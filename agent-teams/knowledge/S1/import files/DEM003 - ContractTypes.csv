@@ -1,0 +1,9 @@
+ContractTypeCode,Title,ContractTypeEnabled
+FXT,Fixed Term,True
+MAT,Maternity Cover,True
+OTH,Other,True
+PERM,Permanent,True
+TEMP,Temporary,True
+VAC,Vacancy,True
+ZERO,Zero Hours,True
+ZZZ,Not Selected,True

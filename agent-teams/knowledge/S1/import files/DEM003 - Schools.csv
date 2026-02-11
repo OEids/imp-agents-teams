@@ -1,0 +1,11 @@
+SchoolLocalAuthority,SchoolCode,SchoolHub,SchoolType,Title,LondonWeighting,UniqueReferenceNumber,TeachingHours,SchoolEnabled
+DEFAULT,BRI,MAT,SECONDARY,Brighton Primary,True,143254,32.5000,True
+DEFAULT,CEN,MAT,CENTRAL,IMP Multi Academy Trust,False,16330,0.0000,True
+DEFAULT,CLA,HUB_N,PRIMARY,Cleary Lane Primary,True,125203,32.5000,True
+DEFAULT,HPA,HUB_S,PRIMARY,Hallet Primary Academy,False,153285,32.5000,True
+DEFAULT,MEA,HUB_E,PRIMARY,"Meadow Lane Primary ",False,127891,32.5000,True
+DEFAULT,MHP,HUB_W,PRIMARY,Mathias Hill Primary Academy,False,122298,32.5000,True
+DEFAULT,ROS,HUB_E,PRIMARY,Rose Hill Primary,False,128385,32.5000,True
+DEFAULT,RYP,HUB_S,PRIMARY,Rydedale Primary Academy,False,138347,32.5000,True
+DEFAULT,SCH,HUB_N,PRIMARY,St Christophers C of E,False,123456987,32.5000,True
+DEFAULT,TESTDISABLE,MAT,TEACHING,TESTdisable,False,123456789,32.5000,True

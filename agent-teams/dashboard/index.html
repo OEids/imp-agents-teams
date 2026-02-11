@@ -1,0 +1,133 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent Hub</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+    <header class="hero">
+      <div class="hero__content">
+        <p class="eyebrow">Agent Hub</p>
+        <h1>Run, review, and trust your data teams.</h1>
+        <p class="subhead">
+          A minimal control room for S1, S2, and S3. Track phases, validate quality,
+          and capture assumptions in one clean place.
+        </p>
+        <div class="hero__actions">
+          <button class="btn btn--primary" type="button">Start new session</button>
+          <button class="btn btn--ghost" type="button">View latest report</button>
+        </div>
+      </div>
+      <div class="hero__card">
+        <div class="metric">
+          <span class="metric__label">Active Session</span>
+          <span class="metric__value">2026-02-08 17:59</span>
+        </div>
+        <div class="metric">
+          <span class="metric__label">Phases Complete</span>
+          <span class="metric__value">8 / 12</span>
+        </div>
+        <div class="metric">
+          <span class="metric__label">Alerts</span>
+          <span class="metric__value metric__value--warn">2 Warnings</span>
+        </div>
+        <div class="progress">
+          <div class="progress__bar" style="width: 66%"></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="panel">
+        <div class="panel__header">
+          <h2>Teams</h2>
+          <div class="chip">live</div>
+        </div>
+        <div class="team-list" id="team-list"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel__header">
+          <h2>Phase Timeline</h2>
+          <button class="link">Export</button>
+        </div>
+        <ol class="timeline" id="timeline"></ol>
+      </section>
+
+      <section class="panel panel--wide">
+        <div class="panel__header">
+          <h2>Quality Snapshot</h2>
+          <div class="chip chip--ok">stable</div>
+        </div>
+        <div class="quality">
+          <div class="quality__item">
+            <p>Data Quality Score</p>
+            <strong>82%</strong>
+            <span>+4% vs last run</span>
+          </div>
+          <div class="quality__item">
+            <p>Assumptions</p>
+            <strong>12</strong>
+            <span>3 low confidence</span>
+          </div>
+          <div class="quality__item">
+            <p>Validation Errors</p>
+            <strong>4</strong>
+            <span>2 critical</span>
+          </div>
+          <div class="quality__item">
+            <p>Next Check-in</p>
+            <strong>Transform</strong>
+            <span>S2 in progress</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel panel--wide">
+        <div class="panel__header">
+          <h2>Recent Reports</h2>
+          <button class="link">See all</button>
+        </div>
+        <div class="reports">
+          <article class="report">
+            <div>
+              <h3>S1 Analysis</h3>
+              <p>3 warnings, 1 critical. Finance code formatting needs review.</p>
+            </div>
+            <span class="status status--warn">Needs Review</span>
+          </article>
+          <article class="report">
+            <div>
+              <h3>S2 Cleanup</h3>
+              <p>Whitespace normalized, 2 missing columns created.</p>
+            </div>
+            <span class="status status--ok">Approved</span>
+          </article>
+          <article class="report">
+            <div>
+              <h3>S3 Transform</h3>
+              <p>Budget sign conventions normalized for 3 accounts.</p>
+            </div>
+            <span class="status status--info">In Progress</span>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>Agent Hub v0.1</span>
+      <span>Last sync: 2026-02-08 18:02</span>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>
