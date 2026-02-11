@@ -14,7 +14,7 @@ from typing import Dict, List, Any, Optional
 
 from .base import (
     BaseAgent, CheckInReport, AnalyzeAgent, CleanAgent,
-    TransformAgent, BuildAgent, QualityCheckAgent, AgentTeam
+    TransformAgent, BuildAgent, QualityCheckAgent, AuditorAgent, AgentTeam
 )
 from .validation import DataValidator, AssumptionTracker
 from .knowledge import (
@@ -1096,6 +1096,265 @@ class ExpertQualityCheckAgent(QualityCheckAgent):
         return recommendations
 
 
+class ExpertAuditorAgent(AuditorAgent):
+    """Auditor agent with domain expertise for external review."""
+
+    def __init__(self, team_id: str, team_config: Dict):
+        super().__init__(team_id, team_config)
+        self.knowledge = get_team_knowledge(team_id)
+
+    def execute(self, input_data: Dict) -> CheckInReport:
+        """Perform expert external review audit with domain knowledge."""
+        self.log(f"Starting Expert External Audit for {self.knowledge.team_name}")
+
+        # Run base audit
+        report = super().execute(input_data)
+
+        # Add expert audit checks based on team type
+        expert_audit = self._perform_expert_audit(input_data)
+        report.details["expert_audit"] = expert_audit
+
+        # Update audit trail with expert findings
+        if report.details.get("audit_trail"):
+            report.details["audit_trail"].append({
+                "timestamp": datetime.now().isoformat(),
+                "action": "Expert Audit",
+                "details": f"Performed domain-specific audit for {self.team_id}"
+            })
+
+        # Adjust accuracy score based on expert findings
+        self._update_score_with_expert_findings(report, expert_audit)
+
+        # Add expert recommendations
+        expert_recs = self._get_expert_audit_recommendations(expert_audit)
+        report.recommendations.extend(expert_recs)
+
+        return report
+
+    def _perform_expert_audit(self, input_data: Dict) -> Dict:
+        """Perform domain-specific audit based on team type."""
+        expert_results = {
+            "domain_checks": [],
+            "reference_data_validation": [],
+            "business_rules_verification": [],
+            "data_lineage": []
+        }
+
+        original_data = input_data.get("original_data")
+        transformed_data = input_data.get("transformed_data")
+
+        if transformed_data is None:
+            return expert_results
+
+        # Team-specific expert audit
+        if self.team_id == "S1":
+            expert_results.update(self._audit_s1_data(original_data, transformed_data))
+        elif self.team_id == "S2":
+            expert_results.update(self._audit_s2_data(original_data, transformed_data))
+        elif self.team_id == "S3":
+            expert_results.update(self._audit_s3_data(original_data, transformed_data))
+
+        return expert_results
+
+    def _audit_s1_data(self, original: pd.DataFrame, processed: pd.DataFrame) -> Dict:
+        """S1-specific audit: Finance codes, schools, departments."""
+        results = {"domain_checks": [], "reference_data_validation": []}
+
+        # Check finance code format consistency
+        fc_cols = [c for c in processed.columns if 'finance' in c.lower() or 'code' in c.lower()]
+        for col in fc_cols:
+            values = processed[col].dropna().astype(str)
+            # Check for consistent format (e.g., all numeric or alphanumeric pattern)
+            if len(values) > 0:
+                numeric_count = values.str.match(r'^\d+$').sum()
+                total_count = len(values)
+                consistency = (numeric_count / total_count * 100) if total_count > 0 else 0
+
+                results["domain_checks"].append({
+                    "check": f"Finance Code Format: {col}",
+                    "passed": consistency > 90 or consistency < 10,  # Should be consistently one type
+                    "details": f"{consistency:.1f}% numeric format",
+                    "severity": "info"
+                })
+
+        # Check school code uniqueness
+        if 'school_code' in [c.lower() for c in processed.columns]:
+            school_col = [c for c in processed.columns if 'school' in c.lower() and 'code' in c.lower()][0]
+            duplicates = processed[school_col].dropna().duplicated().sum()
+            results["reference_data_validation"].append({
+                "check": "School Code Uniqueness",
+                "passed": duplicates == 0,
+                "details": f"{duplicates} duplicate school codes found",
+                "severity": "warning" if duplicates > 0 else "info"
+            })
+
+        return results
+
+    def _audit_s2_data(self, original: pd.DataFrame, processed: pd.DataFrame) -> Dict:
+        """S2-specific audit: Staff, pay scales, contracts using S2 domain knowledge."""
+        results = {"domain_checks": [], "reference_data_validation": [], "business_rules_verification": []}
+
+        # Audit pay scale codes against known scales
+        if S2_DOMAIN_KNOWLEDGE_AVAILABLE:
+            pay_scale_cols = [c for c in processed.columns if 'pay' in c.lower() and 'scale' in c.lower()]
+            for col in pay_scale_cols:
+                values = processed[col].dropna().unique()
+                unknown = [v for v in values if str(v) not in S2_PAY_SCALES]
+                results["domain_checks"].append({
+                    "check": f"Pay Scale Validation: {col}",
+                    "passed": len(unknown) == 0,
+                    "details": f"{len(unknown)} unknown pay scales: {unknown[:3]}",
+                    "severity": "warning" if unknown else "info"
+                })
+
+            # Audit staff role groups
+            role_cols = [c for c in processed.columns if 'role' in c.lower() and 'group' in c.lower()]
+            for col in role_cols:
+                values = processed[col].dropna().unique()
+                unknown = [v for v in values if str(v) not in STAFF_ROLE_GROUPS]
+                results["domain_checks"].append({
+                    "check": f"Role Group Validation: {col}",
+                    "passed": len(unknown) == 0,
+                    "details": f"{len(unknown)} unknown role groups",
+                    "severity": "warning" if unknown else "info"
+                })
+
+        # Verify teaching/support classification consistency
+        if 'role_type' in processed.columns and 'pension_code' in processed.columns:
+            teaching_staff = processed[processed['role_type'] == 'teaching']
+            teaching_with_wrong_pension = teaching_staff[~teaching_staff['pension_code'].isin(['TPS', '0%', '', None])]
+
+            results["business_rules_verification"].append({
+                "check": "Teaching Staff Pension Rule",
+                "passed": len(teaching_with_wrong_pension) == 0,
+                "details": f"{len(teaching_with_wrong_pension)} teaching staff without TPS pension",
+                "severity": "warning" if len(teaching_with_wrong_pension) > 0 else "info"
+            })
+
+        # Verify combined field parsing occurred
+        combined_cols = [c for c in processed.columns if 'Combined' in str(c)]
+        parsed_cols = [c for c in processed.columns if c.endswith('_Code') or c.endswith('_Parsed')]
+
+        if combined_cols and not parsed_cols:
+            results["domain_checks"].append({
+                "check": "Combined Field Parsing",
+                "passed": False,
+                "details": f"{len(combined_cols)} combined fields not parsed",
+                "severity": "warning"
+            })
+        elif parsed_cols:
+            results["domain_checks"].append({
+                "check": "Combined Field Parsing",
+                "passed": True,
+                "details": f"{len(parsed_cols)} code columns extracted",
+                "severity": "info"
+            })
+
+        return results
+
+    def _audit_s3_data(self, original: pd.DataFrame, processed: pd.DataFrame) -> Dict:
+        """S3-specific audit: Financial data, budgets, pupils."""
+        results = {"domain_checks": [], "reference_data_validation": [], "business_rules_verification": []}
+
+        # Check for negative values in amount columns
+        amount_cols = [c for c in processed.columns if any(x in c.lower() for x in ['amount', 'value', 'budget', 'pupil'])]
+        for col in amount_cols:
+            try:
+                numeric_vals = pd.to_numeric(processed[col], errors='coerce').dropna()
+                negative_count = (numeric_vals < 0).sum()
+
+                if 'pupil' in col.lower():
+                    # Pupil numbers should never be negative
+                    results["business_rules_verification"].append({
+                        "check": f"Pupil Numbers Non-Negative: {col}",
+                        "passed": negative_count == 0,
+                        "details": f"{negative_count} negative values found",
+                        "severity": "critical" if negative_count > 0 else "info"
+                    })
+                else:
+                    # Budget amounts can be negative (credits)
+                    results["domain_checks"].append({
+                        "check": f"Amount Values: {col}",
+                        "passed": True,
+                        "details": f"{negative_count} negative values (may be credits)",
+                        "severity": "info"
+                    })
+            except Exception:
+                continue
+
+        # Check year columns are reasonable
+        year_cols = [c for c in processed.columns if 'year' in c.lower()]
+        current_year = datetime.now().year
+        for col in year_cols:
+            try:
+                years = pd.to_numeric(processed[col], errors='coerce').dropna()
+                future_years = (years > current_year + 10).sum()
+                past_years = (years < current_year - 20).sum()
+
+                if future_years > 0 or past_years > 0:
+                    results["reference_data_validation"].append({
+                        "check": f"Year Range: {col}",
+                        "passed": False,
+                        "details": f"{future_years} future, {past_years} historical values outside expected range",
+                        "severity": "warning"
+                    })
+            except Exception:
+                continue
+
+        return results
+
+    def _update_score_with_expert_findings(self, report: CheckInReport, expert_audit: Dict):
+        """Update accuracy score based on expert findings."""
+        expert_failures = 0
+        expert_total = 0
+
+        for category in ['domain_checks', 'reference_data_validation', 'business_rules_verification']:
+            checks = expert_audit.get(category, [])
+            for check in checks:
+                if isinstance(check, dict) and 'passed' in check:
+                    expert_total += 1
+                    if not check['passed']:
+                        expert_failures += 1
+
+        if expert_total > 0:
+            expert_pass_rate = ((expert_total - expert_failures) / expert_total) * 100
+            original_score = report.details.get("accuracy_score", 0)
+            # Weight expert audit at 25% of final score
+            adjusted_score = (original_score * 0.75) + (expert_pass_rate * 0.25)
+            report.details["accuracy_score"] = round(adjusted_score, 1)
+            report.details["expert_audit_pass_rate"] = round(expert_pass_rate, 1)
+
+    def _get_expert_audit_recommendations(self, expert_audit: Dict) -> List[str]:
+        """Generate recommendations from expert audit findings."""
+        recommendations = []
+
+        # Check domain validation failures
+        domain_checks = expert_audit.get("domain_checks", [])
+        failed_domain = [c for c in domain_checks if isinstance(c, dict) and not c.get("passed", True)]
+
+        if failed_domain:
+            recommendations.append(f"EXPERT: Address {len(failed_domain)} domain-specific validation issues")
+
+        # Check business rule violations
+        business_checks = expert_audit.get("business_rules_verification", [])
+        failed_business = [c for c in business_checks if isinstance(c, dict) and not c.get("passed", True)]
+
+        if failed_business:
+            recommendations.append(f"CRITICAL: {len(failed_business)} business rule violations detected")
+
+        # Check reference data issues
+        ref_checks = expert_audit.get("reference_data_validation", [])
+        failed_ref = [c for c in ref_checks if isinstance(c, dict) and not c.get("passed", True)]
+
+        if failed_ref:
+            recommendations.append(f"VERIFY: {len(failed_ref)} reference data inconsistencies found")
+
+        if not (failed_domain or failed_business or failed_ref):
+            recommendations.append("EXPERT AUDIT PASSED: All domain-specific checks passed")
+
+        return recommendations
+
+
 class ExpertAgentTeam(AgentTeam):
     """Agent team with expert knowledge."""
 
@@ -1111,7 +1370,8 @@ class ExpertAgentTeam(AgentTeam):
             "clean": ExpertCleanAgent(team_id, team_config),
             "transform": ExpertTransformAgent(team_id, team_config),
             "build": ExpertBuildAgent(team_id, team_config, template_path),
-            "quality_check": ExpertQualityCheckAgent(team_id, team_config)
+            "quality_check": ExpertQualityCheckAgent(team_id, team_config),
+            "audit": ExpertAuditorAgent(team_id, team_config)
         }
 
         self.reports = []

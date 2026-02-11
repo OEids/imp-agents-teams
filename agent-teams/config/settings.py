@@ -83,6 +83,11 @@ PHASES = [
         "id": "quality_check",
         "name": "Quality Check",
         "description": "Review all processing, validate against standards, ensure data integrity"
+    },
+    {
+        "id": "audit",
+        "name": "External Audit",
+        "description": "Compare source data against output, verify accuracy, generate reconciliation report"
     }
 ]
 

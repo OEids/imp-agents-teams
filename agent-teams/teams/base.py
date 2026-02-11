@@ -1362,6 +1362,460 @@ class QualityCheckAgent(BaseAgent):
         return recommendations
 
 
+class AuditorAgent(BaseAgent):
+    """
+    External Review Auditor - Compares source data against processed output.
+
+    Responsibilities:
+    1. Compare original source files to final output
+    2. Verify data accuracy and completeness
+    3. Identify discrepancies between source and output
+    4. Generate audit trail and reconciliation report
+    5. Flag data that may have been lost, changed, or incorrectly processed
+    """
+
+    def __init__(self, team_id: str, team_config: Dict):
+        super().__init__(team_id, team_config, "audit")
+        self.audit_results: List[Dict] = []
+        self.reconciliation: Dict = {}
+        self.accuracy_score: float = 0.0
+
+    def execute(self, input_data: Dict) -> CheckInReport:
+        """Perform external review audit comparing source to output."""
+        self.log("Starting External Review Audit")
+
+        details = {
+            "accuracy_score": 0,
+            "records_matched": 0,
+            "records_missing": 0,
+            "records_extra": 0,
+            "field_discrepancies": [],
+            "value_changes": [],
+            "reconciliation_summary": {},
+            "source_files_reviewed": [],
+            "audit_trail": []
+        }
+
+        # Get source and output data
+        original_data = input_data.get("original_data")
+        transformed_data = input_data.get("transformed_data")
+        output_path = input_data.get("output_path", "")
+        source_files = input_data.get("source_files", [])
+
+        if original_data is None and transformed_data is None:
+            self.issues.append("No data available for audit")
+            return self.create_report(
+                status="error",
+                summary="Audit failed - no data to review",
+                details=details
+            )
+
+        # Store source files info
+        details["source_files_reviewed"] = [str(f) for f in source_files] if source_files else ["(original data)"]
+
+        # 1. RECORD COUNT RECONCILIATION
+        self.log("  Reconciling record counts...")
+        count_results = self._reconcile_record_counts(original_data, transformed_data)
+        details["reconciliation_summary"]["record_counts"] = count_results
+        details["records_matched"] = count_results.get("matched", 0)
+        details["records_missing"] = count_results.get("missing_from_output", 0)
+        details["records_extra"] = count_results.get("extra_in_output", 0)
+
+        # 2. KEY FIELD VERIFICATION
+        self.log("  Verifying key fields...")
+        key_results = self._verify_key_fields(original_data, transformed_data)
+        details["reconciliation_summary"]["key_fields"] = key_results
+        self.audit_results.extend(key_results.get("checks", []))
+
+        # 3. VALUE ACCURACY CHECK
+        self.log("  Checking value accuracy...")
+        value_results = self._check_value_accuracy(original_data, transformed_data)
+        details["value_changes"] = value_results.get("changes", [])[:20]  # Limit for display
+        details["reconciliation_summary"]["value_accuracy"] = {
+            "total_fields_checked": value_results.get("fields_checked", 0),
+            "fields_with_changes": value_results.get("fields_changed", 0),
+            "accuracy_percentage": value_results.get("accuracy_pct", 0)
+        }
+        self.audit_results.extend(value_results.get("checks", []))
+
+        # 4. DATA COMPLETENESS AUDIT
+        self.log("  Auditing data completeness...")
+        completeness = self._audit_completeness(original_data, transformed_data)
+        details["reconciliation_summary"]["completeness"] = completeness
+        self.audit_results.extend(completeness.get("checks", []))
+
+        # 5. TRANSFORMATION VERIFICATION
+        self.log("  Verifying transformations...")
+        transform_results = self._verify_transformations(original_data, transformed_data)
+        details["reconciliation_summary"]["transformations"] = transform_results
+        self.audit_results.extend(transform_results.get("checks", []))
+
+        # 6. OUTPUT FILE AUDIT
+        if output_path:
+            self.log("  Auditing output file...")
+            output_audit = self._audit_output_file(output_path, transformed_data)
+            details["reconciliation_summary"]["output_file"] = output_audit
+            self.audit_results.extend(output_audit.get("checks", []))
+
+        # Calculate accuracy score
+        passed = sum(1 for c in self.audit_results if c.get("passed", False))
+        total = len(self.audit_results)
+        self.accuracy_score = round((passed / total) * 100, 1) if total > 0 else 0
+
+        details["accuracy_score"] = self.accuracy_score
+
+        # Generate audit trail
+        details["audit_trail"] = self._generate_audit_trail(details)
+
+        # Determine status
+        if details["records_missing"] > 0 and (details["records_missing"] / max(len(original_data) if original_data is not None else 1, 1)) > 0.1:
+            status = "error"
+            self.issues.append(f"Significant data loss detected: {details['records_missing']} records missing")
+        elif self.accuracy_score < 80:
+            status = "warning"
+        elif details["value_changes"]:
+            status = "warning"
+        else:
+            status = "success"
+
+        # Generate recommendations
+        recommendations = self._generate_audit_recommendations(details)
+
+        return self.create_report(
+            status=status,
+            summary=f"Audit Score: {self.accuracy_score}%. Matched {details['records_matched']} records. {details['records_missing']} missing, {len(details['value_changes'])} value changes detected.",
+            details=details,
+            recommendations=recommendations
+        )
+
+    def _reconcile_record_counts(self, original: pd.DataFrame, processed: pd.DataFrame) -> Dict:
+        """Reconcile record counts between source and output."""
+        results = {
+            "source_count": 0,
+            "output_count": 0,
+            "matched": 0,
+            "missing_from_output": 0,
+            "extra_in_output": 0
+        }
+
+        if original is not None:
+            results["source_count"] = len(original)
+        if processed is not None:
+            results["output_count"] = len(processed)
+
+        # Calculate differences
+        results["missing_from_output"] = max(0, results["source_count"] - results["output_count"])
+        results["extra_in_output"] = max(0, results["output_count"] - results["source_count"])
+        results["matched"] = min(results["source_count"], results["output_count"])
+
+        return results
+
+    def _verify_key_fields(self, original: pd.DataFrame, processed: pd.DataFrame) -> Dict:
+        """Verify key identifier fields are preserved."""
+        results = {"checks": [], "key_fields_found": []}
+
+        if original is None or processed is None:
+            return results
+
+        # Common key field patterns
+        key_patterns = ['code', 'id', 'reference', 'number', 'key', 'payroll', 'staff']
+
+        orig_cols = [c for c in original.columns if any(p in str(c).lower() for p in key_patterns)]
+        proc_cols = [c for c in processed.columns if any(p in str(c).lower() for p in key_patterns)]
+
+        results["key_fields_found"] = orig_cols
+
+        for col in orig_cols:
+            if col in processed.columns:
+                # Check if values are preserved
+                orig_values = set(original[col].dropna().astype(str))
+                proc_values = set(processed[col].dropna().astype(str))
+
+                missing = orig_values - proc_values
+                extra = proc_values - orig_values
+
+                if missing:
+                    results["checks"].append({
+                        "name": f"Key Field: {col}",
+                        "passed": len(missing) < len(orig_values) * 0.1,
+                        "severity": "warning" if len(missing) < len(orig_values) * 0.1 else "critical",
+                        "message": f"{len(missing)} values missing from key field '{col}'"
+                    })
+                else:
+                    results["checks"].append({
+                        "name": f"Key Field: {col}",
+                        "passed": True,
+                        "severity": "info",
+                        "message": f"Key field '{col}' fully preserved ({len(orig_values)} values)"
+                    })
+
+        return results
+
+    def _check_value_accuracy(self, original: pd.DataFrame, processed: pd.DataFrame) -> Dict:
+        """Check accuracy of values between source and output."""
+        results = {
+            "fields_checked": 0,
+            "fields_changed": 0,
+            "accuracy_pct": 100,
+            "changes": [],
+            "checks": []
+        }
+
+        if original is None or processed is None:
+            return results
+
+        # Find common columns
+        common_cols = set(original.columns) & set(processed.columns)
+        results["fields_checked"] = len(common_cols)
+
+        changes_found = 0
+        for col in common_cols:
+            try:
+                orig_vals = original[col].astype(str).values
+                proc_vals = processed[col].astype(str).values
+
+                # Compare values (handle different lengths)
+                min_len = min(len(orig_vals), len(proc_vals))
+                if min_len > 0:
+                    differences = sum(1 for i in range(min_len) if orig_vals[i] != proc_vals[i])
+                    if differences > 0:
+                        changes_found += 1
+                        # Record sample changes
+                        for i in range(min(5, min_len)):
+                            if orig_vals[i] != proc_vals[i]:
+                                results["changes"].append({
+                                    "field": col,
+                                    "row": i,
+                                    "original": orig_vals[i][:50],
+                                    "processed": proc_vals[i][:50]
+                                })
+            except Exception:
+                continue
+
+        results["fields_changed"] = changes_found
+        if results["fields_checked"] > 0:
+            results["accuracy_pct"] = round(((results["fields_checked"] - changes_found) / results["fields_checked"]) * 100, 1)
+
+        # Add check result
+        if changes_found > results["fields_checked"] * 0.3:
+            results["checks"].append({
+                "name": "Value Accuracy",
+                "passed": False,
+                "severity": "warning",
+                "message": f"{changes_found} of {results['fields_checked']} fields have value changes"
+            })
+        else:
+            results["checks"].append({
+                "name": "Value Accuracy",
+                "passed": True,
+                "severity": "info",
+                "message": f"Value accuracy: {results['accuracy_pct']}%"
+            })
+
+        return results
+
+    def _audit_completeness(self, original: pd.DataFrame, processed: pd.DataFrame) -> Dict:
+        """Audit data completeness - ensure no required data is missing."""
+        results = {"checks": [], "completeness_score": 0}
+
+        if processed is None:
+            return results
+
+        # Check for columns that are entirely null
+        null_cols = []
+        for col in processed.columns:
+            if processed[col].isna().all():
+                null_cols.append(col)
+
+        if null_cols:
+            results["checks"].append({
+                "name": "Empty Columns",
+                "passed": False,
+                "severity": "warning",
+                "message": f"{len(null_cols)} columns are completely empty: {null_cols[:5]}"
+            })
+        else:
+            results["checks"].append({
+                "name": "Empty Columns",
+                "passed": True,
+                "severity": "info",
+                "message": "No completely empty columns"
+            })
+
+        # Check overall null percentage
+        total_cells = processed.size
+        null_cells = processed.isna().sum().sum()
+        null_pct = (null_cells / total_cells * 100) if total_cells > 0 else 0
+
+        results["completeness_score"] = round(100 - null_pct, 1)
+
+        if null_pct > 50:
+            results["checks"].append({
+                "name": "Data Completeness",
+                "passed": False,
+                "severity": "critical",
+                "message": f"Only {100-null_pct:.1f}% of data cells have values"
+            })
+        elif null_pct > 20:
+            results["checks"].append({
+                "name": "Data Completeness",
+                "passed": True,
+                "severity": "warning",
+                "message": f"Data completeness: {100-null_pct:.1f}%"
+            })
+        else:
+            results["checks"].append({
+                "name": "Data Completeness",
+                "passed": True,
+                "severity": "info",
+                "message": f"Data completeness: {100-null_pct:.1f}%"
+            })
+
+        return results
+
+    def _verify_transformations(self, original: pd.DataFrame, processed: pd.DataFrame) -> Dict:
+        """Verify that transformations were applied correctly."""
+        results = {"checks": [], "transformations_detected": []}
+
+        if original is None or processed is None:
+            return results
+
+        # Detect column renames (new columns that didn't exist)
+        orig_cols = set(str(c).lower() for c in original.columns)
+        proc_cols = set(str(c).lower() for c in processed.columns)
+
+        new_cols = proc_cols - orig_cols
+        if new_cols:
+            results["transformations_detected"].append(f"New columns added: {len(new_cols)}")
+            results["checks"].append({
+                "name": "Column Transformations",
+                "passed": True,
+                "severity": "info",
+                "message": f"{len(new_cols)} new columns created during transformation"
+            })
+
+        # Check for data type changes
+        type_changes = 0
+        for col in original.columns:
+            if col in processed.columns:
+                if original[col].dtype != processed[col].dtype:
+                    type_changes += 1
+
+        if type_changes > 0:
+            results["transformations_detected"].append(f"Type changes: {type_changes}")
+            results["checks"].append({
+                "name": "Data Type Changes",
+                "passed": True,
+                "severity": "info",
+                "message": f"{type_changes} columns had data type changes"
+            })
+
+        return results
+
+    def _audit_output_file(self, output_path: str, data: pd.DataFrame) -> Dict:
+        """Audit the output file for integrity."""
+        results = {"checks": []}
+
+        output_file = Path(output_path)
+        if not output_file.exists():
+            results["checks"].append({
+                "name": "Output File Exists",
+                "passed": False,
+                "severity": "critical",
+                "message": f"Output file not found: {output_path}"
+            })
+            return results
+
+        results["checks"].append({
+            "name": "Output File Exists",
+            "passed": True,
+            "severity": "info",
+            "message": f"Output file exists: {output_file.name}"
+        })
+
+        # Verify file can be read back
+        try:
+            if output_file.suffix in ['.xlsx', '.xls']:
+                read_back = pd.read_excel(output_file, sheet_name=None)
+                sheet_count = len(read_back)
+                results["checks"].append({
+                    "name": "Output File Readable",
+                    "passed": True,
+                    "severity": "info",
+                    "message": f"Output file readable with {sheet_count} sheets"
+                })
+            elif output_file.suffix == '.csv':
+                read_back = pd.read_csv(output_file)
+                results["checks"].append({
+                    "name": "Output File Readable",
+                    "passed": True,
+                    "severity": "info",
+                    "message": f"Output file readable with {len(read_back)} rows"
+                })
+        except Exception as e:
+            results["checks"].append({
+                "name": "Output File Readable",
+                "passed": False,
+                "severity": "critical",
+                "message": f"Cannot read output file: {str(e)[:100]}"
+            })
+
+        return results
+
+    def _generate_audit_trail(self, details: Dict) -> List[Dict]:
+        """Generate audit trail entries."""
+        trail = []
+        timestamp = datetime.now().isoformat()
+
+        trail.append({
+            "timestamp": timestamp,
+            "action": "Audit Started",
+            "details": f"Reviewing {len(details.get('source_files_reviewed', []))} source files"
+        })
+
+        trail.append({
+            "timestamp": timestamp,
+            "action": "Record Reconciliation",
+            "details": f"Matched: {details['records_matched']}, Missing: {details['records_missing']}, Extra: {details['records_extra']}"
+        })
+
+        trail.append({
+            "timestamp": timestamp,
+            "action": "Value Accuracy Check",
+            "details": f"Accuracy: {details.get('reconciliation_summary', {}).get('value_accuracy', {}).get('accuracy_percentage', 'N/A')}%"
+        })
+
+        trail.append({
+            "timestamp": timestamp,
+            "action": "Audit Complete",
+            "details": f"Final Score: {details['accuracy_score']}%"
+        })
+
+        return trail
+
+    def _generate_audit_recommendations(self, details: Dict) -> List[str]:
+        """Generate recommendations based on audit results."""
+        recommendations = []
+
+        if details["records_missing"] > 0:
+            recommendations.append(f"REVIEW: {details['records_missing']} records from source not found in output - verify this is expected")
+
+        if details["records_extra"] > 0:
+            recommendations.append(f"NOTE: {details['records_extra']} additional records in output - may be derived or calculated data")
+
+        if details["value_changes"]:
+            recommendations.append(f"VERIFY: {len(details['value_changes'])} value changes detected - confirm transformations are correct")
+
+        completeness = details.get("reconciliation_summary", {}).get("completeness", {}).get("completeness_score", 100)
+        if completeness < 80:
+            recommendations.append(f"WARNING: Data completeness is {completeness}% - review for missing required fields")
+
+        if details["accuracy_score"] >= 90 and not details["records_missing"]:
+            recommendations.append("PASSED: Data audit successful - output matches source data accurately")
+
+        return recommendations
+
+
 class AgentTeam:
     """A team of agents that process data through all phases."""
 
@@ -1376,7 +1830,8 @@ class AgentTeam:
             "clean": CleanAgent(team_id, team_config),
             "transform": TransformAgent(team_id, team_config),
             "build": BuildAgent(team_id, team_config, template_path),
-            "quality_check": QualityCheckAgent(team_id, team_config)
+            "quality_check": QualityCheckAgent(team_id, team_config),
+            "audit": AuditorAgent(team_id, team_config)
         }
 
         self.reports: List[CheckInReport] = []
@@ -1410,7 +1865,7 @@ class AgentTeam:
 
     def run_all(self, check_in_callback=None) -> List[CheckInReport]:
         """Run all phases with optional check-in callback."""
-        phases = ["analyze", "clean", "transform", "build", "quality_check"]
+        phases = ["analyze", "clean", "transform", "build", "quality_check", "audit"]
 
         for phase in phases:
             # Determine input for this phase
@@ -1419,6 +1874,14 @@ class AgentTeam:
             elif phase == "quality_check":
                 # QA agent gets all accumulated data from previous phases
                 input_data = self.phase_data.get("build", {})
+            elif phase == "audit":
+                # Auditor gets both original and transformed data for comparison
+                input_data = {
+                    "original_data": self.phase_data.get("analyze", {}).get("data"),
+                    "transformed_data": self.phase_data.get("transform", {}).get("data"),
+                    "output_path": self.phase_data.get("build", {}).get("output_path", ""),
+                    "source_files": self.phase_data.get("analyze", {}).get("source_files", [])
+                }
             else:
                 prev_phase = phases[phases.index(phase) - 1]
                 input_data = self.phase_data.get(prev_phase, {})
