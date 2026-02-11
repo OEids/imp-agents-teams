@@ -22,7 +22,20 @@ from .knowledge import (
     normalize_finance_code, normalize_scale_point,
     calculate_fte, calculate_tto_paid_weeks,
     validate_salary_vs_scale, is_teaching_role, is_support_role,
-    PAY_SCALES_2024_25, TTO_LEAVE_ENTITLEMENTS
+    PAY_SCALES_2024_25, TTO_LEAVE_ENTITLEMENTS,
+    # S2 Domain Knowledge integration
+    S2_DOMAIN_KNOWLEDGE_AVAILABLE,
+    parse_combined_field,
+    extract_finance_code,
+    transform_contract_row,
+    S2_PAY_SCALES,
+    STAFF_ROLE_GROUPS,
+    EQUATED_WEEK_PATTERNS,
+    COMBINED_COLUMNS,
+    get_finance_codes_for_role_group,
+    map_role_title_to_group,
+    get_default_pension,
+    get_default_fund_code,
 )
 
 
@@ -372,10 +385,111 @@ class ExpertCleanAgent(CleanAgent):
         return df, changes
 
     def _clean_s2_data(self, df: pd.DataFrame) -> tuple:
-        """S2-specific cleaning: Staff data, pay scales."""
+        """S2-specific cleaning: Staff data, pay scales, combined field parsing."""
         changes = []
 
+        # =====================================================================
+        # CRITICAL: Parse Combined Fields (S2 Domain Knowledge Integration)
+        # =====================================================================
+        # Import files use "CODE: Title (extra)" format that must be parsed
+        if S2_DOMAIN_KNOWLEDGE_AVAILABLE:
+            combined_cols_found = []
+            for col in df.columns:
+                if col in COMBINED_COLUMNS or 'Combined' in str(col):
+                    combined_cols_found.append(col)
+
+            if combined_cols_found:
+                self.log(f"Parsing {len(combined_cols_found)} combined format columns")
+                for col in combined_cols_found:
+                    # Create code column (extract just the code part)
+                    code_col = col.replace(' Combined', '_Code').replace(' Code', '_Code')
+                    if code_col == col:
+                        code_col = col + '_Parsed'
+
+                    df[code_col] = df[col].apply(
+                        lambda x: parse_combined_field(str(x))[0] if pd.notna(x) else ''
+                    )
+                    changes.append(f"Parsed combined field '{col}' -> '{code_col}'")
+
+                self.assumptions.add(
+                    category="format",
+                    description=f"Parsed {len(combined_cols_found)} combined format columns",
+                    reason="Import files use 'CODE: Title' format that needs parsing",
+                    impact="Codes extracted for matching and validation",
+                    confidence="high",
+                    affected_records=len(df)
+                )
+
+        # =====================================================================
+        # Map Role Titles to Role Groups (if role group not already present)
+        # =====================================================================
+        if S2_DOMAIN_KNOWLEDGE_AVAILABLE and 'job_title' in df.columns:
+            if 'staff_role_group' not in df.columns and 'Staff Role Group' not in df.columns:
+                df['staff_role_group'] = df['job_title'].apply(
+                    lambda x: map_role_title_to_group(str(x)) if pd.notna(x) else None
+                )
+                mapped_count = df['staff_role_group'].notna().sum()
+                if mapped_count > 0:
+                    changes.append(f"Mapped {mapped_count} role titles to role groups")
+                    self.assumptions.add(
+                        category="classification",
+                        description=f"Mapped {mapped_count} job titles to staff role groups",
+                        reason="Role groups determine finance code mappings",
+                        impact="Finance codes will be derived from role group",
+                        confidence="medium",
+                        affected_records=mapped_count
+                    )
+
+        # =====================================================================
+        # Derive Finance Codes from Role Groups (S2 Domain Knowledge)
+        # =====================================================================
+        if S2_DOMAIN_KNOWLEDGE_AVAILABLE and 'staff_role_group' in df.columns:
+            # Add finance code columns if not present
+            if 'gross_salary_finance_code' not in df.columns:
+                df['gross_salary_finance_code'] = df['staff_role_group'].apply(
+                    lambda x: get_finance_codes_for_role_group(x).get('gross_salary', '') if x else ''
+                )
+                df['employers_ni_finance_code'] = df['staff_role_group'].apply(
+                    lambda x: get_finance_codes_for_role_group(x).get('employers_ni', '') if x else ''
+                )
+                df['pension_finance_code'] = df['staff_role_group'].apply(
+                    lambda x: get_finance_codes_for_role_group(x).get('pension', '') if x else ''
+                )
+                derived_count = (df['gross_salary_finance_code'] != '').sum()
+                if derived_count > 0:
+                    changes.append(f"Derived finance codes for {derived_count} records from role groups")
+                    self.assumptions.add(
+                        category="derivation",
+                        description=f"Derived finance codes from staff role groups for {derived_count} records",
+                        reason="Role groups have standard finance code mappings",
+                        impact="Gross salary, NI, and pension finance codes populated",
+                        confidence="high",
+                        affected_records=derived_count
+                    )
+
+        # =====================================================================
+        # Set Default Fund Codes and Pension Schemes
+        # =====================================================================
+        if S2_DOMAIN_KNOWLEDGE_AVAILABLE:
+            # Default fund code (GAG)
+            if 'fund_code' in df.columns:
+                empty_fund = df['fund_code'].isna() | (df['fund_code'] == '')
+                if empty_fund.any():
+                    df.loc[empty_fund, 'fund_code'] = get_default_fund_code()
+                    changes.append(f"Set default fund code (GAG) for {empty_fund.sum()} records")
+
+            # Default pension based on role type
+            if 'pension_code' in df.columns and 'role_type' in df.columns:
+                empty_pension = df['pension_code'].isna() | (df['pension_code'] == '')
+                if empty_pension.any():
+                    df.loc[empty_pension, 'pension_code'] = df.loc[empty_pension, 'role_type'].apply(
+                        lambda x: get_default_pension(x == 'teaching')
+                    )
+                    changes.append(f"Set default pension scheme for {empty_pension.sum()} records")
+
+        # =====================================================================
         # Normalize pay scale points
+        # =====================================================================
         if 'current_scale_point' in df.columns:
             original = df['current_scale_point'].copy()
 
@@ -407,7 +521,9 @@ class ExpertCleanAgent(CleanAgent):
                     affected_records=changed
                 )
 
+        # =====================================================================
         # Calculate FTE if hours present
+        # =====================================================================
         if 'weekly_hours' in df.columns and 'full_time_hours' in df.columns:
             if 'weekly_fte' not in df.columns:
                 df['weekly_fte'] = df.apply(
@@ -425,7 +541,9 @@ class ExpertCleanAgent(CleanAgent):
                     affected_records=len(df)
                 )
 
+        # =====================================================================
         # Determine role type (teaching/support)
+        # =====================================================================
         if 'job_title' in df.columns and 'role_type' not in df.columns:
             df['role_type'] = df['job_title'].apply(
                 lambda x: 'teaching' if is_teaching_role(x) else 'support' if is_support_role(x) else 'unknown'
@@ -440,7 +558,9 @@ class ExpertCleanAgent(CleanAgent):
                 affected_records=len(df)
             )
 
+        # =====================================================================
         # Normalize finance codes
+        # =====================================================================
         if 'finance_code' in df.columns:
             df['finance_code'] = df['finance_code'].apply(
                 lambda x: normalize_finance_code(x) if pd.notna(x) else x
@@ -626,10 +746,12 @@ class ExpertQualityCheckAgent(QualityCheckAgent):
         return validations
 
     def _validate_s2_quality(self, df: pd.DataFrame) -> List[Dict]:
-        """S2-specific quality validation: Staff data integrity."""
+        """S2-specific quality validation: Staff data integrity using S2 domain knowledge."""
         validations = []
 
+        # =====================================================================
         # Staff member uniqueness
+        # =====================================================================
         if 'payroll_number' in df.columns:
             duplicates = df['payroll_number'].dropna().duplicated().sum()
             if duplicates > 0:
@@ -650,7 +772,33 @@ class ExpertQualityCheckAgent(QualityCheckAgent):
                     "message": "One row per staff member"
                 })
 
-        # Pay scale validation using knowledge base
+        # =====================================================================
+        # Pay Scale Validation using S2 Domain Knowledge
+        # =====================================================================
+        if S2_DOMAIN_KNOWLEDGE_AVAILABLE and 'pay_scale' in df.columns:
+            # Validate against known pay scales from S2_PAY_SCALES
+            pay_scales = df['pay_scale'].dropna().unique()
+            valid_scales = set(S2_PAY_SCALES.keys())
+            invalid_scales = [ps for ps in pay_scales if ps not in valid_scales]
+
+            if invalid_scales:
+                validations.append({
+                    "check": "Pay Scale Codes (S2 Knowledge)",
+                    "passed": False,
+                    "severity": "warning",
+                    "message": f"{len(invalid_scales)} unrecognized pay scale codes",
+                    "samples": invalid_scales[:5],
+                    "valid_scales": list(valid_scales)[:10]
+                })
+            else:
+                validations.append({
+                    "check": "Pay Scale Codes (S2 Knowledge)",
+                    "passed": True,
+                    "severity": "info",
+                    "message": f"All {len(pay_scales)} pay scale codes are valid"
+                })
+
+        # Pay scale point format validation
         if 'current_scale_point' in df.columns:
             scale_points = df['current_scale_point'].dropna()
             valid_patterns = ['M', 'U', 'L', 'SCP']
@@ -658,21 +806,121 @@ class ExpertQualityCheckAgent(QualityCheckAgent):
 
             if len(invalid_scales) > 0:
                 validations.append({
-                    "check": "Pay Scale Format",
+                    "check": "Pay Scale Point Format",
                     "passed": False,
                     "severity": "warning",
-                    "message": f"{len(invalid_scales)} unrecognized pay scale formats",
+                    "message": f"{len(invalid_scales)} unrecognized pay scale point formats",
                     "samples": invalid_scales.head(5).tolist()
                 })
             else:
                 validations.append({
-                    "check": "Pay Scale Format",
+                    "check": "Pay Scale Point Format",
                     "passed": True,
                     "severity": "info",
-                    "message": "All pay scales in recognized format"
+                    "message": "All pay scale points in recognized format"
                 })
 
+        # =====================================================================
+        # Staff Role Group Validation using S2 Domain Knowledge
+        # =====================================================================
+        if S2_DOMAIN_KNOWLEDGE_AVAILABLE and 'staff_role_group' in df.columns:
+            role_groups = df['staff_role_group'].dropna().unique()
+            valid_groups = set(STAFF_ROLE_GROUPS.keys())
+            invalid_groups = [rg for rg in role_groups if rg not in valid_groups]
+
+            if invalid_groups:
+                validations.append({
+                    "check": "Staff Role Groups (S2 Knowledge)",
+                    "passed": False,
+                    "severity": "warning",
+                    "message": f"{len(invalid_groups)} unrecognized role group codes",
+                    "samples": invalid_groups[:5],
+                    "valid_groups": list(valid_groups)
+                })
+            else:
+                validations.append({
+                    "check": "Staff Role Groups (S2 Knowledge)",
+                    "passed": True,
+                    "severity": "info",
+                    "message": f"All {len(role_groups)} role groups are valid"
+                })
+
+        # =====================================================================
+        # Finance Code Derivation Check
+        # =====================================================================
+        if S2_DOMAIN_KNOWLEDGE_AVAILABLE:
+            # Check if finance codes were properly derived
+            if 'gross_salary_finance_code' in df.columns:
+                missing_fc = (df['gross_salary_finance_code'].isna() | (df['gross_salary_finance_code'] == '')).sum()
+                total = len(df)
+                coverage = ((total - missing_fc) / total * 100) if total > 0 else 0
+
+                if coverage < 80:
+                    validations.append({
+                        "check": "Finance Code Coverage",
+                        "passed": False,
+                        "severity": "warning",
+                        "message": f"Only {coverage:.1f}% of records have finance codes derived",
+                        "missing_count": missing_fc
+                    })
+                else:
+                    validations.append({
+                        "check": "Finance Code Coverage",
+                        "passed": True,
+                        "severity": "info",
+                        "message": f"{coverage:.1f}% of records have finance codes ({total - missing_fc}/{total})"
+                    })
+
+        # =====================================================================
+        # Equated Week Pattern Validation
+        # =====================================================================
+        if S2_DOMAIN_KNOWLEDGE_AVAILABLE and 'equated_week_pattern' in df.columns:
+            patterns = df['equated_week_pattern'].dropna().unique()
+            valid_patterns = set(EQUATED_WEEK_PATTERNS.keys())
+            invalid_patterns = [p for p in patterns if p not in valid_patterns]
+
+            if invalid_patterns:
+                validations.append({
+                    "check": "Equated Week Patterns (S2 Knowledge)",
+                    "passed": False,
+                    "severity": "warning",
+                    "message": f"{len(invalid_patterns)} unrecognized equated week patterns",
+                    "samples": invalid_patterns[:5]
+                })
+            else:
+                validations.append({
+                    "check": "Equated Week Patterns (S2 Knowledge)",
+                    "passed": True,
+                    "severity": "info",
+                    "message": f"All equated week patterns are valid"
+                })
+
+        # =====================================================================
+        # Combined Field Parsing Verification
+        # =====================================================================
+        if S2_DOMAIN_KNOWLEDGE_AVAILABLE:
+            combined_cols = [c for c in df.columns if 'Combined' in str(c)]
+            parsed_cols = [c for c in df.columns if c.endswith('_Code') or c.endswith('_Parsed')]
+
+            if combined_cols and not parsed_cols:
+                validations.append({
+                    "check": "Combined Field Parsing",
+                    "passed": False,
+                    "severity": "error",
+                    "message": f"{len(combined_cols)} combined fields found but not parsed",
+                    "columns": combined_cols[:5]
+                })
+            elif combined_cols and parsed_cols:
+                validations.append({
+                    "check": "Combined Field Parsing",
+                    "passed": True,
+                    "severity": "info",
+                    "message": f"{len(combined_cols)} combined fields parsed into {len(parsed_cols)} code columns"
+                })
+
+        # =====================================================================
         # Salary reasonableness check
+        # =====================================================================
         if 'annual_salary' in df.columns:
             salaries = pd.to_numeric(df['annual_salary'], errors='coerce').dropna()
             if len(salaries) > 0:
@@ -702,6 +950,30 @@ class ExpertQualityCheckAgent(QualityCheckAgent):
                         "severity": "info",
                         "message": f"Salary range £{min_sal:,.0f} - £{max_sal:,.0f} (median: £{median_sal:,.0f})"
                     })
+
+        # =====================================================================
+        # Teaching/Support Role-Pension Alignment
+        # =====================================================================
+        if 'role_type' in df.columns and 'pension_code' in df.columns:
+            mismatched = df[
+                ((df['role_type'] == 'teaching') & (~df['pension_code'].isin(['TPS', '0%', '']))) |
+                ((df['role_type'] == 'support') & (~df['pension_code'].isin(['LGPS_IMP', '0%', ''])))
+            ]
+            if len(mismatched) > 0:
+                validations.append({
+                    "check": "Role-Pension Alignment",
+                    "passed": False,
+                    "severity": "warning",
+                    "message": f"{len(mismatched)} records have role type / pension scheme mismatch",
+                    "note": "Teaching should be TPS, Support should be LGPS"
+                })
+            else:
+                validations.append({
+                    "check": "Role-Pension Alignment",
+                    "passed": True,
+                    "severity": "info",
+                    "message": "Role types and pension schemes are aligned"
+                })
 
         return validations
 

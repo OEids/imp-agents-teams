@@ -7,11 +7,58 @@ Each team has specialized knowledge about their strand.
 Knowledge sourced from:
 - S1: Strand 1 Process Notes, Training Notes, Core Data Review
 - S2: Process Notes (Structure), Process Notes (Contracts), Build Reconciliation
+     + S2_DOMAIN_KNOWLEDGE.py (extracted from import files)
 - S3: Strand 3 Workbook Phase 1, Phase 2, Grants and Calculations
 """
 
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
+
+# Import S2 domain knowledge from extracted import files
+try:
+    from knowledge.S2.S2_DOMAIN_KNOWLEDGE import (
+        # Parsing functions
+        parse_combined_field,
+        extract_finance_code,
+        # Data dictionaries
+        PAY_SCALES as S2_PAY_SCALES,
+        TEACHER_PAY_POINTS_2024_25,
+        STAFF_ROLE_GROUPS,
+        EQUATED_WEEK_PATTERNS,
+        PENSION_SCHEMES,
+        CONTRACT_TYPES,
+        FUND_CODES,
+        ALLOWANCE_TYPES,
+        IMPORT_COLUMN_MAPPINGS,
+        COMBINED_COLUMNS,
+        VALIDATION_RULES as S2_VALIDATION_RULES,
+        # Helper functions
+        get_equated_week_pattern,
+        get_default_pension,
+        get_default_fund_code,
+        is_teaching_role as s2_is_teaching_role,
+        get_finance_codes_for_role_group,
+        get_salary_finance_code,
+        get_ni_finance_code,
+        get_pension_finance_code,
+        map_role_title_to_group,
+        # Validation functions
+        validate_staff_member_code,
+        validate_weekly_fte,
+        # Transformation functions
+        transform_contract_row,
+    )
+    S2_DOMAIN_KNOWLEDGE_AVAILABLE = True
+except ImportError:
+    S2_DOMAIN_KNOWLEDGE_AVAILABLE = False
+    # Define stub functions/dicts if import fails
+    def parse_combined_field(value): return (str(value), str(value))
+    def extract_finance_code(value): return str(value)
+    def transform_contract_row(row): return row
+    S2_PAY_SCALES = {}
+    STAFF_ROLE_GROUPS = {}
+    EQUATED_WEEK_PATTERNS = {}
+    COMBINED_COLUMNS = []
 
 
 @dataclass
@@ -1702,3 +1749,62 @@ def get_team_template_sheets(team_id: str) -> List[TemplateSheet]:
     """Get template sheets for a specific team."""
     knowledge = get_team_knowledge(team_id)
     return knowledge.template_sheets if knowledge else []
+
+
+# =============================================================================
+# S2 DOMAIN KNOWLEDGE INTEGRATION HELPERS
+# =============================================================================
+
+def get_s2_domain_knowledge_status() -> Dict[str, Any]:
+    """
+    Get status of S2 domain knowledge integration.
+    Returns information about available data and functions.
+    """
+    return {
+        "available": S2_DOMAIN_KNOWLEDGE_AVAILABLE,
+        "pay_scales_count": len(S2_PAY_SCALES) if S2_DOMAIN_KNOWLEDGE_AVAILABLE else 0,
+        "role_groups_count": len(STAFF_ROLE_GROUPS) if S2_DOMAIN_KNOWLEDGE_AVAILABLE else 0,
+        "equated_week_patterns_count": len(EQUATED_WEEK_PATTERNS) if S2_DOMAIN_KNOWLEDGE_AVAILABLE else 0,
+        "combined_columns": COMBINED_COLUMNS if S2_DOMAIN_KNOWLEDGE_AVAILABLE else [],
+    }
+
+
+def get_s2_pay_scales() -> Dict:
+    """Get S2 pay scales dictionary."""
+    if S2_DOMAIN_KNOWLEDGE_AVAILABLE:
+        return S2_PAY_SCALES
+    return {}
+
+
+def get_s2_staff_role_groups() -> Dict:
+    """Get S2 staff role groups dictionary."""
+    if S2_DOMAIN_KNOWLEDGE_AVAILABLE:
+        return STAFF_ROLE_GROUPS
+    return {}
+
+
+def get_s2_equated_week_patterns() -> Dict:
+    """Get S2 equated week patterns dictionary."""
+    if S2_DOMAIN_KNOWLEDGE_AVAILABLE:
+        return EQUATED_WEEK_PATTERNS
+    return {}
+
+
+def parse_s2_combined_field(value: str) -> tuple:
+    """
+    Parse a combined field in S2 format "CODE: Title".
+    Wrapper for the S2 domain knowledge function.
+    """
+    if S2_DOMAIN_KNOWLEDGE_AVAILABLE:
+        return parse_combined_field(value)
+    return (str(value), str(value))
+
+
+def transform_s2_contract_row(row: dict) -> dict:
+    """
+    Transform a contract row using S2 domain knowledge.
+    Wrapper for the S2 domain knowledge function.
+    """
+    if S2_DOMAIN_KNOWLEDGE_AVAILABLE:
+        return transform_contract_row(row)
+    return row
