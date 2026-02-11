@@ -25,6 +25,38 @@ from .finished_workbook_patterns import (
     get_finance_codes_for_srg,
 )
 
+# Import S2 domain knowledge for combined field parsing
+try:
+    from knowledge.S2.S2_DOMAIN_KNOWLEDGE import (
+        parse_combined_field,
+        extract_finance_code,
+        COMBINED_COLUMNS,
+        PAY_SCALES as S2_IMPORT_PAY_SCALES,
+        STAFF_ROLE_GROUPS as S2_IMPORT_ROLE_GROUPS,
+        EQUATED_WEEK_PATTERNS as S2_IMPORT_EQW_PATTERNS,
+        map_role_title_to_group,
+        get_finance_codes_for_role_group,
+        transform_contract_row,
+    )
+    S2_DOMAIN_KNOWLEDGE_AVAILABLE = True
+except ImportError:
+    S2_DOMAIN_KNOWLEDGE_AVAILABLE = False
+    # Fallback parsing function
+    def parse_combined_field(value):
+        """Fallback: Parse 'CODE: Title' format."""
+        if not value or str(value) == 'nan':
+            return ('', '')
+        value = str(value).strip()
+        if ':' not in value:
+            return (value, value)
+        parts = value.split(':', 1)
+        code = parts[0].strip()
+        title = parts[1].strip() if len(parts) > 1 else ''
+        if '(' in title:
+            title = title.split('(')[0].strip()
+        return (code, title)
+    COMBINED_COLUMNS = []
+
 
 @dataclass
 class AnalysisReport:
@@ -157,6 +189,51 @@ class S2SpecialistAgent:
             return pd.notna(val)
         except Exception:
             return False
+
+    def _preprocess_combined_fields(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Preprocess dataframe to parse combined format fields.
+        Combined fields use 'CODE: Title (extra)' format from import files.
+
+        Uses S2_DOMAIN_KNOWLEDGE if available for comprehensive parsing.
+        """
+        if not S2_DOMAIN_KNOWLEDGE_AVAILABLE:
+            # Fallback: detect and parse common combined patterns
+            combined_patterns = ['Combined', ' Code', 'Pay Scale', 'Staff Role', 'Pension',
+                                 'Fund', 'Department', 'Contract Type', 'Equated Week']
+        else:
+            combined_patterns = COMBINED_COLUMNS + ['Combined']
+
+        parsed_count = 0
+        for col in df.columns:
+            # Check if column likely contains combined format data
+            is_combined = any(pattern in str(col) for pattern in combined_patterns)
+
+            if not is_combined:
+                # Also check content for "CODE: Title" pattern
+                sample = df[col].dropna().head(10).astype(str)
+                if sample.str.contains(r'^\w+:\s*.+', regex=True).any():
+                    is_combined = True
+
+            if is_combined:
+                # Parse the combined field and create new code column
+                code_col = col.replace(' Combined', '').replace('Combined', '') + '_Code'
+                code_col = code_col.replace('  ', ' ').strip()
+                if code_col == '_Code':
+                    code_col = col + '_Parsed'
+
+                # Only add if doesn't already exist
+                if code_col not in df.columns:
+                    df[code_col] = df[col].apply(
+                        lambda x: parse_combined_field(str(x))[0] if pd.notna(x) else ''
+                    )
+                    parsed_count += 1
+
+        if parsed_count > 0:
+            self.log(f"    Parsed {parsed_count} combined format columns")
+            self.assumptions.append(f"Parsed {parsed_count} combined format columns (CODE: Title format)")
+
+        return df
 
     # =========================================================================
     # PHASE 1: DEEP ANALYSIS
@@ -412,6 +489,9 @@ class S2SpecialistAgent:
         sample_data = {}
         issues = []
         recommendations = []
+
+        # PREPROCESS: Parse combined format fields (CODE: Title format)
+        df = self._preprocess_combined_fields(df)
 
         # Analyze each column - use unique columns to avoid DataFrame issues
         seen_cols = set()
