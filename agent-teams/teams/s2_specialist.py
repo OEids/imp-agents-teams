@@ -144,6 +144,29 @@ class S2SpecialistAgent:
         self.pay_scales_found = set()
         self.allowance_types_found = set()
 
+        # Import file data (loaded from knowledge/S2/import files/)
+        self.import_data = {
+            "staff_members": None,
+            "contracts": None,
+            "staff_roles": None,
+            "staff_role_groups": None,
+            "pay_scales": None,
+            "pensions": None,
+            "equated_week_patterns": None,
+            "allowance_types": None,
+            "adjustment_types": None,
+            "leave_types": None,
+        }
+
+        # Add missing template sheets
+        self.template_data.update({
+            "Genders": [],
+            "ContractTypes": [],
+            "LeaveTypes": [],
+            "AdjustmentTypes": [],
+            "StaffMemberLeaves": [],
+        })
+
     def log(self, message: str, level: str = "INFO"):
         """Log a message with proper encoding and error handling for Streamlit."""
         try:
@@ -234,6 +257,542 @@ class S2SpecialistAgent:
             self.assumptions.append(f"Parsed {parsed_count} combined format columns (CODE: Title format)")
 
         return df
+
+    # =========================================================================
+    # IMPORT FILE LOADING (CRITICAL FIX)
+    # =========================================================================
+
+    def load_import_files(self, import_folder: Path = None) -> Dict[str, pd.DataFrame]:
+        """
+        Load all import files from knowledge/S2/import files/ and parse combined fields.
+        This is the CORRECT way to process the standardized import format files.
+
+        Args:
+            import_folder: Path to import files folder. If None, uses default location.
+
+        Returns:
+            Dictionary of parsed DataFrames keyed by data type.
+        """
+        if import_folder is None:
+            # Default to knowledge/S2/import files/ relative to this file
+            import_folder = Path(__file__).parent.parent / "knowledge" / "S2" / "import files"
+
+        if not import_folder.exists():
+            self.log(f"Warning: Import folder not found: {import_folder}")
+            return {}
+
+        self.log("="*60)
+        self.log("LOADING IMPORT FILES (STANDARDIZED FORMAT)")
+        self.log("="*60)
+
+        # Map file names to data types
+        file_mappings = {
+            "DEM003 - Staff Members": "staff_members",
+            "DEM003 - Contracts": "contracts",
+            "DEM003 - Staff Roles": "staff_roles",
+            "DEM003 - Staff Role Groups": "staff_role_groups",
+            "DEM003 - Pay Scales": "pay_scales",
+            "DEM003 - Pensions": "pensions",
+            "DEM003 - Equated Week Patterns": "equated_week_patterns",
+            "DEM003 - Allowance Types": "allowance_types",
+            "DEM003 - Adjustment Types": "adjustment_types",
+            "DEM003 - Leave Types": "leave_types",
+        }
+
+        for file_path in import_folder.glob("*.xlsx"):
+            if file_path.name.startswith("~$"):
+                continue
+
+            # Find matching data type
+            data_type = None
+            for file_prefix, dtype in file_mappings.items():
+                if file_prefix in file_path.name:
+                    data_type = dtype
+                    break
+
+            if not data_type:
+                self.log(f"  Skipping unknown file: {file_path.name}")
+                continue
+
+            try:
+                df = pd.read_excel(file_path)
+                self.log(f"  {data_type}: {len(df)} rows, {len(df.columns)} columns")
+
+                # Parse all combined fields
+                df = self._preprocess_combined_fields(df)
+
+                # Store in import_data
+                self.import_data[data_type] = df
+
+                # Also add to staff_data if it's contracts (for compatibility)
+                if data_type == "contracts":
+                    self.staff_data.append(df)
+
+            except Exception as e:
+                self.log(f"  Error loading {file_path.name}: {str(e)[:100]}")
+
+        self._log_import_summary()
+        return self.import_data
+
+    def _log_import_summary(self):
+        """Log summary of loaded import data."""
+        self.log("\nIMPORT DATA SUMMARY:")
+        for dtype, df in self.import_data.items():
+            if df is not None:
+                self.log(f"  {dtype}: {len(df)} records")
+            else:
+                self.log(f"  {dtype}: NOT LOADED")
+
+    def build_from_import_files(self) -> Dict[str, list]:
+        """
+        Build all template sheets from loaded import files.
+        This processes the standardized DEM003 format correctly.
+        """
+        if not any(df is not None for df in self.import_data.values()):
+            self.log("Error: No import files loaded. Call load_import_files() first.")
+            return self.template_data
+
+        self.log("="*60)
+        self.log("BUILDING TEMPLATE SHEETS FROM IMPORT FILES")
+        self.log("="*60)
+
+        # Build reference data sheets first
+        self._build_genders()
+        self._build_contract_types()
+        self._build_leave_types_from_import()
+        self._build_adjustment_types_from_import()
+        self._build_pensions_from_import()
+        self._build_eqw_patterns_from_import()
+        self._build_staff_role_groups_from_import()
+        self._build_staff_roles_from_import()
+        self._build_pay_scales_from_import()
+        self._build_allowance_types_from_import()
+
+        # Build staff and contract sheets
+        self._build_staff_members_from_import()
+        self._build_contracts_from_import()
+
+        return self.template_data
+
+    def _build_genders(self):
+        """Build Genders reference sheet (standard values)."""
+        self.log("Building Genders...")
+        self.template_data["Genders"] = [
+            {"Code": "M", "Title": "Male"},
+            {"Code": "F", "Title": "Female"},
+            {"Code": "O", "Title": "Other"},
+            {"Code": "U", "Title": "Unknown"},
+        ]
+        self.log(f"  Added {len(self.template_data['Genders'])} genders")
+
+    def _build_contract_types(self):
+        """Build ContractTypes reference sheet from contracts data."""
+        self.log("Building ContractTypes...")
+
+        contracts_df = self.import_data.get("contracts")
+        if contracts_df is None:
+            # Standard contract types
+            self.template_data["ContractTypes"] = [
+                {"Code": "PERM", "Title": "Permanent"},
+                {"Code": "TEMP", "Title": "Temporary"},
+                {"Code": "FTC", "Title": "Fixed Term Contract"},
+                {"Code": "MAT", "Title": "Maternity Cover"},
+                {"Code": "CASUAL", "Title": "Casual"},
+            ]
+        else:
+            # Extract unique contract types from contracts
+            seen = set()
+            for _, row in contracts_df.iterrows():
+                # Try parsed column first, then combined column
+                code = row.get('Contract Type_Code', row.get('Contract Type Combined_Code', ''))
+                if not code:
+                    combined = row.get('Contract Type Combined', '')
+                    if combined:
+                        code, title = parse_combined_field(str(combined))
+                    else:
+                        continue
+                else:
+                    combined = row.get('Contract Type Combined', '')
+                    _, title = parse_combined_field(str(combined)) if combined else (code, code)
+
+                if code and code not in seen:
+                    seen.add(code)
+                    self.template_data["ContractTypes"].append({
+                        "Code": code,
+                        "Title": title if title else code
+                    })
+
+        self.log(f"  Added {len(self.template_data['ContractTypes'])} contract types")
+
+    def _build_leave_types_from_import(self):
+        """Build LeaveTypes from import file."""
+        self.log("Building LeaveTypes...")
+
+        df = self.import_data.get("leave_types")
+        if df is None:
+            self.log("  Warning: No leave types import file loaded")
+            return
+
+        for _, row in df.iterrows():
+            code = row.get('Code', '')
+            if not code:
+                continue
+
+            self.template_data["LeaveTypes"].append({
+                "Code": code,
+                "Title": row.get('Title', code),
+                "AvailableToAllSchools": row.get('Available To All Schools', True),
+                "AvailableToSchools": row.get('Available to Schools', ''),
+                "RebatePercentage": row.get('Rebate Percentage', 0),
+            })
+
+        self.log(f"  Added {len(self.template_data['LeaveTypes'])} leave types")
+
+    def _build_adjustment_types_from_import(self):
+        """Build AdjustmentTypes from import file."""
+        self.log("Building AdjustmentTypes...")
+
+        df = self.import_data.get("adjustment_types")
+        if df is None:
+            self.log("  Warning: No adjustment types import file loaded")
+            return
+
+        for _, row in df.iterrows():
+            code = row.get('Code', '')
+            if not code:
+                continue
+
+            self.template_data["AdjustmentTypes"].append({
+                "Code": code,
+                "Title": row.get('Title', code),
+                "AnniversaryDate": str(row.get('Anniversary Date', ''))[:10] if pd.notna(row.get('Anniversary Date')) else '',
+                "IncreasePercentage": row.get('Increase Percentage', 0),
+                "ExcludeNI": row.get('Exclude National Insurance', False),
+                "ExcludePension": row.get('Exclude Pension', False),
+            })
+
+        self.log(f"  Added {len(self.template_data['AdjustmentTypes'])} adjustment types")
+
+    def _build_pensions_from_import(self):
+        """Build Pensions from import file."""
+        self.log("Building Pensions from import...")
+
+        df = self.import_data.get("pensions")
+        if df is None:
+            self.log("  Warning: No pensions import file loaded")
+            return
+
+        for _, row in df.iterrows():
+            code = row.get('Code', '')
+            if not code:
+                continue
+
+            self.template_data["Pensions"].append({
+                "Code": code,
+                "Title": row.get('Title', code),
+                "AvailableToAllSchools": row.get('Available To All Schools', True),
+                "AvailableToSchools": row.get('Available to Schools', ''),
+            })
+
+        self.log(f"  Added {len(self.template_data['Pensions'])} pensions")
+
+    def _build_eqw_patterns_from_import(self):
+        """Build EQWPatterns from import file."""
+        self.log("Building EQWPatterns from import...")
+
+        df = self.import_data.get("equated_week_patterns")
+        if df is None:
+            self.log("  Warning: No EQW patterns import file loaded")
+            return
+
+        for _, row in df.iterrows():
+            code = row.get('Code', '')
+            if not code:
+                continue
+
+            self.template_data["EQWPatterns"].append({
+                "Code": code,
+                "Title": row.get('Title', code),
+                "AvailableToAllSchools": row.get('Available To All Schools', True),
+                "AvailableToSchools": row.get('Available to Schools', ''),
+                "FullTimeWeeks": row.get('Full Time Weeks', 52.143),
+            })
+
+        self.log(f"  Added {len(self.template_data['EQWPatterns'])} EQW patterns")
+
+    def _build_staff_role_groups_from_import(self):
+        """Build StfRoleGroup from import file with finance code parsing."""
+        self.log("Building StfRoleGroup from import...")
+
+        df = self.import_data.get("staff_role_groups")
+        if df is None:
+            self.log("  Warning: No staff role groups import file loaded")
+            return
+
+        for _, row in df.iterrows():
+            code = row.get('Code', '')
+            if not code:
+                continue
+
+            # Parse finance codes from combined format
+            def get_fc_code(col_name):
+                """Extract finance code from combined format column."""
+                val = row.get(col_name, '')
+                if pd.isna(val) or not val:
+                    # Try parsed column
+                    parsed_col = col_name.replace(' Code', '_Code')
+                    return row.get(parsed_col, '')
+                return parse_combined_field(str(val))[0]
+
+            self.template_data["StfRoleGroup"].append({
+                "Code": code,
+                "Title": row.get('Title', code),
+                "TeachingRoleGroup": row.get('Teaching Role Group', False),
+                "IncrementCount": row.get('Increment Count', 0),
+                "GrossSalaryCode": get_fc_code('Gross Salary Code'),
+                "LeaveRebateCode": get_fc_code('Leave Rebate Code'),
+                "EmployersNICode": get_fc_code('Employers NI Code'),
+                "PensionCode": get_fc_code('Pension Code'),
+                "MinimumWageTopupCode": get_fc_code('Minimum Wage Topup Code'),
+                "LivingWageTopupCode": get_fc_code('Living Wage Topup Code'),
+                "OptOutPensionCode": get_fc_code('Opt Out Pension Code'),
+                "OtherSalaryCostsCode": get_fc_code('Other Salary Costs Code'),
+                "AdjustmentsCode": get_fc_code('Adjustments Code'),
+                "AllowancesCode": get_fc_code('Allowances Code'),
+            })
+
+        self.log(f"  Added {len(self.template_data['StfRoleGroup'])} staff role groups")
+
+    def _build_staff_roles_from_import(self):
+        """Build StfRole from import file."""
+        self.log("Building StfRole from import...")
+
+        df = self.import_data.get("staff_roles")
+        if df is None:
+            self.log("  Warning: No staff roles import file loaded")
+            return
+
+        for _, row in df.iterrows():
+            code = row.get('Code', '')
+            if not code:
+                continue
+
+            # Parse staff role group from combined format
+            srg_combined = row.get('Staff Role Group', '')
+            srg_code = row.get('Staff Role Group_Code', '')
+            if not srg_code and srg_combined:
+                srg_code = parse_combined_field(str(srg_combined))[0]
+
+            # Parse pay scale from combined format
+            ps_combined = row.get('Pay Scale', '')
+            ps_code = row.get('Pay Scale_Code', '')
+            if not ps_code and ps_combined:
+                ps_code = parse_combined_field(str(ps_combined))[0]
+
+            self.template_data["StfRole"].append({
+                "Code": code,
+                "Title": row.get('Title', code),
+                "AvailableToAllSchools": row.get('Available To All Schools', True),
+                "AvailableToSchools": row.get('Available to Schools', ''),
+                "StaffRoleGroupCode": srg_code,
+                "PayScaleCode": ps_code,
+                "FullTimeHoursPerWeek": row.get('Full Time Hours Per Week', 37.0),
+                "IsFinanceRole": row.get('Is Finance Role', False),
+            })
+
+        self.log(f"  Added {len(self.template_data['StfRole'])} staff roles")
+
+    def _build_pay_scales_from_import(self):
+        """Build PayScales from import file."""
+        self.log("Building PayScales from import...")
+
+        df = self.import_data.get("pay_scales")
+        if df is None:
+            self.log("  Warning: No pay scales import file loaded")
+            return
+
+        for _, row in df.iterrows():
+            code = row.get('Code', '')
+            if not code:
+                continue
+
+            self.template_data["PayScales"].append({
+                "Code": code,
+                "Title": row.get('Title', code),
+                "AvailableToAllSchools": row.get('Available To All Schools', True),
+                "AvailableToSchools": row.get('Available to Schools', ''),
+                "IncrementAtServiceStartDate": row.get('Increment at Service Start Date', False),
+                "IncrementDate": str(row.get('Increment Date', ''))[:10] if pd.notna(row.get('Increment Date')) else '',
+                "IncreaseDate": str(row.get('Increase Date', ''))[:10] if pd.notna(row.get('Increase Date')) else '',
+                "DefaultIncreasePercentage": row.get('Default Increase Percentage', 0),
+                "ExcludeNI": row.get('Exclude National Insurance', False),
+                "ExcludePension": row.get('Exclude Pension', False),
+            })
+
+        self.log(f"  Added {len(self.template_data['PayScales'])} pay scales")
+
+    def _build_allowance_types_from_import(self):
+        """Build AllowanceTypes from import file."""
+        self.log("Building AllowanceTypes from import...")
+
+        df = self.import_data.get("allowance_types")
+        if df is None:
+            self.log("  Warning: No allowance types import file loaded")
+            return
+
+        for _, row in df.iterrows():
+            code = row.get('Code', '')
+            if not code:
+                continue
+
+            self.template_data["AllowanceTypes"].append({
+                "Code": code,
+                "Title": row.get('Title', code),
+                "AvailableToAllSchools": row.get('Available To All Schools', True),
+                "AvailableToSchools": row.get('Available to Schools', ''),
+                "IncreaseDate": str(row.get('Increase Date', ''))[:10] if pd.notna(row.get('Increase Date')) else '',
+                "DefaultIncreasePercentage": row.get('Default Increase Percentage', 0),
+                "ExcludeNI": row.get('Exclude National Insurance', False),
+                "ExcludePension": row.get('Exclude Pension', False),
+            })
+
+        self.log(f"  Added {len(self.template_data['AllowanceTypes'])} allowance types")
+
+    def _build_staff_members_from_import(self):
+        """Build StaffMembers from import file."""
+        self.log("Building StaffMembers from import...")
+
+        df = self.import_data.get("staff_members")
+        if df is None:
+            self.log("  Warning: No staff members import file loaded")
+            return
+
+        for _, row in df.iterrows():
+            code = row.get('Code', '')
+            if not code:
+                continue
+
+            self.template_data["StaffMembers"].append({
+                "Code": code,
+                "LastName": row.get('Last Name', ''),
+                "FirstName": row.get('First Name', ''),
+                "PensionOptedOut": row.get('Pension Opted Out', False),
+                "ServiceStartDate": str(row.get('Service Start Date', ''))[:10] if pd.notna(row.get('Service Start Date')) else '',
+                "ServiceEndDate": str(row.get('Service End Date', ''))[:10] if pd.notna(row.get('Service End Date')) else '',
+                "PayrollLocationCode": row.get('Payroll Location Code', ''),
+            })
+
+        self.log(f"  Added {len(self.template_data['StaffMembers'])} staff members")
+
+    def _build_contracts_from_import(self):
+        """Build ContractsTeachFTE and ContractsSupportHours from import file."""
+        self.log("Building Contracts from import...")
+
+        df = self.import_data.get("contracts")
+        if df is None:
+            self.log("  Warning: No contracts import file loaded")
+            return
+
+        teaching_count = 0
+        support_count = 0
+
+        for _, row in df.iterrows():
+            # Parse all combined fields
+            def get_code(col_name):
+                """Get code from combined field or parsed column."""
+                # Try parsed column first
+                parsed_col = col_name.replace(' Combined', '_Code')
+                val = row.get(parsed_col, '')
+                if val:
+                    return str(val).strip()
+                # Try combined column
+                combined = row.get(col_name, '')
+                if combined and pd.notna(combined):
+                    return parse_combined_field(str(combined))[0]
+                return ''
+
+            school_code = row.get('School Code', '')
+            staff_member_code = get_code('Staff Member Combined')
+            reference = row.get('Reference', '')
+            staff_role_code = get_code('Staff Role Combined')
+            contract_type_code = get_code('Contract Type Combined')
+            pay_scale_code = get_code('Pay Scale Combined')
+            pay_scale_grade_code = get_code('Pay Scale Grade Combined')
+            pay_scale_point_code = get_code('Pay Scale Point Combined')
+            pension_code = get_code('Pension Combined')
+            eqwp_code = get_code('Equated Week Pattern Combined')
+            department_code = get_code('Department Combined')
+            fund_code = get_code('Fund Combined')
+
+            # Skip if no staff member code
+            if not staff_member_code:
+                continue
+
+            # Generate reference if missing
+            if not reference or pd.isna(reference):
+                reference = f"{staff_member_code}A"
+
+            # Parse dates
+            date_from = str(row.get('Date From', ''))[:10] if pd.notna(row.get('Date From')) else ''
+            date_to = str(row.get('Date To', ''))[:10] if pd.notna(row.get('Date To')) else ''
+
+            # Get FTE values
+            weekly_fte = row.get('Weekly FTE', 0)
+            if pd.isna(weekly_fte):
+                weekly_fte = 0
+
+            no_increment = row.get('No Increment', False)
+            notes = row.get('Notes', '')
+            if pd.isna(notes):
+                notes = ''
+
+            # Determine if teaching or support based on staff role group
+            is_teaching = False
+            if staff_role_code:
+                # Check staff roles to determine if teaching
+                roles_df = self.import_data.get("staff_roles")
+                if roles_df is not None:
+                    role_match = roles_df[roles_df['Code'] == staff_role_code]
+                    if not role_match.empty:
+                        srg_combined = role_match.iloc[0].get('Staff Role Group', '')
+                        srg_code = parse_combined_field(str(srg_combined))[0] if srg_combined else ''
+                        # Check if staff role group is teaching
+                        srg_df = self.import_data.get("staff_role_groups")
+                        if srg_df is not None:
+                            srg_match = srg_df[srg_df['Code'] == srg_code]
+                            if not srg_match.empty:
+                                is_teaching = srg_match.iloc[0].get('Teaching Role Group', False)
+
+            # Build contract record
+            contract_record = {
+                "SchoolCode": school_code,
+                "StaffMemberCode": staff_member_code,
+                "Reference": reference,
+                "StaffRoleCode": staff_role_code,
+                "ContractTypeCode": contract_type_code,
+                "PayScaleCode": pay_scale_code,
+                "PayScaleGradeCode": pay_scale_grade_code,
+                "PayScalePointCode": pay_scale_point_code,
+                "PensionCode": pension_code,
+                "EquatedWeekPatternCode": eqwp_code,
+                "DepartmentCode": department_code,
+                "FundCode": fund_code,
+                "DateFrom": date_from,
+                "DateTo": date_to,
+                "WeeklyFteOrHpw": float(weekly_fte) if weekly_fte else 0,
+                "NoIncrement": no_increment,
+                "Notes": str(notes),
+            }
+
+            if is_teaching:
+                self.template_data["ContractsTeachFTE"].append(contract_record)
+                teaching_count += 1
+            else:
+                self.template_data["ContractsSupportHours"].append(contract_record)
+                support_count += 1
+
+        self.log(f"  Added {teaching_count} teaching contracts (ContractsTeachFTE)")
+        self.log(f"  Added {support_count} support contracts (ContractsSupportHours)")
 
     # =========================================================================
     # PHASE 1: DEEP ANALYSIS
@@ -2091,23 +2650,41 @@ class S2SpecialistAgent:
     # MAIN ENTRY POINT
     # =========================================================================
 
-    def process(self, customer_data_dir: Path, output_dir: Path) -> Dict[str, Any]:
+    def process(self, customer_data_dir: Path, output_dir: Path, use_import_files: bool = True) -> Dict[str, Any]:
         """
         Main processing entry point.
 
-        1. Deeply analyze all customer data
-        2. Extract pay scales, allowances, and staff data
-        3. Build ALL template sheets
-        4. Save output
+        1. Load standardized import files (if available)
+        2. Deeply analyze all customer data
+        3. Extract pay scales, allowances, and staff data
+        4. Build ALL template sheets
+        5. Save output
+
+        Args:
+            customer_data_dir: Path to customer data files
+            output_dir: Path to save output
+            use_import_files: If True, load from knowledge/S2/import files/ first
         """
         self.log("="*60)
         self.log("S2 SPECIALIST AGENT - STARTING PROCESSING")
         self.log("="*60)
 
-        # Phase 1: Analysis
-        self.analyze_customer_data(customer_data_dir)
+        # Phase 0: Load standardized import files (PRIMARY DATA SOURCE)
+        if use_import_files:
+            import_folder = Path(__file__).parent.parent / "knowledge" / "S2" / "import files"
+            if import_folder.exists():
+                self.load_import_files(import_folder)
+                # Build templates from import files first
+                self.build_from_import_files()
+                self.log("Import files processed - this is the primary data source")
+            else:
+                self.log(f"Import folder not found: {import_folder}")
 
-        # Phase 2: Build templates
+        # Phase 1: Analysis of customer data (supplements import files)
+        if customer_data_dir.exists():
+            self.analyze_customer_data(customer_data_dir)
+
+        # Phase 2: Build templates (fills in any gaps not covered by import files)
         template_sheets = self.build_all_templates()
 
         # Phase 3: Save output
