@@ -55,10 +55,28 @@ except ImportError:
     def parse_combined_field(value): return (str(value), str(value))
     def extract_finance_code(value): return str(value)
     def transform_contract_row(row): return row
+    def get_equated_week_pattern(weeks): return "AYR"
+    def get_default_pension(is_teaching): return "TPS" if is_teaching else "LGPS"
+    def get_default_fund_code(role_group): return ""
+    def s2_is_teaching_role(role): return False
+    def get_finance_codes_for_role_group(role_group): return {"gross_salary": "", "employers_ni": "", "pension": ""}
+    def get_salary_finance_code(role_group): return ""
+    def get_ni_finance_code(role_group): return ""
+    def get_pension_finance_code(role_group): return ""
+    def map_role_title_to_group(title): return "OTH"
+    def validate_staff_member_code(code): return True
+    def validate_weekly_fte(fte): return True
     S2_PAY_SCALES = {}
+    TEACHER_PAY_POINTS_2024_25 = {}
     STAFF_ROLE_GROUPS = {}
     EQUATED_WEEK_PATTERNS = {}
+    PENSION_SCHEMES = {}
+    CONTRACT_TYPES = {}
+    FUND_CODES = {}
+    ALLOWANCE_TYPES = {}
+    IMPORT_COLUMN_MAPPINGS = {}
     COMBINED_COLUMNS = []
+    S2_VALIDATION_RULES = {}
 
 
 @dataclass
