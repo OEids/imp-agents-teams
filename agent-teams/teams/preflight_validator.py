@@ -320,7 +320,7 @@ class PreFlightValidator:
         if self.inference_engine and strand:
             try:
                 result = self.inference_engine.infer_column_mapping(
-                    source_column=column_name,
+                    source_column=str(column_name),
                     strand=strand
                 )
                 mapped_to = result.decision
@@ -360,7 +360,7 @@ class PreFlightValidator:
                     alternatives = [(m, s) for m, s in all_matches if m != best_match][:5]
 
         return ColumnMappingResult(
-            source_column=column_name,
+            source_column=str(column_name),  # Convert to string for datetime/numeric headers
             mapped_to=mapped_to if confidence >= 0.5 else None,
             confidence=confidence,
             match_type=match_type,
@@ -377,8 +377,8 @@ class PreFlightValidator:
         if strand not in self.STANDARD_FIELDS:
             return None
 
-        # Normalize source column name
-        source_clean = column_name.lower().strip()
+        # Normalize source column name (convert to string first for datetime/numeric headers)
+        source_clean = str(column_name).lower().strip()
         source_clean = source_clean.replace('_', ' ').replace('-', ' ')
 
         matches = []
