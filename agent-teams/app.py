@@ -557,7 +557,7 @@ def render_sidebar():
             with col1:
                 st.markdown(f"### {team['icon']}")
             with col2:
-                if st.button(f"{team['name']}", key=f"btn_{team_id}", use_container_width=True):
+                if st.button(f"{team['name']}", key=f"btn_{team_id}", width="stretch"):
                     st.session_state.selected_team = team_id
 
         st.markdown("---")
@@ -569,7 +569,7 @@ def render_sidebar():
         if auto:
             st.success("✅ ON - Auto-process uploads")
             # Show process all button when auto-processing is on
-            if st.button("🚀 Process All Teams", use_container_width=True):
+            if st.button("🚀 Process All Teams", width="stretch"):
                 for tid in TEAMS:
                     files = get_customer_files(tid)
                     if files:
@@ -594,7 +594,7 @@ def render_sidebar():
 
         # App Sync Check
         st.subheader("🔄 App Sync")
-        if st.button("Check Sync Status", use_container_width=True):
+        if st.button("Check Sync Status", width="stretch"):
             try:
                 from teams.app_sync_agent import run_app_sync_check
                 result = run_app_sync_check()
@@ -613,7 +613,7 @@ def render_sidebar():
         st.subheader("🧹 Cleanup")
         cleanup_col1, cleanup_col2 = st.columns(2)
         with cleanup_col1:
-            if st.button("End of Day", use_container_width=True, help="Keep only latest file per strand"):
+            if st.button("End of Day", width="stretch", help="Keep only latest file per strand"):
                 try:
                     from teams.cleanup_agent import run_end_of_day_cleanup
                     result = run_end_of_day_cleanup()
@@ -624,7 +624,7 @@ def render_sidebar():
                 except Exception as e:
                     st.error(f"Cleanup failed: {e}")
         with cleanup_col2:
-            if st.button("View Storage", use_container_width=True):
+            if st.button("View Storage", width="stretch"):
                 try:
                     from teams.cleanup_agent import get_storage_summary
                     summary = get_storage_summary()
@@ -635,7 +635,7 @@ def render_sidebar():
                     st.error(f"Error: {e}")
 
         # Remove Customer Data button
-        if st.button("🗑️ Remove Customer Data", use_container_width=True, help="Remove all customer data files"):
+        if st.button("🗑️ Remove Customer Data", width="stretch", help="Remove all customer data files"):
             st.session_state.show_remove_confirm = True
 
         if st.session_state.get("show_remove_confirm", False):
@@ -648,7 +648,7 @@ def render_sidebar():
             )
             col_confirm, col_cancel = st.columns(2)
             with col_confirm:
-                if st.button("✅ Confirm Delete", use_container_width=True, type="primary"):
+                if st.button("✅ Confirm Delete", width="stretch", type="primary"):
                     try:
                         files_removed = 0
                         if remove_scope == "Current team only":
@@ -672,7 +672,7 @@ def render_sidebar():
                     except Exception as e:
                         st.error(f"Error removing files: {e}")
             with col_cancel:
-                if st.button("❌ Cancel", use_container_width=True):
+                if st.button("❌ Cancel", width="stretch"):
                     st.session_state.show_remove_confirm = False
                     st.rerun()
 
@@ -693,7 +693,7 @@ def render_sidebar():
         )
 
         if new_data_dir != current_data_dir:
-            if st.button("Save Data Directory", use_container_width=True):
+            if st.button("Save Data Directory", width="stretch"):
                 if Path(new_data_dir).exists():
                     if set_data_directory(new_data_dir):
                         st.success("Data directory updated!")
@@ -715,7 +715,7 @@ def render_sidebar():
         )
 
         if new_templates_dir != current_templates_dir:
-            if st.button("Save Templates Directory", use_container_width=True):
+            if st.button("Save Templates Directory", width="stretch"):
                 if Path(new_templates_dir).exists():
                     if set_templates_directory(new_templates_dir):
                         st.success("Templates directory updated!")
@@ -877,17 +877,17 @@ def render_processing(team_id: str):
     col1, col2, col3 = st.columns([2, 1, 1])
 
     with col1:
-        if st.button(f"🚀 Run {team_id} Specialist Agent", type="primary", use_container_width=True):
+        if st.button(f"🚀 Run {team_id} Specialist Agent", type="primary", width="stretch"):
             with st.spinner(f"Running {team_id} Specialist Agent..."):
                 result = run_team_processing(team_id)
                 st.session_state.processing_status[team_id] = result
 
     with col2:
-        if st.button("🔄 Refresh", use_container_width=True):
+        if st.button("🔄 Refresh", width="stretch"):
             st.rerun()
 
     with col3:
-        if st.button("🗑️ Clear Results", use_container_width=True):
+        if st.button("🗑️ Clear Results", width="stretch"):
             if team_id in st.session_state.processing_status:
                 del st.session_state.processing_status[team_id]
                 st.rerun()
@@ -1244,7 +1244,7 @@ def render_preview(team_id: str):
                 mask = df.astype(str).apply(lambda x: x.str.contains(search, case=False, na=False)).any(axis=1)
                 df = df[mask]
 
-            st.dataframe(df.head(max_rows), use_container_width=True)
+            st.dataframe(df.head(max_rows), width="stretch")
             st.caption(f"Showing {min(len(df), max_rows)} of {len(df)} rows")
 
     except Exception as e:
@@ -1296,7 +1296,7 @@ def render_validate_and_map(team_id: str):
         return
 
     # Validate button
-    if st.button("Analyze Selected Files", type="primary", use_container_width=True):
+    if st.button("Analyze Selected Files", type="primary", width="stretch"):
         with st.spinner("Analyzing columns..."):
             results = {}
             for file_path in selected_files:
@@ -1347,7 +1347,7 @@ def render_validate_and_map(team_id: str):
                             {"Source": c.source_column, "Mapped To": c.mapped_to, "Confidence": f"{c.confidence:.0%}"}
                             for c in matched_cols
                         ])
-                        st.dataframe(matched_df, use_container_width=True, hide_index=True)
+                        st.dataframe(matched_df, width="stretch", hide_index=True)
 
         # Collect and deduplicate columns needing review across all files
         all_review = {}  # source_column -> (mapping, file_keys)
@@ -1447,7 +1447,7 @@ def render_validate_and_map(team_id: str):
 
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("Confirm Mappings", type="primary", use_container_width=True):
+            if st.button("Confirm Mappings", type="primary", width="stretch"):
                 # Collect all final mappings using deduplicated keys
                 all_mappings = {}
                 custom_maps = st.session_state.get("custom_mappings", {})
@@ -1474,7 +1474,7 @@ def render_validate_and_map(team_id: str):
                 st.success("Mappings confirmed! You can now proceed to Process tab.")
 
         with col2:
-            if st.button("Clear & Re-analyze", use_container_width=True):
+            if st.button("Clear & Re-analyze", width="stretch"):
                 if team_id in st.session_state.validation_results:
                     del st.session_state.validation_results[team_id]
                 if team_id in st.session_state.column_mappings:
@@ -1501,7 +1501,7 @@ def render_validate_and_map(team_id: str):
                             {"Source": k, "Mapped To": v}
                             for k, v in mappings.items()
                         ])
-                        st.dataframe(mapping_df, use_container_width=True, hide_index=True)
+                        st.dataframe(mapping_df, width="stretch", hide_index=True)
                     else:
                         st.caption("No mappings")
 
