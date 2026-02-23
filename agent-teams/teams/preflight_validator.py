@@ -267,8 +267,11 @@ class PreFlightValidator:
         column_mappings = []
         for col in df.columns:
             # Skip blank/empty column names and pandas auto-generated "Unnamed:" columns
-            col_str = str(col) if col is not None else ""
-            if not col_str.strip() or col_str.lower().startswith("unnamed:"):
+            # Handle NaN, None, empty strings, and numeric NaN values
+            if col is None or (isinstance(col, float) and pd.isna(col)):
+                continue
+            col_str = str(col).strip()
+            if not col_str or col_str.lower().startswith("unnamed:") or col_str.lower() == "nan":
                 continue
             mapping = self._analyze_column(col, df[col], detected_strand)
             column_mappings.append(mapping)

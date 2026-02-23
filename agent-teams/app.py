@@ -1522,6 +1522,8 @@ def render_validate_and_map(team_id: str):
                     del st.session_state.mapping_validated[team_id]
                 # Clear custom mappings for this team
                 st.session_state.custom_mappings = {k: v for k, v in st.session_state.custom_mappings.items() if team_id not in k}
+                # Force new validator instance
+                st.session_state.preflight_validator = None
                 st.rerun()
 
         # Show validation status
