@@ -1,0 +1,103 @@
+# S2 Combined Columns Configuration
+# Columns that use "CODE: Title" format and require parsing
+# Source: S2_DOMAIN_KNOWLEDGE.py:668-687
+
+columns:
+  # Contract-level combined fields
+  - "Staff Member Combined"
+  - "Staff Role Combined"
+  - "Contract Type Combined"
+  - "Pay Scale Combined"
+  - "Pay Scale Grade Combined"
+  - "Pay Scale Point Combined"
+  - "Pension Combined"
+  - "Equated Week Pattern Combined"
+  - "Department Combined"
+  - "Fund Combined"
+
+  # Finance code combined fields
+  - "Gross Salary Code"
+  - "Leave Rebate Code"
+  - "Employers NI Code"
+  - "Pension Code"
+  - "Opt Out Pension Code"
+  - "Other Salary Costs Code"
+  - "Adjustments Code"
+  - "Allowances Code"
+
+  # Additional combined fields
+  - "School Combined"
+  - "Gender Combined"
+  - "Activity Combined"
+  - "Ledger Combined"
+  - "Finance Code Combined"
+
+# Parsing rules
+parsing:
+  # Standard format: "CODE: Title"
+  standard:
+    separator: ":"
+    code_position: 0
+    title_position: 1
+
+  # Format with suffix: "CODE: Title (EXTRA: Info)"
+  with_suffix:
+    separator: ":"
+    code_position: 0
+    title_position: 1
+    strip_parenthetical: true
+
+# Column output mappings
+# Maps combined column names to their code/title output columns
+output_mappings:
+  "Staff Member Combined":
+    code: "StaffMemberCode"
+    title: "StaffMemberName"
+
+  "Staff Role Combined":
+    code: "StaffRoleCode"
+    title: "StaffRoleTitle"
+
+  "Contract Type Combined":
+    code: "ContractTypeCode"
+    title: "ContractTypeTitle"
+
+  "Pay Scale Combined":
+    code: "PayScaleCode"
+    title: "PayScaleTitle"
+
+  "Pay Scale Grade Combined":
+    code: "PayScaleGradeCode"
+    title: "PayScaleGradeTitle"
+
+  "Pay Scale Point Combined":
+    code: "PayScalePointCode"
+    title: "PayScalePointTitle"
+
+  "Pension Combined":
+    code: "PensionCode"
+    title: "PensionTitle"
+
+  "Equated Week Pattern Combined":
+    code: "EquatedWeekPatternCode"
+    title: "EquatedWeekPatternTitle"
+
+  "Department Combined":
+    code: "DepartmentCode"
+    title: "DepartmentTitle"
+
+  "Fund Combined":
+    code: "FundCode"
+    title: "FundTitle"
+
+  "Gross Salary Code":
+    code: "GrossSalaryFinanceCode"
+    title: null
+
+  "Employers NI Code":
+    code: "EmployersNiFinanceCode"
+    title: null
+
+  "Pension Code":
+    code: "PensionFinanceCode"
+    title: null

@@ -1,0 +1,61 @@
+# S2 Sheet Name Mappings
+# Maps internal sheet names to official template sheet names
+# Source: s2_specialist.py:335-358
+
+mappings:
+  # Pay Scales
+  PayScales: "19_PayScales"
+  PayScalePoints: "20_PayScalePoints"
+  PayScaleGrades: "22_PayScaleGrades"
+  PayScaleIncreasePercen: "21_PayScaleIncreasePercen"
+
+  # Allowances
+  AllowanceTypes: "16_AllowanceTypes"
+  AllowanceTypePoint: "17_AllowanceTypePoint"
+  AllowanceIncreasePercen: "18_AllowanceIncreasePercen"
+
+  # Staff Structure
+  Pensions: "24_Pensions"
+  EQWPatterns: "23_EQWPatterns"
+  StfRoleGroup: "26_StfRoleGroup"
+  StfRole: "27_StfRole"
+  StaffMembers: "25_StaffMembers"
+
+  # Contracts
+  ContractsTeachFTE: "28_ContractsTeachFTE"
+  ContractsSupportHours: "29_ContractsSupportHours"
+  ContractAllowances: "34_ContractAllowances"
+  ContractAdjustments: "33_ContractAdjustments"
+
+  # Reference Data
+  "Finance Codes S2": "11_Finance Codes S2"
+  Genders: "12_Genders"
+  ContractTypes: "13_ContractTypes"
+  LeaveTypes: "30_LeaveTypes"
+  AdjustmentTypes: "31_AdjustmentTypes"
+  StaffMemberLeaves: "32_StaffMemberLeaves"
+
+# Reverse mappings (template -> internal) for lookup
+reverse_mappings:
+  "19_PayScales": "PayScales"
+  "20_PayScalePoints": "PayScalePoints"
+  "22_PayScaleGrades": "PayScaleGrades"
+  "21_PayScaleIncreasePercen": "PayScaleIncreasePercen"
+  "16_AllowanceTypes": "AllowanceTypes"
+  "17_AllowanceTypePoint": "AllowanceTypePoint"
+  "18_AllowanceIncreasePercen": "AllowanceIncreasePercen"
+  "24_Pensions": "Pensions"
+  "23_EQWPatterns": "EQWPatterns"
+  "26_StfRoleGroup": "StfRoleGroup"
+  "27_StfRole": "StfRole"
+  "25_StaffMembers": "StaffMembers"
+  "28_ContractsTeachFTE": "ContractsTeachFTE"
+  "29_ContractsSupportHours": "ContractsSupportHours"
+  "34_ContractAllowances": "ContractAllowances"
+  "33_ContractAdjustments": "ContractAdjustments"
+  "11_Finance Codes S2": "Finance Codes S2"
+  "12_Genders": "Genders"
+  "13_ContractTypes": "ContractTypes"
+  "30_LeaveTypes": "LeaveTypes"
+  "31_AdjustmentTypes": "AdjustmentTypes"
+  "32_StaffMemberLeaves": "StaffMemberLeaves"

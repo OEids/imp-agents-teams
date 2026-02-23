@@ -1,0 +1,270 @@
+# Validation Threshold Rules
+# Replaces hardcoded magic numbers (20%, 5%, etc.) in validation logic
+
+rules:
+  # ============================================================================
+  # Salary Validation Thresholds
+  # ============================================================================
+  - id: threshold_salary_min
+    name: "Minimum Salary Threshold"
+    category: validation_thresholds
+    weight: 1.0
+    result: valid
+    metadata:
+      threshold_name: salary_minimum
+      min: 10000
+      max: 500000
+      warning_min: 15000
+      warning_max: 200000
+      description: "Annual salary reasonable range check"
+      unit: "GBP"
+
+  - id: threshold_salary_variance
+    name: "Salary Variance Threshold"
+    category: validation_thresholds
+    weight: 1.0
+    result: valid
+    metadata:
+      threshold_name: salary_variance_from_scale
+      min: -0.10
+      max: 0.10
+      warning_min: -0.05
+      warning_max: 0.05
+      description: "How much salary can deviate from pay scale point (percentage)"
+      unit: "percentage"
+
+  # ============================================================================
+  # FTE Thresholds
+  # ============================================================================
+  - id: threshold_fte_range
+    name: "FTE Range Threshold"
+    category: validation_thresholds
+    weight: 1.0
+    result: valid
+    metadata:
+      threshold_name: fte_range
+      min: 0.0
+      max: 1.5
+      warning_min: 0.1
+      warning_max: 1.0
+      description: "Valid FTE range (0.0 to 1.0, with warning for overtime)"
+      unit: "decimal"
+
+  - id: threshold_fte_minimum_viable
+    name: "Minimum Viable FTE"
+    category: validation_thresholds
+    weight: 1.0
+    result: valid
+    metadata:
+      threshold_name: fte_minimum_viable
+      min: 0.05
+      description: "Minimum FTE that makes sense (5% of full time)"
+      unit: "decimal"
+
+  # ============================================================================
+  # Hours Thresholds
+  # ============================================================================
+  - id: threshold_weekly_hours_teaching
+    name: "Teaching Weekly Hours"
+    category: validation_thresholds
+    weight: 1.0
+    result: valid
+    metadata:
+      threshold_name: weekly_hours_teaching
+      min: 0
+      max: 65
+      warning_min: 16
+      warning_max: 40
+      description: "Weekly contracted hours for teaching staff"
+      unit: "hours"
+
+  - id: threshold_weekly_hours_support
+    name: "Support Weekly Hours"
+    category: validation_thresholds
+    weight: 1.0
+    result: valid
+    metadata:
+      threshold_name: weekly_hours_support
+      min: 0
+      max: 45
+      warning_min: 5
+      warning_max: 37.5
+      description: "Weekly contracted hours for support staff"
+      unit: "hours"
+
+  - id: threshold_full_time_hours_teaching
+    name: "Full Time Hours Teaching"
+    category: validation_thresholds
+    weight: 1.0
+    result: valid
+    metadata:
+      threshold_name: full_time_hours_teaching
+      min: 32.5
+      max: 32.5
+      description: "Standard full-time hours for teachers (1265 hours / 39 weeks)"
+      unit: "hours"
+
+  - id: threshold_full_time_hours_support
+    name: "Full Time Hours Support"
+    category: validation_thresholds
+    weight: 1.0
+    result: valid
+    metadata:
+      threshold_name: full_time_hours_support
+      min: 36
+      max: 37.5
+      warning_min: 36
+      warning_max: 37
+      description: "Standard full-time hours for support staff (36-37.5)"
+      unit: "hours"
+
+  # ============================================================================
+  # Data Quality Thresholds
+  # ============================================================================
+  - id: threshold_completeness
+    name: "Data Completeness Threshold"
+    category: validation_thresholds
+    weight: 1.0
+    result: valid
+    metadata:
+      threshold_name: data_completeness
+      min: 0
+      max: 100
+      warning_min: 80
+      warning_max: 100
+      description: "Minimum percentage of non-null values for required fields"
+      unit: "percentage"
+
+  - id: threshold_duplicates
+    name: "Duplicate Records Threshold"
+    category: validation_thresholds
+    weight: 1.0
+    result: valid
+    metadata:
+      threshold_name: duplicate_percentage
+      min: 0
+      max: 100
+      warning_min: 0
+      warning_max: 5
+      description: "Maximum percentage of duplicate records allowed"
+      unit: "percentage"
+
+  # ============================================================================
+  # Financial Thresholds
+  # ============================================================================
+  - id: threshold_budget_variance
+    name: "Budget Variance Threshold"
+    category: validation_thresholds
+    weight: 1.0
+    result: valid
+    metadata:
+      threshold_name: budget_variance
+      min: -0.20
+      max: 0.20
+      warning_min: -0.10
+      warning_max: 0.10
+      description: "Acceptable variance from budget (20% max, 10% warning)"
+      unit: "percentage"
+
+  - id: threshold_deficit
+    name: "Deficit Threshold"
+    category: validation_thresholds
+    weight: 1.0
+    result: valid
+    metadata:
+      threshold_name: budget_deficit
+      min: -1000000
+      max: 0
+      warning_min: -100000
+      warning_max: 0
+      description: "Budget deficit warning and critical levels"
+      unit: "GBP"
+
+  # ============================================================================
+  # Equated Weeks Thresholds
+  # ============================================================================
+  - id: threshold_equated_weeks
+    name: "Equated Weeks Range"
+    category: validation_thresholds
+    weight: 1.0
+    result: valid
+    metadata:
+      threshold_name: equated_weeks
+      min: 39
+      max: 52.14
+      warning_min: 39
+      warning_max: 52
+      description: "Valid equated weeks range (39 for teachers, up to 52.14 for year-round)"
+      unit: "weeks"
+
+  - id: threshold_paid_weeks
+    name: "Paid Weeks Range"
+    category: validation_thresholds
+    weight: 1.0
+    result: valid
+    metadata:
+      threshold_name: paid_weeks
+      min: 39
+      max: 52.14
+      warning_min: 44
+      warning_max: 52.14
+      description: "Valid paid weeks range for TTO staff"
+      unit: "weeks"
+
+  # ============================================================================
+  # Finance Code Thresholds
+  # ============================================================================
+  - id: threshold_finance_code_length
+    name: "Finance Code Length"
+    category: validation_thresholds
+    weight: 1.0
+    result: valid
+    metadata:
+      threshold_name: finance_code_length
+      min: 4
+      max: 4
+      description: "Finance codes must be exactly 4 digits"
+      unit: "characters"
+
+  - id: threshold_department_code_length
+    name: "Department Code Length"
+    category: validation_thresholds
+    weight: 1.0
+    result: valid
+    metadata:
+      threshold_name: department_code_length
+      min: 3
+      max: 3
+      description: "Department codes must be exactly 3 digits"
+      unit: "characters"
+
+  # ============================================================================
+  # Age/Date Thresholds
+  # ============================================================================
+  - id: threshold_employment_age
+    name: "Employment Age Range"
+    category: validation_thresholds
+    weight: 1.0
+    result: valid
+    metadata:
+      threshold_name: employment_age
+      min: 16
+      max: 75
+      warning_min: 18
+      warning_max: 68
+      description: "Reasonable age range for employment"
+      unit: "years"
+
+  - id: threshold_contract_length
+    name: "Contract Length"
+    category: validation_thresholds
+    weight: 1.0
+    result: valid
+    metadata:
+      threshold_name: contract_length_years
+      min: 0
+      max: 50
+      warning_min: 0
+      warning_max: 40
+      description: "Reasonable contract length in years"
+      unit: "years"

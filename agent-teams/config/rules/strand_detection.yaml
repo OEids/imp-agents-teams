@@ -1,0 +1,274 @@
+# Strand Detection Rules
+# Replaces hardcoded s1_indicators, s2_indicators, s3_indicators in master_orchestrator.py
+
+rules:
+  # ============================================================================
+  # S1 - Structure/Schools Strand Detection
+  # ============================================================================
+  - id: s1_school_keywords
+    name: "S1 School Keywords"
+    category: strand_detection
+    condition: "contains:school,schools,academy,trust"
+    weight: 2.0
+    confidence_boost: 0.1
+    result: S1
+    metadata:
+      subcategory: S1
+      description: "School-related column indicators"
+
+  - id: s1_department_keywords
+    name: "S1 Department Keywords"
+    category: strand_detection
+    condition: "contains:department,dept,cost centre,costcentre"
+    weight: 2.0
+    result: S1
+    metadata:
+      subcategory: S1
+
+  - id: s1_finance_keywords
+    name: "S1 Finance Code Keywords"
+    category: strand_detection
+    condition: "contains:financecode,finance_code,nominal,ledger"
+    weight: 2.5
+    confidence_boost: 0.1
+    result: S1
+    metadata:
+      subcategory: S1
+
+  - id: s1_fund_keywords
+    name: "S1 Fund Keywords"
+    category: strand_detection
+    condition: "contains:fund,funds,funding"
+    weight: 1.5
+    result: S1
+    metadata:
+      subcategory: S1
+
+  - id: s1_activity_keywords
+    name: "S1 Activity Keywords"
+    category: strand_detection
+    condition: "contains:activity,activities"
+    weight: 1.5
+    result: S1
+    metadata:
+      subcategory: S1
+
+  - id: s1_grouping_keywords
+    name: "S1 Grouping Keywords"
+    category: strand_detection
+    condition: "contains:customgrouping,custom_grouping,grouping"
+    weight: 1.5
+    result: S1
+    metadata:
+      subcategory: S1
+
+  - id: s1_hub_keywords
+    name: "S1 Hub Keywords"
+    category: strand_detection
+    condition: "contains:hub,hubs,schoolhub"
+    weight: 1.0
+    result: S1
+    metadata:
+      subcategory: S1
+
+  - id: s1_local_authority_keywords
+    name: "S1 Local Authority Keywords"
+    category: strand_detection
+    condition: "contains:localauthority,local_authority,la_code"
+    weight: 1.5
+    result: S1
+    metadata:
+      subcategory: S1
+
+  # ============================================================================
+  # S2 - Staff Strand Detection
+  # ============================================================================
+  - id: s2_staff_keywords
+    name: "S2 Staff Keywords"
+    category: strand_detection
+    condition: "contains:staff,employee,personnel"
+    weight: 2.5
+    confidence_boost: 0.15
+    result: S2
+    metadata:
+      subcategory: S2
+      description: "Staff/employee column indicators"
+
+  - id: s2_role_keywords
+    name: "S2 Role Keywords"
+    category: strand_detection
+    condition: "contains:role,job_title,jobtitle,position"
+    weight: 2.0
+    result: S2
+    metadata:
+      subcategory: S2
+
+  - id: s2_payroll_keywords
+    name: "S2 Payroll Keywords"
+    category: strand_detection
+    condition: "contains:payroll,payroll_number,employee_number,emp_no"
+    weight: 2.5
+    confidence_boost: 0.1
+    result: S2
+    metadata:
+      subcategory: S2
+
+  - id: s2_contract_keywords
+    name: "S2 Contract Keywords"
+    category: strand_detection
+    condition: "contains:contract,contracts,employment"
+    weight: 2.0
+    result: S2
+    metadata:
+      subcategory: S2
+
+  - id: s2_salary_keywords
+    name: "S2 Salary Keywords"
+    category: strand_detection
+    condition: "contains:salary,wage,pay,remuneration"
+    weight: 2.0
+    result: S2
+    metadata:
+      subcategory: S2
+
+  - id: s2_equated_keywords
+    name: "S2 Equated Weeks Keywords"
+    category: strand_detection
+    condition: "contains:equated,eqw,term_time,termtime"
+    weight: 2.5
+    confidence_boost: 0.15
+    result: S2
+    metadata:
+      subcategory: S2
+      description: "Equated weeks specific to staff processing"
+
+  - id: s2_pension_keywords
+    name: "S2 Pension Keywords"
+    category: strand_detection
+    condition: "contains:pension,tps,lgps,superannuation"
+    weight: 2.0
+    result: S2
+    metadata:
+      subcategory: S2
+
+  - id: s2_teacher_keywords
+    name: "S2 Teacher Keywords"
+    category: strand_detection
+    condition: "contains:teacher,teaching,mps,ups,leadership"
+    weight: 2.0
+    result: S2
+    metadata:
+      subcategory: S2
+
+  - id: s2_support_keywords
+    name: "S2 Support Staff Keywords"
+    category: strand_detection
+    condition: "contains:support,njc,scp,spine"
+    weight: 2.0
+    result: S2
+    metadata:
+      subcategory: S2
+
+  - id: s2_fte_keywords
+    name: "S2 FTE Keywords"
+    category: strand_detection
+    condition: "contains:fte,full_time,fulltime,hours"
+    weight: 1.5
+    result: S2
+    metadata:
+      subcategory: S2
+
+  - id: s2_allowance_keywords
+    name: "S2 Allowance Keywords"
+    category: strand_detection
+    condition: "contains:allowance,tlr,sen,recruitment"
+    weight: 1.5
+    result: S2
+    metadata:
+      subcategory: S2
+
+  # ============================================================================
+  # S3 - Financial Planning Strand Detection
+  # ============================================================================
+  - id: s3_grant_keywords
+    name: "S3 Grant Keywords"
+    category: strand_detection
+    condition: "contains:grant,grants,allocation"
+    weight: 2.5
+    confidence_boost: 0.1
+    result: S3
+    metadata:
+      subcategory: S3
+      description: "Grant/funding allocation indicators"
+
+  - id: s3_budget_keywords
+    name: "S3 Budget Keywords"
+    category: strand_detection
+    condition: "contains:budget,budgets,forecast"
+    weight: 2.0
+    result: S3
+    metadata:
+      subcategory: S3
+
+  - id: s3_planning_keywords
+    name: "S3 Planning Keywords"
+    category: strand_detection
+    condition: "contains:planning,scenario,projection"
+    weight: 2.0
+    result: S3
+    metadata:
+      subcategory: S3
+
+  - id: s3_saving_keywords
+    name: "S3 Savings Keywords"
+    category: strand_detection
+    condition: "contains:saving,savings,efficiency"
+    weight: 1.5
+    result: S3
+    metadata:
+      subcategory: S3
+
+  - id: s3_priority_keywords
+    name: "S3 Priority Keywords"
+    category: strand_detection
+    condition: "contains:priority,priorities,phase"
+    weight: 1.5
+    result: S3
+    metadata:
+      subcategory: S3
+
+  - id: s3_calculation_keywords
+    name: "S3 Calculation Keywords"
+    category: strand_detection
+    condition: "contains:calculation,calculator,formula"
+    weight: 2.0
+    result: S3
+    metadata:
+      subcategory: S3
+
+  - id: s3_pupil_keywords
+    name: "S3 Pupil Keywords"
+    category: strand_detection
+    condition: "contains:pupil,pupils,student,enrollment"
+    weight: 2.0
+    result: S3
+    metadata:
+      subcategory: S3
+
+  - id: s3_income_keywords
+    name: "S3 Income Keywords"
+    category: strand_detection
+    condition: "contains:income,revenue,funding_stream"
+    weight: 1.5
+    result: S3
+    metadata:
+      subcategory: S3
+
+  - id: s3_expenditure_keywords
+    name: "S3 Expenditure Keywords"
+    category: strand_detection
+    condition: "contains:expenditure,expense,spend"
+    weight: 1.5
+    result: S3
+    metadata:
+      subcategory: S3

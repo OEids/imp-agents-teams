@@ -1,0 +1,60 @@
+# S2 Import File Mappings
+# Maps file name patterns to data types for import processing
+# Source: s2_specialist.py:602-613
+
+mappings:
+  # Staff Data
+  "DEM003 - Staff Members": "staff_members"
+  "Staff Members": "staff_members"
+  "StaffMembers": "staff_members"
+
+  # Contracts
+  "DEM003 - Contracts": "contracts"
+  "Contracts": "contracts"
+
+  # Role Structure
+  "DEM003 - Staff Roles": "staff_roles"
+  "Staff Roles": "staff_roles"
+  "StaffRoles": "staff_roles"
+
+  "DEM003 - Staff Role Groups": "staff_role_groups"
+  "Staff Role Groups": "staff_role_groups"
+  "StaffRoleGroups": "staff_role_groups"
+
+  # Pay Scales
+  "DEM003 - Pay Scales": "pay_scales"
+  "Pay Scales": "pay_scales"
+  "PayScales": "pay_scales"
+
+  # Benefits & Deductions
+  "DEM003 - Pensions": "pensions"
+  "Pensions": "pensions"
+
+  "DEM003 - Equated Week Patterns": "equated_week_patterns"
+  "Equated Week Patterns": "equated_week_patterns"
+  "EQW Patterns": "equated_week_patterns"
+
+  "DEM003 - Allowance Types": "allowance_types"
+  "Allowance Types": "allowance_types"
+  "AllowanceTypes": "allowance_types"
+
+  "DEM003 - Adjustment Types": "adjustment_types"
+  "Adjustment Types": "adjustment_types"
+  "AdjustmentTypes": "adjustment_types"
+
+  "DEM003 - Leave Types": "leave_types"
+  "Leave Types": "leave_types"
+  "LeaveTypes": "leave_types"
+
+# File extensions to process
+extensions:
+  - ".xlsx"
+  - ".xlsm"
+  - ".xls"
+  - ".csv"
+
+# Files to skip
+skip_patterns:
+  - "~$*"
+  - "*.tmp"
+  - ".DS_Store"

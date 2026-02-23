@@ -1,0 +1,382 @@
+# S2 Staff Role Groups with Finance Code Mappings
+# Standard 15+ Staff Role Groups with DFE finance code patterns
+# Sources: finished_workbook_patterns.py:94-216, S2_DOMAIN_KNOWLEDGE.py:198-389
+
+role_groups:
+  # =========================================================================
+  # Teaching Staff
+  # =========================================================================
+  LST:
+    code: "LST"
+    title: "Staff Costs - Leadership Teaching-Wages and salaries"
+    teaching: true
+    finance_codes:
+      gross_salary: "610100"
+      ni: "610200"
+      pension: "610300"
+    fte_codes:
+      weekly: "WK_FTE_LST"
+      annual: "A_FTE_LST"
+      weekly_leave_adj: "WK_FTE_LEAVE_ADJ_LST"
+      annual_leave_adj: "A_FTE_LEAVE_ADJ_LST"
+
+  LSN:
+    code: "LSN"
+    title: "Staff Costs - Leadership Non-Teaching-Wages and salaries"
+    teaching: false
+    finance_codes:
+      gross_salary: "611100"
+      ni: "611200"
+      pension: "611300"
+    fte_codes:
+      weekly: "WK_FTE_LSN"
+      annual: "A_FTE_LSN"
+
+  TEA:
+    code: "TEA"
+    title: "Staff Costs - Teachers-Wages and salaries"
+    teaching: true
+    finance_codes:
+      gross_salary: "612100"
+      ni: "612200"
+      pension: "612300"
+    fte_codes:
+      weekly: "WK_FTE_TEA"
+      annual: "A_FTE_TEA"
+
+  TEACH:
+    code: "TEACH"
+    title: "Teachers"
+    teaching: true
+    finance_codes:
+      gross_salary: "2000"
+      leave_rebate: "2000"
+      employers_ni: "2005"
+      pension: "2010"
+
+  TEACH_SUPPLY:
+    code: "TEACH_SUPPLY"
+    title: "Teachers - Supply Staff"
+    teaching: true
+    finance_codes:
+      gross_salary: "2760"
+      leave_rebate: "2760"
+      employers_ni: "2765"
+      pension: "2770"
+
+  TEACH_TLR:
+    code: "TEACH_TLR"
+    title: "Teachers - TLR"
+    teaching: true
+    finance_codes:
+      gross_salary: "2000"
+      leave_rebate: "2000"
+      employers_ni: "2005"
+      pension: "2010"
+
+  TEA_SS:
+    code: "TEA_SS"
+    title: "Staff Costs - Teaching Supply Staff-Wages and salaries"
+    teaching: true
+    finance_codes:
+      gross_salary: "650400"
+      ni: "650410"
+      pension: "650420"
+
+  # =========================================================================
+  # Support Staff
+  # =========================================================================
+  TA:
+    code: "TA"
+    title: "Staff Costs - Teaching Assistants-Wages and salaries"
+    teaching: false
+    finance_codes:
+      gross_salary: "615100"
+      ni: "615200"
+      pension: "615300"
+
+  EDS:
+    code: "EDS"
+    title: "Staff Costs - Educational Support-Wages and salaries"
+    teaching: false
+    finance_codes:
+      gross_salary: "619100"
+      ni: "619200"
+      pension: "619300"
+
+  LIB:
+    code: "LIB"
+    title: "Staff Costs - Librarians-Wages and salaries"
+    teaching: false
+    finance_codes:
+      gross_salary: "620100"
+      ni: "620200"
+      pension: "620300"
+
+  TEC:
+    code: "TEC"
+    title: "Staff Costs - Technicians-Wages and salaries"
+    teaching: false
+    finance_codes:
+      gross_salary: "622100"
+      ni: "622200"
+      pension: "622300"
+
+  ADM:
+    code: "ADM"
+    title: "Staff Costs - Finance and Admin-Wages and salaries"
+    teaching: false
+    finance_codes:
+      gross_salary: "625100"
+      ni: "625200"
+      pension: "625300"
+
+  PRE:
+    code: "PRE"
+    title: "Staff Costs - Site Staff-Wages and salaries"
+    teaching: false
+    finance_codes:
+      gross_salary: "627100"
+      ni: "627200"
+      pension: "627300"
+
+  CLE:
+    code: "CLE"
+    title: "Staff Costs - Cleaning Staff-Wages and salaries"
+    teaching: false
+    finance_codes:
+      gross_salary: "630100"
+      ni: "630200"
+      pension: "630300"
+
+  MDS:
+    code: "MDS"
+    title: "Staff Costs - Midday Supervisors-Wages and salaries"
+    teaching: false
+    finance_codes:
+      gross_salary: "635100"
+      ni: "635200"
+      pension: "635300"
+
+  NUR:
+    code: "NUR"
+    title: "Staff Costs - Nursery Staff-Wages and salaries"
+    teaching: false
+    finance_codes:
+      gross_salary: "637100"
+      ni: "637200"
+      pension: "637300"
+
+  FSW:
+    code: "FSW"
+    title: "Staff Costs - Family Support Workers-Wages and salaries"
+    teaching: false
+    finance_codes:
+      gross_salary: "640100"
+      ni: "640200"
+      pension: "640300"
+
+  OTH:
+    code: "OTH"
+    title: "Staff Costs - Other Staff-Wages and salaries"
+    teaching: false
+    finance_codes:
+      gross_salary: "647100"
+      ni: "647200"
+      pension: "647300"
+
+  # =========================================================================
+  # Additional Role Groups (from S2_DOMAIN_KNOWLEDGE)
+  # =========================================================================
+  CAT_GENERAL:
+    code: "CAT_GENERAL"
+    title: "Catering Staff - General"
+    teaching: false
+    finance_codes:
+      gross_salary: "2700"
+      leave_rebate: "2700"
+      employers_ni: "2705"
+      pension: "2710"
+      minimum_wage_topup: "MINWAGE"
+      living_wage_topup: "LIVWAGE"
+      opt_out_pension: "PENS"
+      other_salary_costs: "2700"
+      adjustments: "2700"
+      allowances: "2700"
+
+  PREM_CLEAN:
+    code: "PREM_CLEAN"
+    title: "Premises Staff - Cleaning"
+    teaching: false
+    finance_codes:
+      gross_salary: "2320"
+      leave_rebate: "2320"
+      employers_ni: "2325"
+      pension: "2330"
+
+  PREM_GENERAL:
+    code: "PREM_GENERAL"
+    title: "Premises Staff - General Staff"
+    teaching: false
+    finance_codes:
+      gross_salary: "2300"
+      leave_rebate: "2300"
+      employers_ni: "2305"
+      pension: "2310"
+
+  SUP_BREAK:
+    code: "SUP_BREAK"
+    title: "Support Staff - Breakfast Club"
+    teaching: false
+    finance_codes:
+      gross_salary: "2400"
+      leave_rebate: "2400"
+      employers_ni: "2405"
+      pension: "2410"
+
+  SUP_COVER:
+    code: "SUP_COVER"
+    title: "Support Staff - Cover Supervisor"
+    teaching: true  # Cover supervisors count as teaching for some purposes
+    finance_codes:
+      gross_salary: "2720"
+      leave_rebate: "2720"
+      employers_ni: "2725"
+      pension: "2730"
+
+  SUP_FINAD:
+    code: "SUP_FINAD"
+    title: "Support Staff - Finance & Admin"
+    teaching: false
+    finance_codes:
+      gross_salary: "2630"
+      leave_rebate: "2630"
+      employers_ni: "2635"
+      pension: "2640"
+
+  SUP_GENERAL:
+    code: "SUP_GENERAL"
+    title: "Support Staff - General Staff"
+    teaching: false
+    finance_codes:
+      gross_salary: "2200"
+      leave_rebate: "2200"
+      employers_ni: "2205"
+      pension: "2210"
+
+  SUP_HLTA:
+    code: "SUP_HLTA"
+    title: "Support Staff - HLTA"
+    teaching: false
+    finance_codes:
+      gross_salary: "2250"
+      leave_rebate: "2250"
+      employers_ni: "2255"
+      pension: "2260"
+
+  SUP_MIDDAY:
+    code: "SUP_MIDDAY"
+    title: "Support Staff - Midday Supervisor"
+    teaching: false
+    finance_codes:
+      gross_salary: "2820"
+      leave_rebate: "2820"
+      employers_ni: "2825"
+      pension: "2830"
+
+  SUP_NURSERY:
+    code: "SUP_NURSERY"
+    title: "Support Staff - Nursery"
+    teaching: false
+    finance_codes:
+      gross_salary: "2500"
+      leave_rebate: "2500"
+      employers_ni: "2505"
+      pension: "2510"
+
+  SUP_PASTORAL:
+    code: "SUP_PASTORAL"
+    title: "Support Staff - Pastoral"
+    teaching: false
+    finance_codes:
+      gross_salary: "2780"
+      leave_rebate: "2780"
+      employers_ni: "2785"
+      pension: "2790"
+
+  SUP_SWIM:
+    code: "SUP_SWIM"
+    title: "Supply Staff - Swimming Staff"
+    teaching: false
+    finance_codes:
+      gross_salary: "2600"
+      leave_rebate: "2600"
+      employers_ni: "2605"
+      pension: "2610"
+
+  SUP_TECH:
+    code: "SUP_TECH"
+    title: "Supply Staff - Technicians"
+    teaching: false
+    finance_codes:
+      gross_salary: "2280"
+      leave_rebate: "2280"
+      employers_ni: "2285"
+      pension: "2290"
+
+# Role title to group mapping keywords
+role_title_keywords:
+  TEACH:
+    - "teacher"
+    - "head"
+    - "deputy"
+    - "assistant head"
+  TEACH_SUPPLY:
+    - "supply"
+  TEACH_TLR:
+    - "tlr"
+  SUP_HLTA:
+    - "hlta"
+    - "higher level"
+  SUP_GENERAL:
+    - "teaching assistant"
+    - " ta "
+    - "classroom assistant"
+  SUP_FINAD:
+    - "admin"
+    - "office"
+    - "secretary"
+    - "receptionist"
+  SUP_MIDDAY:
+    - "midday"
+    - "lunchtime"
+    - "msa"
+  SUP_BREAK:
+    - "breakfast club"
+  SUP_NURSERY:
+    - "nursery"
+    - "eyfs"
+    - "early years"
+  SUP_PASTORAL:
+    - "pastoral"
+    - "welfare"
+    - "safeguarding"
+  SUP_COVER:
+    - "cover supervisor"
+  SUP_TECH:
+    - "technician"
+    - "ict"
+    - "it support"
+  PREM_GENERAL:
+    - "caretaker"
+    - "site"
+    - "premises"
+    - "maintenance"
+  PREM_CLEAN:
+    - "cleaner"
+    - "cleaning"
+  CAT_GENERAL:
+    - "cook"
+    - "chef"
+    - "kitchen"
+    - "catering"

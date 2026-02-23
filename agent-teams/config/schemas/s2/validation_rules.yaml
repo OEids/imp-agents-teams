@@ -1,0 +1,155 @@
+# S2 Validation Rules
+# Configurable validation thresholds and rules
+# Source: S2_DOMAIN_KNOWLEDGE.py:694-718
+
+rules:
+  # =========================================================================
+  # Staff Member Validation
+  # =========================================================================
+  staff_member_code:
+    pattern: "^[A-Za-z0-9_-]+$"
+    max_length: 20
+    required: true
+    error_message: "Staff member code must be alphanumeric, max 20 characters"
+
+  first_name:
+    max_length: 50
+    required: true
+
+  last_name:
+    max_length: 50
+    required: true
+
+  # =========================================================================
+  # Pay Scale Validation
+  # =========================================================================
+  pay_scale_code:
+    pattern: "^[A-Z0-9_]+$"
+    max_length: 30
+    required: true
+
+  # =========================================================================
+  # Finance Code Validation
+  # =========================================================================
+  finance_code:
+    pattern: "^[A-Z0-9_]+$"
+    min_length: 4
+    max_length: 10
+
+  # =========================================================================
+  # FTE Validation
+  # =========================================================================
+  weekly_fte:
+    min_value: 0.0
+    max_value: 1.5
+    warning_min: 0.1
+    warning_max: 1.0
+    decimal_places: 4
+    error_message: "Weekly FTE must be between 0 and 1.5"
+
+  annual_fte:
+    min_value: 0.0
+    max_value: 1.5
+    decimal_places: 4
+
+  # =========================================================================
+  # Salary Validation
+  # =========================================================================
+  annual_salary:
+    min_value: 10000
+    max_value: 250000
+    warning_min: 15000
+    warning_max: 200000
+    error_message: "Annual salary outside expected range"
+
+  hourly_rate:
+    min_value: 5.0
+    max_value: 100.0
+    warning_min: 10.0
+    warning_max: 75.0
+
+  # =========================================================================
+  # Contract Validation
+  # =========================================================================
+  weekly_hours:
+    min_value: 0
+    max_value: 60
+    warning_max: 37.5
+    full_time_teaching: 32.436
+    full_time_support: 37.0
+
+  contract_reference:
+    pattern: "^[A-Za-z0-9_-]+$"
+    max_length: 20
+
+  # =========================================================================
+  # Date Validation
+  # =========================================================================
+  date_from:
+    required: true
+    format: "YYYY-MM-DD"
+
+  date_to:
+    required: false
+    format: "YYYY-MM-DD"
+    must_be_after: "date_from"
+
+  service_start_date:
+    format: "YYYY-MM-DD"
+    max_years_ago: 50
+    max_years_future: 1
+
+# Threshold definitions for validation warnings
+thresholds:
+  # FTE thresholds
+  fte_variance:
+    warning: 0.05
+    error: 0.10
+    description: "FTE variance from expected"
+
+  # Salary vs pay scale point variance
+  salary_variance:
+    warning: 0.02
+    error: 0.05
+    description: "Salary variance from pay scale point"
+
+  # Missing data thresholds
+  missing_pension_rate:
+    warning: 0.10
+    error: 0.25
+    description: "Rate of records missing pension"
+
+  missing_pay_scale_rate:
+    warning: 0.10
+    error: 0.25
+    description: "Rate of records missing pay scale"
+
+  # Audit thresholds
+  audit_pass_score: 75.0
+  audit_warning_score: 85.0
+
+# Business rules
+business_rules:
+  - name: "Teaching pension requirement"
+    condition: "role_group.teaching == true"
+    requirement: "pension_code in ['TPS']"
+    message: "Teaching staff must have TPS pension"
+    severity: "warning"
+
+  - name: "Support pension requirement"
+    condition: "role_group.teaching == false"
+    requirement: "pension_code in ['LGPS_IMP', '0%']"
+    message: "Support staff should have LGPS or opted out"
+    severity: "info"
+
+  - name: "Contract date range"
+    condition: "date_to is not null"
+    requirement: "date_to > date_from"
+    message: "Contract end date must be after start date"
+    severity: "error"
+
+  - name: "FTE consistency"
+    condition: "weekly_fte > 0"
+    requirement: "annual_fte > 0"
+    message: "If weekly FTE set, annual FTE should also be set"
+    severity: "warning"

@@ -1,0 +1,270 @@
+# S2 Pay Scale Definitions
+# Complete pay scale definitions for teaching and support staff
+# Source: S2_DOMAIN_KNOWLEDGE.py:79-164
+
+pay_scales:
+  # =========================================================================
+  # Teaching Scales
+  # =========================================================================
+  TEACH_MAIN_EW:
+    code: "TEACH_MAIN_EW"
+    title: "Teachers Main England & Wales"
+    type: "teacher_main"
+    teaching: true
+    increment_date: "2019-09-01"
+    increase_date: "2019-09-01"
+    grades:
+      - "M1"
+      - "M2"
+      - "M3"
+      - "M4"
+      - "M5"
+      - "M6"
+
+  TEACH_UPS_EW:
+    code: "TEACH_UPS_EW"
+    title: "Teachers UPS England & Wales"
+    type: "teacher_ups"
+    teaching: true
+    increment_date: "2019-09-01"
+    increase_date: "2019-09-01"
+    grades:
+      - "U1"
+      - "U2"
+      - "U3"
+
+  TEACH_UQ_EW:
+    code: "TEACH_UQ_EW"
+    title: "Teacher Unqualified"
+    type: "teacher_unqualified"
+    teaching: true
+    increment_date: "2019-09-01"
+    increase_date: "2019-09-01"
+
+  TEACH_LEADERSHIP_EW:
+    code: "TEACH_LEADERSHIP_EW"
+    title: "Teacher Leadership Group"
+    type: "leadership"
+    teaching: true
+    increment_date: "2019-09-01"
+    increase_date: "2019-09-01"
+    grade_range:
+      from: 1
+      to: 43
+    grade_format: "L{:02d}"  # L01, L02, ..., L43
+
+  TEACH_LP_EW:
+    code: "TEACH_LP_EW"
+    title: "Teacher Lead Practitioner England & Wales"
+    type: "lead_practitioner"
+    teaching: true
+
+  # =========================================================================
+  # Teacher Allowance Scales
+  # =========================================================================
+  TEACH_SEN:
+    code: "TEACH_SEN"
+    title: "Teacher SEN Allowance"
+    type: "allowance"
+    teaching: true
+
+  TEACH_TLR:
+    code: "TEACH_TLR"
+    title: "Teacher TLR"
+    type: "allowance"
+    teaching: true
+
+  TEACH_TLRLS:
+    code: "TEACH_TLRLS"
+    title: "Teacher TLR Local"
+    type: "allowance"
+    teaching: true
+
+  # =========================================================================
+  # Support Staff Scales
+  # =========================================================================
+  NJC:
+    code: "NJC"
+    title: "NJC Scale"
+    type: "njc"
+    teaching: false
+    increment_date: "2021-04-01"
+    increase_date: "2021-04-01"
+    description: "National Joint Council pay scale for support staff"
+
+  NJC_SM1:
+    code: "NJC_SM1"
+    title: "NJC Scale SMTest 1"
+    type: "njc"
+    teaching: false
+
+  NJC_SM2:
+    code: "NJC_SM2"
+    title: "NJC Scale SMTest 2"
+    type: "njc"
+    teaching: false
+
+  NJC_SM3:
+    code: "NJC_SM3"
+    title: "NJC Scale SMTest 3"
+    type: "njc"
+    teaching: false
+
+  NJC_SM4:
+    code: "NJC_SM4"
+    title: "NJC Scale SMTest 4"
+    type: "njc"
+    teaching: false
+
+  NJC_SM5:
+    code: "NJC_SM5"
+    title: "NJC Scale SMTest 5"
+    type: "njc"
+    teaching: false
+
+  APPRENTICE:
+    code: "APPRENTICE"
+    title: "Apprentice"
+    type: "apprentice"
+    teaching: false
+    increment_date: "2019-04-01"
+    increase_date: "2019-04-01"
+
+  # =========================================================================
+  # Special Scales
+  # =========================================================================
+  SPOT:
+    code: "SPOT"
+    title: "Spot Salary"
+    type: "spot"
+    teaching: false
+    description: "Fixed spot salary, no scale progression"
+
+  LOCATION_PAYSCALE:
+    code: "LOCATION_PAYSCALE"
+    title: "Location Specific"
+    type: "location"
+    teaching: false
+
+  # =========================================================================
+  # Legacy/Test Scales
+  # =========================================================================
+  IC:
+    code: "IC"
+    title: "Import Change Test"
+    type: "test"
+    teaching: false
+
+  IMPORTTEST:
+    code: "IMPORTTEST"
+    title: "Importtest"
+    type: "test"
+    teaching: false
+
+  NEW:
+    code: "NEW"
+    title: "New"
+    type: "custom"
+    teaching: false
+
+  TEST:
+    code: "TEST"
+    title: "test"
+    type: "test"
+    teaching: false
+
+  JJ:
+    code: "JJ"
+    title: "jj"
+    type: "test"
+    teaching: false
+
+  Z_PR:
+    code: "Z_PR"
+    title: "Test PR"
+    type: "test"
+    teaching: false
+
+# Standard teacher pay scale points (England & Wales 2024-25)
+teacher_pay_points_2024_25:
+  MAIN:
+    M1: 31650
+    M2: 33483
+    M3: 35674
+    M4: 37895
+    M5: 40377
+    M6: 43607
+
+  UPS:
+    U1: 45646
+    U2: 47340
+    U3: 49084
+
+  LEADERSHIP:
+    L01: 47185
+    L02: 48389
+    L03: 49618
+    L04: 50872
+    L05: 52151
+    L06: 53380
+    L07: 54816
+    L08: 55965
+    L09: 57252
+    L10: 58539
+    L11: 60019
+    L12: 61493
+    L13: 62821
+    L14: 64414
+    L15: 66064
+    L16: 67667
+    L17: 69426
+    L18: 71194
+    L19: 72744
+    L20: 74609
+    L21: 76530
+    L22: 78262
+    L23: 80165
+    L24: 82108
+    L25: 84105
+    L26: 86157
+    L27: 88260
+    L28: 90370
+    L29: 92556
+    L30: 94797
+    L31: 97076
+    L32: 99425
+    L33: 101795
+    L34: 104217
+    L35: 106700
+    L36: 109214
+    L37: 111782
+    L38: 114420
+    L39: 117100
+    L40: 119863
+    L41: 122673
+    L42: 125533
+    L43: 128443
+
+  UNQUALIFIED:
+    UQ1: 22637
+    UQ2: 24781
+    UQ3: 26878
+    UQ4: 28969
+    UQ5: 31077
+    UQ6: 33455
+
+# Scale type classification
+scale_types:
+  teaching:
+    - "teacher_main"
+    - "teacher_ups"
+    - "teacher_unqualified"
+    - "leadership"
+    - "lead_practitioner"
+  support:
+    - "njc"
+    - "apprentice"
+    - "spot"
+    - "location"
+  allowance:
+    - "allowance"

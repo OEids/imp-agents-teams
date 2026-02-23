@@ -1,0 +1,423 @@
+# Common Abbreviations for Fuzzy Column Matching
+# Maps short forms to possible expansions for flexible column recognition
+
+abbreviations:
+  # =========================================================================
+  # Name Fields
+  # =========================================================================
+  fn:
+    - first_name
+    - firstname
+    - forename
+    - given_name
+
+  ln:
+    - last_name
+    - lastname
+    - surname
+    - family_name
+
+  nm:
+    - name
+    - full_name
+
+  fname:
+    - first_name
+    - firstname
+    - forename
+
+  lname:
+    - last_name
+    - lastname
+    - surname
+
+  mi:
+    - middle_initial
+    - middle_name
+
+  # =========================================================================
+  # Employee/Staff Identifiers
+  # =========================================================================
+  emp:
+    - employee
+    - employment
+
+  emp_no:
+    - employee_number
+    - payroll_number
+    - staff_number
+    - personnel_number
+
+  empno:
+    - employee_number
+    - payroll_number
+
+  empid:
+    - employee_id
+    - staff_id
+
+  staff_no:
+    - staff_number
+    - employee_number
+    - payroll_number
+
+  payroll:
+    - payroll_number
+    - employee_number
+
+  pr_no:
+    - payroll_number
+    - personnel_number
+
+  # =========================================================================
+  # Pay/Salary Fields
+  # =========================================================================
+  sal:
+    - salary
+    - annual_salary
+
+  fte:
+    - full_time_equivalent
+    - fte_value
+
+  hpw:
+    - hours_per_week
+    - weekly_hours
+    - contracted_hours
+
+  hrs:
+    - hours
+    - weekly_hours
+
+  wkly:
+    - weekly
+    - per_week
+
+  ann:
+    - annual
+    - yearly
+
+  gross:
+    - gross_salary
+    - gross_pay
+
+  basic:
+    - basic_salary
+    - basic_pay
+
+  rate:
+    - hourly_rate
+    - pay_rate
+
+  # =========================================================================
+  # Pension Fields
+  # =========================================================================
+  pens:
+    - pension
+    - pension_scheme
+
+  tps:
+    - teachers_pension_scheme
+    - teachers_pension
+
+  lgps:
+    - local_government_pension_scheme
+    - local_government_pension
+
+  opt_out:
+    - pension_opted_out
+    - opted_out
+
+  # =========================================================================
+  # School/Organization
+  # =========================================================================
+  sch:
+    - school
+    - school_code
+
+  sch_cd:
+    - school_code
+    - site_code
+
+  dept:
+    - department
+    - department_code
+
+  org:
+    - organization
+    - organisation
+
+  site:
+    - site_code
+    - school_code
+    - location
+
+  est:
+    - establishment
+    - school
+
+  # =========================================================================
+  # Date Fields
+  # =========================================================================
+  dt:
+    - date
+
+  dob:
+    - date_of_birth
+    - birth_date
+
+  start_dt:
+    - start_date
+    - date_from
+    - commencement_date
+
+  end_dt:
+    - end_date
+    - date_to
+    - termination_date
+    - leaving_date
+
+  join_dt:
+    - join_date
+    - hire_date
+    - start_date
+
+  incr_dt:
+    - increment_date
+    - progression_date
+
+  # =========================================================================
+  # Contract Fields
+  # =========================================================================
+  cont:
+    - contract
+    - employment_contract
+
+  cont_ref:
+    - contract_reference
+    - reference
+
+  ref:
+    - reference
+    - contract_reference
+
+  typ:
+    - type
+    - contract_type
+
+  perm:
+    - permanent
+    - perm_contract
+
+  fxt:
+    - fixed_term
+    - fixed_term_contract
+
+  temp:
+    - temporary
+    - temp_contract
+
+  # =========================================================================
+  # Pay Scale Fields
+  # =========================================================================
+  ps:
+    - pay_scale
+    - payscale
+    - scale
+
+  psc:
+    - pay_scale_code
+    - scale_code
+
+  sp:
+    - scale_point
+    - spine_point
+    - pay_point
+
+  scp:
+    - scale_point
+    - spine_point
+
+  grd:
+    - grade
+    - pay_grade
+
+  njc:
+    - national_joint_council
+    - njc_scale
+
+  mps:
+    - main_pay_scale
+    - main_scale
+
+  ups:
+    - upper_pay_scale
+    - upper_scale
+
+  ldr:
+    - leadership
+    - leadership_scale
+
+  # =========================================================================
+  # Role Fields
+  # =========================================================================
+  pos:
+    - position
+    - job_title
+
+  role:
+    - staff_role
+    - job_role
+
+  title:
+    - job_title
+    - role_title
+    - position
+
+  grp:
+    - group
+    - role_group
+
+  srg:
+    - staff_role_group
+    - role_group
+
+  teach:
+    - teacher
+    - teaching
+
+  supp:
+    - support
+    - support_staff
+
+  # =========================================================================
+  # Allowance Fields
+  # =========================================================================
+  all:
+    - allowance
+    - allowance_type
+
+  tlr:
+    - teaching_learning_responsibility
+    - tlr_allowance
+
+  sen:
+    - special_educational_needs
+    - sen_allowance
+
+  # =========================================================================
+  # Equated Weeks
+  # =========================================================================
+  eqw:
+    - equated_weeks
+    - equated_week_pattern
+
+  eqwp:
+    - equated_week_pattern
+
+  tto:
+    - term_time_only
+    - term_time
+
+  ayr:
+    - all_year_round
+    - all_year
+
+  wks:
+    - weeks
+    - weeks_worked
+
+  # =========================================================================
+  # Finance Codes
+  # =========================================================================
+  fc:
+    - finance_code
+    - cost_code
+    - nominal_code
+
+  cc:
+    - cost_centre
+    - cost_center
+
+  nom:
+    - nominal
+    - nominal_code
+
+  ni:
+    - national_insurance
+    - employers_ni
+
+  # =========================================================================
+  # Fund Fields
+  # =========================================================================
+  fund:
+    - fund_code
+    - funding_source
+
+  gag:
+    - general_annual_grant
+
+  pp:
+    - pupil_premium
+
+  # =========================================================================
+  # Status Fields
+  # =========================================================================
+  act:
+    - active
+    - status_active
+
+  inact:
+    - inactive
+    - status_inactive
+
+  avail:
+    - available
+    - available_to
+
+  # =========================================================================
+  # Boolean Indicators
+  # =========================================================================
+  y_n:
+    - yes_no
+    - boolean
+
+  flg:
+    - flag
+    - indicator
+
+# Bidirectional mappings - also map expansions back to standard forms
+reverse_mappings:
+  # These map common variations TO the standard column name
+  firstname: first_name
+  forename: first_name
+  given_name: first_name
+
+  lastname: last_name
+  surname: last_name
+  family_name: last_name
+
+  employee_number: payroll_number
+  personnel_number: payroll_number
+  staff_number: payroll_number
+
+  hours_per_week: weekly_hours
+  contracted_hours: weekly_hours
+
+  date_from: start_date
+  commencement_date: start_date
+  hire_date: start_date
+
+  date_to: end_date
+  termination_date: end_date
+  leaving_date: end_date
+
+  job_title: position
+  role_title: position
+  job_role: position
+
+  payscale: pay_scale
+  scale: pay_scale
+
+  scale_point: pay_scale_point
+  spine_point: pay_scale_point

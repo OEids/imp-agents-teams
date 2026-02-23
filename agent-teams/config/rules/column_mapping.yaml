@@ -1,0 +1,652 @@
+# Column Mapping Rules
+# Replaces hardcoded column alias dictionaries in expert_agents.py
+
+rules:
+  # ============================================================================
+  # Common Identifiers
+  # ============================================================================
+  - id: map_payroll_number
+    name: "Payroll Number Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [payroll, emp_no, employee_number, employee_no, staff_id, personnel_no]
+    weight: 2.0
+    result: payroll_number
+    metadata:
+      strand: S2
+      description: "Maps various payroll/employee ID columns"
+
+  # ============================================================================
+  # School/Academy Columns - Comprehensive Variations
+  # ============================================================================
+  - id: map_school_code
+    name: "School Code Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [school_code, school_id, schoolcode, schoolid, academy_code, academycode, site_code, sitecode, establishment_code, estab_code, school code, school id, academy code, site code]
+    weight: 2.5
+    result: school_code
+    metadata:
+      strand: S1
+      description: "Maps school identifier columns"
+
+  - id: map_school_name
+    name: "School Name Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [school_name, schoolname, academy_name, academyname, establishment_name, school_title, school name, academy name, establishment name]
+    weight: 2.5
+    result: school_name
+    metadata:
+      strand: S1
+      description: "Maps school name columns"
+
+  - id: map_la_code
+    name: "LA Code Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [la_code, lacode, local_authority_code, local_auth, localauthority, lea_code, leacode, la code, local authority code, local authority]
+    weight: 2.5
+    result: la_code
+    metadata:
+      strand: S1
+      description: "Maps local authority code columns"
+
+  - id: map_urn
+    name: "URN Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        # Note: Removed bare 'urn' to avoid matching 'surname'
+        value: [unique_reference, dfe_number, dfenumber, establishment_number, estab_number, dfe number, establishment number, school_urn, urn_number, laestab]
+      - type: starts_with
+        # Only match 'urn' at start of column name
+        value: [urn_]
+    weight: 2.5
+    result: urn
+    metadata:
+      strand: S1
+      description: "Maps URN columns"
+
+  - id: map_london_weighting
+    name: "London Weighting Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [london_weighting, londonweighting, london_weight, london weighting, lw_zone, weighting_zone, weighting zone, area_weighting]
+    weight: 2.5
+    result: london_weighting
+    metadata:
+      strand: S1
+      description: "Maps London weighting zone columns"
+
+  - id: map_teaching_hours_school
+    name: "Teaching Hours Mapping (School)"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [teaching_hours, teachinghours, teaching hours, directed_hours, directed hours, teacher_hours, annual_hours, annual hours]
+    weight: 2.5
+    result: teaching_hours
+    metadata:
+      strand: S1
+      description: "Maps school teaching hours (typically 32.5 but varies)"
+
+  - id: map_cost_centre
+    name: "Cost Centre to Department Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [cost_centre, cost_center, costcentre, costcenter, cc_code]
+    weight: 2.5
+    result: department_code
+    metadata:
+      strand: S1
+      description: "Cost centres map to departments"
+
+  - id: map_finance_code
+    name: "Finance Code Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [finance_code, financecode, nominal, nominal_code, account_code, ledger_code]
+    weight: 2.0
+    result: finance_code
+    metadata:
+      strand: S1
+      description: "Maps finance/nominal code columns"
+
+  # ============================================================================
+  # Staff/Personnel Fields
+  # ============================================================================
+  - id: map_first_name
+    name: "First Name Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [first_name, firstname, forename, given_name, first name, given name, fname]
+    weight: 2.5
+    result: first_name
+    metadata:
+      strand: S2
+      description: "Maps first/given name columns"
+
+  - id: map_last_name
+    name: "Last Name Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [last_name, lastname, surname, family_name, last name, family name, lname]
+    weight: 2.5
+    result: last_name
+    metadata:
+      strand: S2
+      description: "Maps last/family/surname columns"
+
+  - id: map_job_title
+    name: "Job Title Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [job_title, jobtitle, position, role_title, post]
+    weight: 2.0
+    result: job_title
+    metadata:
+      strand: S2
+
+  - id: map_spot_salary
+    name: "Spot Salary Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [spot_salary, spot salary, spotsalary, spot_scale, spot scale, spot_amount, spot amount]
+    weight: 2.5
+    result: spot_salary
+    metadata:
+      strand: S2
+      description: "Maps spot salary columns (higher priority than annual_salary)"
+
+  - id: map_annual_salary
+    name: "Annual Salary Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [annual_salary, salary, annual_pay, gross_salary, basic_salary]
+    weight: 2.0
+    result: annual_salary
+    metadata:
+      strand: S2
+
+  - id: map_fte
+    name: "FTE Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [fte, full_time_equivalent, weekly_fte]
+    weight: 2.0
+    result: weekly_fte
+    metadata:
+      strand: S2
+
+  - id: map_weekly_hours
+    name: "Weekly Hours Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [weekly_hours, hours_per_week, contracted_hours, hours]
+    weight: 2.0
+    result: weekly_hours
+    metadata:
+      strand: S2
+
+  - id: map_full_time_hours
+    name: "Full Time Hours Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [full_time_hours, ft_hours, standard_hours]
+    weight: 1.5
+    result: full_time_hours
+    metadata:
+      strand: S2
+
+  # ============================================================================
+  # Pay Scale Fields
+  # ============================================================================
+  - id: map_scale_point
+    name: "Scale Point Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        # Scale point must come before pay_scale to match correctly
+        value: [scale_point, scalepoint, spine_point, current_point, pay_point, scp, spine point, scale point]
+    weight: 2.5
+    result: current_scale_point
+    metadata:
+      strand: S2
+      description: "Maps scale/spine point columns (higher priority than pay_scale)"
+
+  - id: map_pay_scale
+    name: "Pay Scale Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        # Removed bare 'scale' to avoid matching 'scale_point'
+        value: [pay_scale, payscale, pay_range, salary_scale, pay_grade, scale_type, scale_name]
+    weight: 2.0
+    result: pay_scale
+    metadata:
+      strand: S2
+
+  - id: map_pension_code
+    name: "Pension Code Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [pension, pension_code, pension_scheme, superannuation]
+    weight: 2.0
+    result: pension_code
+    metadata:
+      strand: S2
+
+  # ============================================================================
+  # Contract Fields
+  # ============================================================================
+  - id: map_start_date
+    name: "Start Date Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [start_date, startdate, commencement, hire_date, employment_start]
+    weight: 2.0
+    result: start_date
+    metadata:
+      strand: S2
+
+  - id: map_end_date
+    name: "End Date Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [end_date, enddate, termination, leaving_date, employment_end]
+    weight: 2.0
+    result: end_date
+    metadata:
+      strand: S2
+
+  - id: map_contract_type
+    name: "Contract Type Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [contract_type, contracttype, employment_type, contract_status]
+    weight: 2.0
+    result: contract_type
+    metadata:
+      strand: S2
+
+  - id: map_equated_weeks
+    name: "Equated Weeks Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [equated_weeks, eqw, term_weeks, working_weeks]
+    weight: 2.0
+    result: equated_week_pattern
+    metadata:
+      strand: S2
+
+  # ============================================================================
+  # S1 Structure Fields
+  # ============================================================================
+  - id: map_department_code
+    name: "Department Code Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [department, dept, dept_code, department_code, cost_centre, cost_center, cc_code]
+    weight: 2.0
+    result: department_code
+    metadata:
+      strand: S1
+      description: "Departments and cost centres are equivalent"
+
+  - id: map_fund_code
+    name: "Fund Code Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [fund, fund_code, funding_code]
+    weight: 2.0
+    result: fund_code
+    metadata:
+      strand: S1
+
+  - id: map_activity_code
+    name: "Activity Code Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [activity, activity_code]
+    weight: 2.0
+    result: activity_code
+    metadata:
+      strand: S1
+
+  - id: map_ledger_code
+    name: "Ledger Code Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [ledger, ledger_code]
+    weight: 2.0
+    result: ledger_code
+    metadata:
+      strand: S1
+
+  # ============================================================================
+  # Role Group Mapping
+  # ============================================================================
+  - id: map_staff_role_group
+    name: "Staff Role Group Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [role_group, staff_role_group, rolegroup, category]
+    weight: 2.0
+    result: staff_role_group
+    metadata:
+      strand: S2
+
+  # ============================================================================
+  # Finance Code Fields (S2)
+  # ============================================================================
+  - id: map_gross_salary_fc
+    name: "Gross Salary Finance Code Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [gross_salary_fc, salary_finance_code, gross_fc]
+    weight: 2.0
+    result: gross_salary_finance_code
+    metadata:
+      strand: S2
+
+  - id: map_employers_ni_fc
+    name: "Employers NI Finance Code Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [ni_finance_code, employers_ni_fc, ni_fc]
+    weight: 2.0
+    result: employers_ni_finance_code
+    metadata:
+      strand: S2
+
+  - id: map_pension_fc
+    name: "Pension Finance Code Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [pension_finance_code, pension_fc, super_fc]
+    weight: 2.0
+    result: pension_finance_code
+    metadata:
+      strand: S2
+
+  # ============================================================================
+  # S1 Structure Fields - Extended
+  # ============================================================================
+  - id: map_local_authority
+    name: "Local Authority Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [local_authority, la_code, local_auth, localauthority]
+    weight: 2.0
+    result: local_authority_code
+    metadata:
+      strand: S1
+
+  - id: map_school_hub
+    name: "School Hub Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [school_hub, hub, hub_code, region]
+    weight: 2.0
+    result: school_hub_code
+    metadata:
+      strand: S1
+
+  - id: map_school_type
+    name: "School Type Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [school_type, type, phase, establishment_type]
+    weight: 1.5
+    result: school_type_code
+    metadata:
+      strand: S1
+
+  - id: map_urn
+    name: "URN Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [urn, unique_reference, dfe_number, establishment_number]
+    weight: 2.0
+    result: urn
+    metadata:
+      strand: S1
+
+  - id: map_grouping_code
+    name: "Grouping Code Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [grouping_code, dfe_code, bfr_code, grouping, coa_code]
+    weight: 2.0
+    result: grouping_code
+    metadata:
+      strand: S1
+
+  - id: map_custom_grouping
+    name: "Custom Grouping Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [custom_grouping, custom_group, trust_grouping, internal_grouping]
+    weight: 2.0
+    result: custom_grouping_code
+    metadata:
+      strand: S1
+
+  - id: map_ledger
+    name: "Ledger Code Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [ledger, ledger_code, gl_code, general_ledger]
+    weight: 2.0
+    result: ledger_code
+    metadata:
+      strand: S1
+
+  - id: map_nominal
+    name: "Nominal Code Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [nominal, nominal_code, account_code, finance_code]
+    weight: 2.0
+    result: finance_code
+    metadata:
+      strand: S1
+
+  - id: map_title
+    name: "Title/Description Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        # Removed bare 'name' to avoid matching first_name, last_name, etc.
+        # This rule is for generic title/description fields only
+        value: [_title, description, label, display_name, item_name]
+      - type: starts_with
+        value: [title_]
+    weight: 1.0
+    result: title
+    metadata:
+      strand: S1
+      description: "Maps generic title/description fields (low priority)"
+
+  # ============================================================================
+  # S3 Financial Planning Fields
+  # ============================================================================
+  - id: map_pupil_count
+    name: "Pupil Count Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [pupil_count, pupils, headcount, enrollment, enrolment, student_count]
+    weight: 2.0
+    result: pupil_count
+    metadata:
+      strand: S3
+
+  - id: map_year_code
+    name: "Year Code Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [year_code, year, financial_year, academic_year, fy]
+    weight: 2.0
+    result: year_code
+    metadata:
+      strand: S3
+
+  - id: map_budget_amount
+    name: "Budget Amount Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [amount, value, budget, total, sum]
+    weight: 1.5
+    result: amount
+    metadata:
+      strand: S3
+
+  - id: map_calculator_code
+    name: "Calculator Code Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [calculator, calc_code, formula_code, calculation]
+    weight: 2.0
+    result: calculator_code
+    metadata:
+      strand: S3
+
+  - id: map_month_profile
+    name: "Month Profile Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [month_profile, profile, spread, monthly]
+    weight: 2.0
+    result: month_profile
+    metadata:
+      strand: S3
+
+  - id: map_scenario_code
+    name: "Scenario Code Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [scenario, scenario_code, forecast, plan]
+    weight: 2.0
+    result: scenario_code
+    metadata:
+      strand: S3
+
+  - id: map_grant_type
+    name: "Grant Type Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [grant_type, funding_type, allocation_type]
+    weight: 2.0
+    result: grant_type
+    metadata:
+      strand: S3
+
+  - id: map_income_category
+    name: "Income Category Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [income_category, income_type, revenue_type]
+    weight: 2.0
+    result: income_category
+    metadata:
+      strand: S3
+
+  - id: map_expenditure_category
+    name: "Expenditure Category Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [expenditure_category, expense_category, cost_category, spend_type]
+    weight: 2.0
+    result: expenditure_category
+    metadata:
+      strand: S3
+
+  - id: map_balance_bf
+    name: "Brought Forward Balance Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [balance_bf, bf_balance, brought_forward, opening_balance]
+    weight: 2.0
+    result: balance_bf
+    metadata:
+      strand: S3
+
+  - id: map_balance_cf
+    name: "Carried Forward Balance Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [balance_cf, cf_balance, carried_forward, closing_balance]
+    weight: 2.0
+    result: balance_cf
+    metadata:
+      strand: S3
+
+  - id: map_key_stage
+    name: "Key Stage Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [key_stage, ks, phase, year_group]
+    weight: 2.0
+    result: key_stage
+    metadata:
+      strand: S3
+
+  - id: map_census_date
+    name: "Census Date Mapping"
+    category: column_mapping
+    conditions:
+      - type: contains
+        value: [census_date, census, count_date]
+    weight: 2.0
+    result: census_date
+    metadata:
+      strand: S3

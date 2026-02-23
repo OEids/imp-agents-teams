@@ -1,0 +1,1480 @@
+# Template Output Schemas
+# Defines exact column formats for each strand's output sheets
+# Based on official IMP Planner Standard Workbook API templates
+
+# ============================================================================
+# STRAND 1 - Structure Data
+# Template: AA_New - Strand 1 Standard Workbook API 1.200.xlsx
+# ============================================================================
+S1:
+  template_file: "AA_New - Strand 1 Standard Workbook API 1.200.xlsx"
+  template_version: "1.200"
+
+  sheets:
+    01_Funds:
+      description: "Fund/Funding source definitions"
+      columns:
+        - name: FundCode
+          required: true
+          max_length: 10
+          format: "uppercase"
+        - name: Title
+          required: true
+          max_length: 100
+        - name: FundEnabled
+          required: true
+          type: boolean
+          default: true
+
+    02_Activity:
+      description: "Activity code definitions"
+      columns:
+        - name: ActivityCode
+          required: true
+          max_length: 10
+          format: "uppercase"
+        - name: Title
+          required: true
+          max_length: 100
+        - name: ActivityEnabled
+          required: true
+          type: boolean
+          default: true
+
+    03_CustGroup:
+      description: "Custom grouping definitions"
+      columns:
+        - name: CustomGroupingCode
+          required: true
+          max_length: 10
+          format: "uppercase"
+        - name: Title
+          required: true
+          max_length: 100
+        - name: CustomGroupingEnabled
+          required: true
+          type: boolean
+          default: true
+
+    04_Ledger:
+      description: "Ledger definitions"
+      columns:
+        - name: LedgerCode
+          required: true
+          max_length: 10
+          format: "uppercase"
+        - name: Title
+          required: true
+          max_length: 100
+        - name: LedgerEnabled
+          required: true
+          type: boolean
+          default: true
+        - name: IsIELedger
+          required: true
+          type: boolean
+          default: false
+        - name: IsPurchaseLedger
+          required: true
+          type: boolean
+          default: false
+        - name: IsBankLedger
+          required: true
+          type: boolean
+          default: false
+
+    05_SchHub:
+      description: "School hub/region definitions"
+      columns:
+        - name: SchoolHubCode
+          required: true
+          max_length: 10
+          format: "uppercase"
+        - name: Title
+          required: true
+          max_length: 100
+        - name: SchoolHubEnabled
+          required: true
+          type: boolean
+          default: true
+
+    06_SchType:
+      description: "School type definitions"
+      columns:
+        - name: SchoolTypeCode
+          required: true
+          max_length: 10
+          format: "uppercase"
+        - name: Title
+          required: true
+          max_length: 100
+        - name: SchoolTypeEnabled
+          required: true
+          type: boolean
+          default: true
+
+    07_LocalAuth:
+      description: "Local authority definitions"
+      columns:
+        - name: SchoolLocalAuthorityCode
+          required: true
+          max_length: 10
+          format: "uppercase"
+        - name: Title
+          required: true
+          max_length: 100
+        - name: SchoolLocalAuthorityEnabled
+          required: true
+          type: boolean
+          default: true
+
+    08_Schools:
+      description: "School/Academy definitions"
+      columns:
+        - name: SchoolLocalAuthority
+          required: false
+          max_length: 10
+          description: "Reference to 07_LocalAuth"
+        - name: SchoolCode
+          required: true
+          max_length: 10
+          format: "uppercase"
+        - name: SchoolHub
+          required: false
+          max_length: 10
+          description: "Reference to 05_SchHub"
+        - name: SchoolType
+          required: false
+          max_length: 10
+          description: "Reference to 06_SchType"
+        - name: Title
+          required: true
+          max_length: 100
+        - name: LondonWeighting
+          required: false
+          type: string
+          valid_values: ["INNER", "OUTER", "FRINGE", "NONE", ""]
+        - name: UniqueReferenceNumber
+          required: false
+          max_length: 20
+          description: "URN/DfE number"
+        - name: TeachingHours
+          required: false
+          type: decimal
+          default: 32.5
+          description: "Standard teaching hours (varies by school)"
+        - name: SchoolEnabled
+          required: true
+          type: boolean
+          default: true
+
+    09_Depts:
+      description: "Department/Cost centre definitions"
+      columns:
+        - name: DepartmentCode
+          required: true
+          max_length: 10
+          format: "uppercase"
+        - name: Title
+          required: true
+          max_length: 100
+        - name: AvailableToAllSchools
+          required: true
+          type: boolean
+          default: true
+        - name: SchoolCodes
+          required: false
+          description: "Comma-separated school codes if not available to all"
+        - name: ActivityCode
+          required: false
+          max_length: 10
+          description: "Reference to 02_Activity"
+        - name: FundCode
+          required: false
+          max_length: 10
+          description: "Reference to 01_Funds"
+        - name: LedgerCode
+          required: false
+          max_length: 10
+          description: "Reference to 04_Ledger"
+        - name: DefaultFinanceCode
+          required: false
+          max_length: 10
+          description: "Default finance code for this department"
+        - name: DepartmentEnabled
+          required: true
+          type: boolean
+          default: true
+
+    10_FinanceCodes Budget:
+      description: "Finance/Nominal code definitions"
+      columns:
+        - name: FinanceCode
+          required: true
+          max_length: 10
+          format: "4_digits"
+          description: "4 digit code with leading zeros"
+        - name: Title
+          required: true
+          max_length: 100
+        - name: GroupingCode
+          required: false
+          max_length: 10
+          description: "DfE/BFR grouping code"
+        - name: CustomGrouping
+          required: false
+          max_length: 10
+          description: "Reference to 03_CustGroup"
+        - name: AvailableToAllSchools
+          required: true
+          type: boolean
+          default: true
+        - name: SchoolCodes
+          required: false
+          description: "Comma-separated school codes if not available to all"
+        - name: FinanceCodeTypeCode
+          required: true
+          valid_values: ["INC", "EXP", "BAL", "STAT"]
+        - name: LedgerCode
+          required: false
+          max_length: 10
+          description: "Reference to 04_Ledger"
+        - name: FinanceCodeEnabled
+          required: true
+          type: boolean
+          default: true
+        - name: BalanceToScenario
+          required: true
+          type: boolean
+          default: false
+        - name: IsBalanceSheet
+          required: false
+          type: boolean
+          default: false
+
+# ============================================================================
+# STRAND 2 - Staff Data
+# Template: AA_New - Strand 2 Standard Workbook API 1.101.xlsx
+# ============================================================================
+S2:
+  template_file: "AA_New - Strand 2 Standard Workbook API 1.101.xlsx"
+  template_version: "1.101"
+
+  sheets:
+    19_PayScales:
+      description: "Pay scale definitions"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: PayScaleCode
+          required: true
+          max_length: 20
+          format: "uppercase"
+        - name: PayScaleTitle
+          required: true
+          max_length: 100
+        - name: ServiceIncrementDateEnabled
+          required: true
+          type: boolean
+          default: true
+        - name: IncrementDate
+          required: false
+          type: date
+          format: "DD/MM/YYYY"
+          description: "Service increment date"
+        - name: IncreaseDate
+          required: false
+          type: date
+          format: "DD/MM/YYYY"
+          description: "Annual pay increase date"
+        - name: IncreasePercentage
+          required: false
+          type: decimal
+          default: 0
+        - name: AvailableToAllSchools
+          required: true
+          type: boolean
+          default: true
+        - name: SchoolCodes
+          required: false
+        - name: PayScaleEnabled
+          required: true
+          type: boolean
+          default: true
+        - name: ExcludeNationalInsurance
+          required: true
+          type: boolean
+          default: false
+        - name: ExcludePension
+          required: true
+          type: boolean
+          default: false
+
+    20_PayScalePoints:
+      description: "Pay scale point values"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: PayScaleCode
+          required: true
+          max_length: 20
+        - name: PayScaleTitle
+          required: true
+          max_length: 100
+        - name: PayScalePointCode
+          required: true
+          max_length: 20
+        - name: PayScalePointTitle
+          required: true
+          max_length: 100
+        - name: ScalePointNumber
+          required: true
+          type: integer
+        - name: Hourly
+          required: true
+          type: boolean
+          default: false
+        - name: PayScalePointEnabled
+          required: true
+          type: boolean
+          default: true
+        - name: RateDateFrom
+          required: true
+          type: date
+          format: "DD/MM/YYYY"
+        - name: RateDateTo
+          required: false
+          type: date
+          format: "DD/MM/YYYY"
+        - name: PayScaleRate
+          required: true
+          type: decimal
+          description: "Annual salary or hourly rate"
+
+    22_PayScaleGrades:
+      description: "Pay scale grade definitions (point ranges)"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: PayScaleGradeCode
+          required: true
+          max_length: 20
+        - name: Title
+          required: true
+          max_length: 100
+        - name: PayScaleCode
+          required: true
+          max_length: 20
+        - name: ScalePointNumberFrom
+          required: true
+          type: integer
+        - name: ScalePointNumberTo
+          required: true
+          type: integer
+        - name: AvailableToAllSchools
+          required: true
+          type: boolean
+          default: true
+        - name: SchoolCodes
+          required: false
+        - name: PayScaleGradeEnabled
+          required: true
+          type: boolean
+          default: true
+
+    16_AllowanceTypes:
+      description: "Allowance type definitions"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: AllowanceTypeCode
+          required: true
+          max_length: 20
+        - name: AllowanceTypeTitle
+          required: true
+          max_length: 100
+        - name: IncreaseDate
+          required: false
+          type: date
+        - name: IncreasePercentage
+          required: false
+          type: decimal
+          default: 0
+        - name: AvailableToAllSchools
+          required: true
+          type: boolean
+          default: true
+        - name: SchoolCodes
+          required: false
+        - name: ExcludePension
+          required: true
+          type: boolean
+          default: false
+        - name: ExcludeNI
+          required: true
+          type: boolean
+          default: false
+        - name: AllowanceTypeEnabled
+          required: true
+          type: boolean
+          default: true
+
+    17_AllowanceTypePoint:
+      description: "Allowance point values"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: AllowanceTypeCode
+          required: true
+          max_length: 20
+        - name: AllowanceTypeTitle
+          required: true
+          max_length: 100
+        - name: AllowancePointCode
+          required: true
+          max_length: 20
+        - name: AllowancePointTitle
+          required: true
+          max_length: 100
+        - name: AvailableToAllSchools
+          required: true
+          type: boolean
+          default: true
+        - name: SchoolCodes
+          required: false
+        - name: RateDateFrom
+          required: true
+          type: date
+        - name: RateDateTo
+          required: false
+          type: date
+        - name: AnnualRate
+          required: true
+          type: decimal
+        - name: AllowancePointEnabled
+          required: true
+          type: boolean
+          default: true
+
+    24_Pensions:
+      description: "Pension scheme definitions"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: PensionCode
+          required: true
+          max_length: 20
+        - name: Title
+          required: true
+          max_length: 100
+        - name: AvailableToAllSchools
+          required: true
+          type: boolean
+          default: true
+        - name: SchoolCodes
+          required: false
+        - name: PensionEnabled
+          required: true
+          type: boolean
+          default: true
+        - name: RateDateFrom
+          required: true
+          type: date
+        - name: RateDateTo
+          required: false
+          type: date
+        - name: PensionPercentage
+          required: true
+          type: decimal
+
+    23_EQWPatterns:
+      description: "Equated week pattern definitions"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: EquatedWeekPatternCode
+          required: true
+          max_length: 20
+        - name: EquatedWeekPatternTitle
+          required: true
+          max_length: 100
+        - name: AvailableToAllSchools
+          required: true
+          type: boolean
+          default: true
+        - name: SchoolCodes
+          required: false
+        - name: ServiceYearsFrom
+          required: true
+          type: integer
+          default: 0
+        - name: ServiceYearsTo
+          required: true
+          type: integer
+          default: 99
+        - name: EquatedWeeks
+          required: true
+          type: decimal
+        - name: FullTimeWeeks
+          required: true
+          type: decimal
+          default: 52.14
+        - name: EquatedWeekPatternEnabled
+          required: true
+          type: boolean
+          default: true
+
+    26_StfRoleGroup:
+      description: "Staff role group definitions with finance codes"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: StaffRoleGroupCode
+          required: true
+          max_length: 20
+        - name: Title
+          required: true
+          max_length: 100
+        - name: GrossSalaryFinanceCode
+          required: true
+          max_length: 10
+        - name: LeaveRebateFinanceCode
+          required: false
+          max_length: 10
+        - name: AllowanceTypesFinanceCode
+          required: false
+          max_length: 10
+        - name: AdjustmentsFinanceCode
+          required: false
+          max_length: 10
+        - name: MinimumWageTopupFinanceCode
+          required: false
+          max_length: 10
+        - name: LivingWageTopupFinanceCode
+          required: false
+          max_length: 10
+        - name: EmployersNiFinanceCode
+          required: true
+          max_length: 10
+        - name: PensionFinanceCode
+          required: true
+          max_length: 10
+        - name: OptOutPensionFinanceCode
+          required: false
+          max_length: 10
+        - name: OtherSalaryCostsFinanceCode
+          required: false
+          max_length: 10
+        - name: WeeklyFteFinanceCode
+          required: false
+          max_length: 10
+        - name: AnnualFteFinanceCode
+          required: false
+          max_length: 10
+        - name: WeeklyFteLeaveAdjustmentFinanceCode
+          required: false
+          max_length: 10
+        - name: AnnualFteLeaveAdjustmentFinanceCode
+          required: false
+          max_length: 10
+        - name: TeachingRoleGroup
+          required: true
+          type: boolean
+        - name: StaffRoleGroupEnabled
+          required: true
+          type: boolean
+          default: true
+        - name: IncrementCount
+          required: false
+          type: integer
+
+    27_StfRole:
+      description: "Staff role definitions"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: StaffRoleGroupCode
+          required: true
+          max_length: 20
+        - name: StaffRoleCode
+          required: true
+          max_length: 20
+        - name: Title
+          required: true
+          max_length: 100
+        - name: PayScaleCode
+          required: true
+          max_length: 20
+        - name: FullTimeHoursPerWeek
+          required: true
+          type: decimal
+        - name: AvailableToAllSchools
+          required: true
+          type: boolean
+          default: true
+        - name: SchoolCodes
+          required: false
+        - name: MonthsServiceBeforeIncrement
+          required: false
+          type: integer
+          default: 12
+        - name: DaysServiceBeforeIncrement
+          required: false
+          type: integer
+          default: 0
+        - name: StaffRoleEnabled
+          required: true
+          type: boolean
+          default: true
+        - name: IsFinanceRole
+          required: true
+          type: boolean
+          default: false
+
+    25_StaffMembers:
+      description: "Staff member definitions"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: StaffMemberCode
+          required: true
+          max_length: 20
+          description: "Usually payroll number"
+        - name: FirstName
+          required: true
+          max_length: 50
+        - name: LastName
+          required: true
+          max_length: 50
+        - name: Title
+          required: false
+          max_length: 10
+          description: "Mr/Mrs/Ms etc"
+        - name: ServiceStartDate
+          required: true
+          type: date
+        - name: ServiceEndDate
+          required: false
+          type: date
+        - name: DateOfBirth
+          required: false
+          type: date
+        - name: Apprenticeship
+          required: true
+          type: boolean
+          default: false
+        - name: PensionOptOut
+          required: true
+          type: boolean
+          default: false
+        - name: AvailableToAllSchools
+          required: true
+          type: boolean
+          default: false
+        - name: SchoolCodes
+          required: false
+        - name: StaffMemberEnabled
+          required: true
+          type: boolean
+          default: true
+        - name: PayrollLocation
+          required: false
+          max_length: 20
+        - name: GenderCode
+          required: false
+          max_length: 10
+        - name: Casual
+          required: true
+          type: boolean
+          default: false
+
+    28_ContractsTeachFTE:
+      description: "Teaching contracts (FTE-based)"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: SchoolCode
+          required: true
+          max_length: 10
+        - name: StaffMemberCode
+          required: true
+          max_length: 20
+        - name: Reference
+          required: true
+          max_length: 20
+          description: "Unique contract reference"
+        - name: Title
+          required: true
+          max_length: 100
+          description: "Job title"
+        - name: StaffRoleCode
+          required: true
+          max_length: 20
+        - name: PayScaleCode
+          required: true
+          max_length: 20
+        - name: PayScaleGradeCode
+          required: false
+          max_length: 20
+        - name: PayScalePointCode
+          required: true
+          max_length: 20
+        - name: DepartmentCode
+          required: true
+          max_length: 10
+        - name: FundCode
+          required: false
+          max_length: 10
+        - name: PensionCode
+          required: true
+          max_length: 20
+        - name: EquatedWeekPatternCode
+          required: false
+          max_length: 20
+        - name: DateFrom
+          required: true
+          type: date
+        - name: DateTo
+          required: false
+          type: date
+        - name: WeeklyFteOrHpw
+          required: true
+          type: decimal
+          description: "FTE (0-1) for teaching staff"
+        - name: MatEditOnly
+          required: true
+          type: boolean
+          default: false
+        - name: NoIncrement
+          required: true
+          type: boolean
+          default: false
+        - name: ContractTypeCode
+          required: true
+          max_length: 20
+        - name: Notes
+          required: false
+          max_length: 500
+
+    29_ContractsSupportHours:
+      description: "Support staff contracts (hours-based)"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: SchoolCode
+          required: true
+          max_length: 10
+        - name: StaffMemberCode
+          required: true
+          max_length: 20
+        - name: Reference
+          required: true
+          max_length: 20
+        - name: Title
+          required: true
+          max_length: 100
+        - name: StaffRoleCode
+          required: true
+          max_length: 20
+        - name: PayScaleCode
+          required: true
+          max_length: 20
+        - name: PayScaleGradeCode
+          required: false
+          max_length: 20
+        - name: PayScalePointCode
+          required: true
+          max_length: 20
+        - name: DepartmentCode
+          required: true
+          max_length: 10
+        - name: FundCode
+          required: false
+          max_length: 10
+        - name: PensionCode
+          required: true
+          max_length: 20
+        - name: EquatedWeekPatternCode
+          required: false
+          max_length: 20
+        - name: DateFrom
+          required: true
+          type: date
+        - name: DateTo
+          required: false
+          type: date
+        - name: WeeklyFteOrHpw
+          required: true
+          type: decimal
+          description: "Hours per week for support staff"
+        - name: MatEditOnly
+          required: true
+          type: boolean
+          default: false
+        - name: NoIncrement
+          required: true
+          type: boolean
+          default: false
+        - name: ContractTypeCode
+          required: true
+          max_length: 20
+        - name: Notes
+          required: false
+          max_length: 500
+
+    34_ContractAllowances:
+      description: "Contract allowance assignments"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: SchoolCode
+          required: true
+          max_length: 10
+        - name: StaffMemberCode
+          required: true
+          max_length: 20
+        - name: ContractReference
+          required: true
+          max_length: 20
+        - name: StaffRoleCode
+          required: true
+          max_length: 20
+        - name: DepartmentCode
+          required: true
+          max_length: 10
+        - name: ContractDateFrom
+          required: true
+          type: date
+        - name: ContractDateTo
+          required: false
+          type: date
+        - name: AllowanceCode
+          required: true
+          max_length: 20
+        - name: AllowancePointCode
+          required: true
+          max_length: 20
+        - name: AllowanceDateFrom
+          required: true
+          type: date
+        - name: AllowanceDateTo
+          required: false
+          type: date
+        - name: IgnoreFte
+          required: true
+          type: boolean
+          default: false
+        - name: Notes
+          required: false
+          max_length: 500
+
+    30_LeaveTypes:
+      description: "Leave type definitions"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: LeaveTypeCode
+          required: true
+          max_length: 20
+        - name: LeaveTypeTitle
+          required: true
+          max_length: 100
+        - name: AvailableToAllSchools
+          required: true
+          type: boolean
+          default: true
+        - name: SchoolCodes
+          required: false
+        - name: RebatePercentage
+          required: true
+          type: decimal
+        - name: LeaveTypeEnabled
+          required: true
+          type: boolean
+          default: true
+        - name: UseGrossValueForPension
+          required: true
+          type: boolean
+          default: false
+        - name: WeeksFrom
+          required: false
+          type: integer
+        - name: WeeksTo
+          required: false
+          type: integer
+        - name: StatutoryPayPercentage
+          required: false
+          type: decimal
+        - name: OtherPayPercentage
+          required: false
+          type: decimal
+        - name: MinimumStatutoryWeeklyValue
+          required: false
+          type: decimal
+        - name: MaximumStatutoryWeeklyValue
+          required: false
+          type: decimal
+        - name: TopUpToPercentage
+          required: false
+          type: decimal
+
+    32_StaffMemberLeaves:
+      description: "Staff member leave records"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: StaffMemberCode
+          required: true
+          max_length: 20
+        - name: LeaveTypeCode
+          required: true
+          max_length: 20
+        - name: DateFrom
+          required: true
+          type: date
+        - name: DateTo
+          required: false
+          type: date
+        - name: BaseWeeklyEarnings
+          required: false
+          type: decimal
+        - name: PensionOptOut
+          required: true
+          type: boolean
+          default: false
+
+# ============================================================================
+# STRAND 3 - Financial Planning Data
+# Template: AA_New - Strand 3 Standard Workbook API 2.100.xlsx
+# ============================================================================
+S3:
+  template_file: "AA_New - Strand 3 Standard Workbook API 2.100.xlsx"
+  template_version: "2.100"
+
+  sheets:
+    14_Calculators:
+      description: "Calculator definitions for automatic calculations"
+      columns:
+        - name: CalculatorCode
+          required: true
+          max_length: 20
+          format: "uppercase"
+        - name: Title
+          required: true
+          max_length: 100
+        - name: SourceSelectAllSchools
+          required: true
+          type: boolean
+          default: true
+        - name: SourceSelectAllFunds
+          required: true
+          type: boolean
+          default: true
+        - name: SourceSelectAllDepartments
+          required: true
+          type: boolean
+          default: true
+        - name: SourceDepartmentsAcrossLedgers
+          required: true
+          type: boolean
+          default: false
+        - name: SourceIncludeScenarioRow
+          required: true
+          type: boolean
+          default: false
+        - name: SourceUseLastYear
+          required: true
+          type: boolean
+          default: false
+        - name: SourceSchoolLocalAuthority
+          required: false
+        - name: SourceConstant
+          required: false
+          type: decimal
+        - name: SourceSchoolHubSelectedScenarioRow
+          required: false
+        - name: SourceSchoolTypeSelectedScenarioRow
+          required: false
+        - name: DivisorSelectAllSchools
+          required: true
+          type: boolean
+          default: true
+        - name: DivisorSelectAllFunds
+          required: true
+          type: boolean
+          default: true
+        - name: DivisorSelectAllDepartments
+          required: true
+          type: boolean
+          default: true
+        - name: DivisorDepartmentsAcrossLedgers
+          required: true
+          type: boolean
+          default: false
+        - name: DivisorIncludeScenarioRow
+          required: true
+          type: boolean
+          default: false
+        - name: DivisorUseLastYear
+          required: true
+          type: boolean
+          default: false
+        - name: DivisorSchoolLocalAuthority
+          required: false
+        - name: DivisorConstant
+          required: false
+          type: decimal
+        - name: DivisorSchoolHubSelectedScenarioRow
+          required: false
+        - name: DivisorSchoolTypeSelectedScenarioRow
+          required: false
+        - name: MultiplierSelectAllSchools
+          required: true
+          type: boolean
+          default: true
+        - name: MultiplierSelectAllFunds
+          required: true
+          type: boolean
+          default: true
+        - name: MultiplierSelectAllDepartments
+          required: true
+          type: boolean
+          default: true
+        - name: MultiplierDepartmentsAcrossLedgers
+          required: true
+          type: boolean
+          default: false
+        - name: MultiplierIncludeScenarioRow
+          required: true
+          type: boolean
+          default: false
+        - name: MultiplierUseLastYear
+          required: true
+          type: boolean
+          default: false
+        - name: MultiplierSchoolLocalAuthority
+          required: false
+        - name: MultiplierConstant
+          required: false
+          type: decimal
+        - name: MultiplierSchoolHubSelectedScenarioRow
+          required: false
+        - name: MultiplierSchoolTypeSelectedScenarioRow
+          required: false
+        - name: CalculatorEnabled
+          required: true
+          type: boolean
+          default: true
+        - name: CalculatorLockRows
+          required: true
+          type: boolean
+          default: false
+        - name: CalculatorTypeCode
+          required: true
+          valid_values: ["STAT", "PUPIL", "FUND", "BUDGET"]
+
+    15_MonthProfiles:
+      description: "Monthly spread profiles"
+      columns:
+        - name: Code
+          required: true
+          max_length: 20
+          format: "uppercase"
+        - name: Title
+          required: true
+          max_length: 100
+        - name: Period01Percentage
+          required: true
+          type: decimal
+        - name: Period02Percentage
+          required: true
+          type: decimal
+        - name: Period03Percentage
+          required: true
+          type: decimal
+        - name: Period04Percentage
+          required: true
+          type: decimal
+        - name: Period05Percentage
+          required: true
+          type: decimal
+        - name: Period06Percentage
+          required: true
+          type: decimal
+        - name: Period07Percentage
+          required: true
+          type: decimal
+        - name: Period08Percentage
+          required: true
+          type: decimal
+        - name: Period09Percentage
+          required: true
+          type: decimal
+        - name: Period10Percentage
+          required: true
+          type: decimal
+        - name: Period11Percentage
+          required: true
+          type: decimal
+        - name: Period12Percentage
+          required: true
+          type: decimal
+        - name: Enabled
+          required: true
+          type: boolean
+          default: true
+
+    35_ScenarioRows:
+      description: "Scenario row definitions"
+      columns:
+        - name: Tab
+          required: true
+          valid_values: ["Pupils", "Statistics", "Funding", "Income", "Expenditure", "BF Balances"]
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: FinanceCode
+          required: true
+          max_length: 10
+        - name: SchoolCode
+          required: true
+          max_length: 10
+        - name: LedgerCode
+          required: true
+          max_length: 10
+        - name: DepartmentCode
+          required: true
+          max_length: 10
+        - name: FundCode
+          required: false
+          max_length: 10
+        - name: CalculatorCode
+          required: false
+          max_length: 20
+        - name: MonthProfileCode
+          required: false
+          max_length: 20
+        - name: StaffMemberCode
+          required: false
+          max_length: 20
+        - name: StaffRoleCode
+          required: false
+          max_length: 20
+        - name: ContractReference
+          required: false
+          max_length: 20
+        - name: ContractDateFrom
+          required: false
+          type: date
+        - name: ContractDateTo
+          required: false
+          type: date
+        - name: Description
+          required: true
+          max_length: 200
+        - name: Notes
+          required: false
+          max_length: 500
+        - name: MatEditOnly
+          required: true
+          type: boolean
+          default: false
+
+    36_ScenarioYearValues:
+      description: "Scenario year values"
+      columns:
+        - name: Tab
+          required: true
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: FinanceCode
+          required: true
+          max_length: 10
+        - name: SchoolCode
+          required: true
+          max_length: 10
+        - name: LedgerCode
+          required: true
+          max_length: 10
+        - name: DepartmentCode
+          required: true
+          max_length: 10
+        - name: Description
+          required: true
+          max_length: 200
+        - name: YearNotes
+          required: false
+          max_length: 500
+        - name: FinancialYearCode
+          required: true
+          format: "YYYY/YY"
+          description: "e.g., 2025/26"
+        - name: Calculated
+          required: true
+          type: boolean
+          default: false
+        - name: YearValue
+          required: true
+          type: decimal
+
+    37_Monthly Values:
+      description: "Monthly value breakdown"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: FinanceCode
+          required: true
+          max_length: 10
+        - name: SchoolCode
+          required: true
+          max_length: 10
+        - name: LedgerCode
+          required: true
+          max_length: 10
+        - name: DepartmentCode
+          required: true
+          max_length: 10
+        - name: Description
+          required: true
+          max_length: 200
+        - name: FinancialYearCode
+          required: true
+        - name: Calculated
+          required: true
+          type: boolean
+          default: false
+        - name: FinancialMonthIndexNumber
+          required: true
+          type: integer
+          min: 1
+          max: 12
+        - name: MonthValue
+          required: true
+          type: decimal
+
+    Pupils:
+      description: "Pupil number forecasts"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: FinanceCode
+          required: true
+          max_length: 10
+        - name: SchoolCode
+          required: true
+          max_length: 10
+        - name: LedgerCode
+          required: true
+          max_length: 10
+        - name: DepartmentCode
+          required: true
+          max_length: 10
+        - name: FundCode
+          required: false
+          max_length: 10
+        - name: CalculatorCode
+          required: false
+          max_length: 20
+        - name: MonthProfileCode
+          required: false
+          max_length: 20
+        - name: Description
+          required: true
+          max_length: 200
+        - name: Notes
+          required: false
+          max_length: 500
+        - name: YearNotes
+          required: false
+          max_length: 500
+        - name: MatEditOnly
+          required: true
+          type: boolean
+          default: false
+        - name: FinancialYearCode
+          required: true
+        - name: Calculated
+          required: true
+          type: boolean
+          default: false
+        - name: YearValue
+          required: true
+          type: decimal
+
+    Funding:
+      description: "Funding allocations"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: FinanceCode
+          required: true
+        - name: SchoolCode
+          required: true
+        - name: LedgerCode
+          required: true
+        - name: DepartmentCode
+          required: true
+        - name: FundCode
+          required: false
+        - name: MonthProfileCode
+          required: false
+        - name: CalculatorCode
+          required: false
+        - name: Description
+          required: true
+        - name: Notes
+          required: false
+        - name: YearNotes
+          required: false
+        - name: MatEditOnly
+          required: true
+          type: boolean
+          default: false
+        - name: FinancialYearCode
+          required: true
+        - name: Calculated
+          required: true
+          type: boolean
+          default: false
+        - name: YearValue
+          required: true
+          type: decimal
+
+    Income:
+      description: "Income lines"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: FinanceCode
+          required: true
+        - name: SchoolCode
+          required: true
+        - name: LedgerCode
+          required: true
+        - name: DepartmentCode
+          required: true
+        - name: FundCode
+          required: false
+        - name: CalculatorCode
+          required: false
+        - name: MonthProfileCode
+          required: false
+        - name: Description
+          required: true
+        - name: Notes
+          required: false
+        - name: YearNotes
+          required: false
+        - name: MatEditOnly
+          required: true
+          type: boolean
+          default: false
+        - name: FinancialYearCode
+          required: true
+        - name: Calculated
+          required: true
+          type: boolean
+          default: false
+        - name: YearValue
+          required: true
+          type: decimal
+
+    Expenditure:
+      description: "Expenditure lines"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: FinanceCode
+          required: true
+        - name: SchoolCode
+          required: true
+        - name: LedgerCode
+          required: true
+        - name: DepartmentCode
+          required: true
+        - name: FundCode
+          required: false
+        - name: CalculatorCode
+          required: false
+        - name: MonthProfileCode
+          required: false
+        - name: Description
+          required: true
+        - name: Notes
+          required: false
+        - name: YearNotes
+          required: false
+        - name: MatEditOnly
+          required: true
+          type: boolean
+          default: false
+        - name: FinancialYearCode
+          required: true
+        - name: Calculated
+          required: true
+          type: boolean
+          default: false
+        - name: YearValue
+          required: true
+          type: decimal
+
+    BF Balances:
+      description: "Brought forward balances"
+      columns:
+        - name: ScenarioCode
+          required: true
+          default: "MASTER"
+        - name: FinanceCode
+          required: true
+        - name: SchoolCode
+          required: true
+        - name: LedgerCode
+          required: true
+        - name: DepartmentCode
+          required: true
+        - name: FundCode
+          required: false
+        - name: CalculatorCode
+          required: false
+        - name: MonthProfileCode
+          required: false
+        - name: Description
+          required: true
+        - name: Notes
+          required: false
+        - name: YearNotes
+          required: false
+        - name: MatEditOnly
+          required: true
+          type: boolean
+          default: false
+        - name: FinancialYearCode
+          required: true
+        - name: Calculated
+          required: true
+          type: boolean
+          default: false
+        - name: YearValue
+          required: true
+          type: decimal

@@ -1,0 +1,648 @@
+# Classification Rules
+# Replaces hardcoded is_teaching_role(), is_support_role() and other classification functions
+
+rules:
+  # ============================================================================
+  # Role Type Classification (Teaching vs Support)
+  # ============================================================================
+  - id: classify_teaching_teacher
+    name: "Teaching Role - Teacher"
+    category: classification_role_type
+    condition: "contains:teacher,head teacher,headteacher,deputy head"
+    weight: 3.0
+    confidence_boost: 0.2
+    result: teaching
+    metadata:
+      role_category: qualified_teacher
+
+  - id: classify_teaching_leadership
+    name: "Teaching Role - Leadership"
+    category: classification_role_type
+    condition: "contains:principal,assistant head,vice principal,head of"
+    weight: 3.0
+    confidence_boost: 0.2
+    result: teaching
+    metadata:
+      role_category: leadership
+
+  - id: classify_teaching_subject
+    name: "Teaching Role - Subject Lead"
+    category: classification_role_type
+    condition: "contains:subject lead,curriculum lead,head of department,hod"
+    weight: 2.5
+    result: teaching
+    metadata:
+      role_category: middle_leadership
+
+  - id: classify_teaching_senco
+    name: "Teaching Role - SENCO"
+    category: classification_role_type
+    condition: "contains:senco,sen coordinator,inclusion lead"
+    weight: 2.5
+    result: teaching
+    metadata:
+      role_category: qualified_teacher
+
+  - id: classify_teaching_nqt
+    name: "Teaching Role - ECT/NQT"
+    category: classification_role_type
+    condition: "contains:ect,nqt,early career,newly qualified"
+    weight: 2.5
+    result: teaching
+    metadata:
+      role_category: early_career
+
+  # ============================================================================
+  # Support Staff Classification
+  # ============================================================================
+  - id: classify_support_admin
+    name: "Support Role - Admin"
+    category: classification_role_type
+    condition: "contains:administrator,admin,receptionist,office,secretary"
+    weight: 2.5
+    result: support
+    metadata:
+      role_category: administrative
+
+  - id: classify_support_ta
+    name: "Support Role - Teaching Assistant"
+    category: classification_role_type
+    condition: "contains:teaching assistant,ta,classroom assistant,learning support"
+    weight: 2.5
+    result: support
+    metadata:
+      role_category: teaching_assistant
+
+  - id: classify_support_hlta
+    name: "Support Role - HLTA"
+    category: classification_role_type
+    condition: "contains:hlta,higher level teaching assistant"
+    weight: 2.5
+    result: support
+    metadata:
+      role_category: hlta
+
+  - id: classify_support_caretaker
+    name: "Support Role - Site Staff"
+    category: classification_role_type
+    condition: "contains:caretaker,site manager,premises,groundskeeper,cleaner"
+    weight: 2.5
+    result: support
+    metadata:
+      role_category: site_staff
+
+  - id: classify_support_finance
+    name: "Support Role - Finance"
+    category: classification_role_type
+    condition: "contains:finance officer,finance manager,accountant,bursar,payroll"
+    weight: 2.5
+    result: support
+    metadata:
+      role_category: finance
+
+  - id: classify_support_it
+    name: "Support Role - IT"
+    category: classification_role_type
+    condition: "contains:it technician,it manager,network,systems,ict"
+    weight: 2.5
+    result: support
+    metadata:
+      role_category: it
+
+  - id: classify_support_midday
+    name: "Support Role - Midday"
+    category: classification_role_type
+    condition: "contains:midday,lunchtime,mealtime,msa"
+    weight: 2.5
+    result: support
+    metadata:
+      role_category: midday
+
+  - id: classify_support_welfare
+    name: "Support Role - Welfare"
+    category: classification_role_type
+    condition: "contains:welfare,pastoral,family liaison,attendance"
+    weight: 2.5
+    result: support
+    metadata:
+      role_category: welfare
+
+  - id: classify_support_technician
+    name: "Support Role - Technician"
+    category: classification_role_type
+    condition: "contains:technician,science tech,lab,food tech"
+    weight: 2.5
+    result: support
+    metadata:
+      role_category: technician
+
+  - id: classify_support_exams
+    name: "Support Role - Exams"
+    category: classification_role_type
+    condition: "contains:exams,examination,invigilator"
+    weight: 2.5
+    result: support
+    metadata:
+      role_category: exams
+
+  # ============================================================================
+  # Pay Scale Classification
+  # ============================================================================
+  - id: classify_scale_mps
+    name: "Pay Scale - MPS"
+    category: classification_pay_scale
+    condition: "contains:mps,main pay,main scale,m1,m2,m3,m4,m5,m6"
+    weight: 2.5
+    result: MPS
+    metadata:
+      scale_type: teaching
+
+  - id: classify_scale_ups
+    name: "Pay Scale - UPS"
+    category: classification_pay_scale
+    condition: "contains:ups,upper pay,upper scale,u1,u2,u3"
+    weight: 2.5
+    result: UPS
+    metadata:
+      scale_type: teaching
+
+  - id: classify_scale_leadership
+    name: "Pay Scale - Leadership"
+    category: classification_pay_scale
+    condition: "contains:leadership,head,leader,l1,l2,l3,l4,l5,l6,l7,l8,l9,l10"
+    weight: 2.5
+    result: leadership
+    metadata:
+      scale_type: teaching
+
+  - id: classify_scale_njc
+    name: "Pay Scale - NJC"
+    category: classification_pay_scale
+    condition: "contains:njc,scp,spine,national joint"
+    weight: 2.5
+    result: NJC
+    metadata:
+      scale_type: support
+
+  - id: classify_scale_unqualified
+    name: "Pay Scale - Unqualified Teacher"
+    category: classification_pay_scale
+    condition: "contains:unqualified,unq"
+    weight: 2.5
+    result: unqualified
+    metadata:
+      scale_type: teaching
+
+  # ============================================================================
+  # Pension Scheme Classification
+  # ============================================================================
+  - id: classify_pension_tps
+    name: "Pension - TPS"
+    category: classification_pension
+    condition: "contains:tps,teachers pension,teachers' pension"
+    weight: 2.5
+    result: TPS
+    metadata:
+      pension_type: teaching
+
+  - id: classify_pension_lgps
+    name: "Pension - LGPS"
+    category: classification_pension
+    condition: "contains:lgps,local government pension"
+    weight: 2.5
+    result: LGPS_IMP
+    metadata:
+      pension_type: support
+
+  - id: classify_pension_opt_out
+    name: "Pension - Opt Out"
+    category: classification_pension
+    condition: "contains:opt out,opted out,no pension,0%"
+    weight: 2.0
+    result: "0%"
+    metadata:
+      pension_type: none
+
+  # ============================================================================
+  # Contract Type Classification
+  # ============================================================================
+  - id: classify_contract_permanent
+    name: "Contract - Permanent"
+    category: classification_contract_type
+    condition: "contains:permanent,perm,open ended,indefinite"
+    weight: 2.5
+    result: permanent
+    metadata:
+      contract_category: standard
+
+  - id: classify_contract_fixed
+    name: "Contract - Fixed Term"
+    category: classification_contract_type
+    condition: "contains:fixed,fixed term,temporary,temp,ftc"
+    weight: 2.5
+    result: fixed_term
+    metadata:
+      contract_category: temporary
+
+  - id: classify_contract_casual
+    name: "Contract - Casual"
+    category: classification_contract_type
+    condition: "contains:casual,zero hour,0 hour,as required"
+    weight: 2.5
+    result: casual
+    metadata:
+      contract_category: casual
+
+  - id: classify_contract_agency
+    name: "Contract - Agency"
+    category: classification_contract_type
+    condition: "contains:agency,supply,cover"
+    weight: 2.5
+    result: agency
+    metadata:
+      contract_category: external
+
+  # ============================================================================
+  # S1 Finance Code Type Classification
+  # ============================================================================
+  - id: classify_fc_income
+    name: "Finance Code - Income"
+    category: classification_finance_code_type
+    condition: "contains:income,grant,funding,revenue,donation,sponsorship"
+    weight: 2.5
+    result: income
+    metadata:
+      code_range: "5xxxxx"
+
+  - id: classify_fc_staff
+    name: "Finance Code - Staff Costs"
+    category: classification_finance_code_type
+    condition: "contains:salary,salaries,wage,pension,ni ,national insurance"
+    weight: 2.5
+    result: staff_costs
+    metadata:
+      code_range: "6xxxxx"
+
+  - id: classify_fc_premises
+    name: "Finance Code - Premises"
+    category: classification_finance_code_type
+    condition: "contains:premises,building,maintenance,repair,cleaning,utilities,rates"
+    weight: 2.5
+    result: premises
+    metadata:
+      code_range: "7xxxxx"
+
+  - id: classify_fc_supplies
+    name: "Finance Code - Supplies"
+    category: classification_finance_code_type
+    condition: "contains:supplies,equipment,resources,stationery,books,ict"
+    weight: 2.5
+    result: supplies
+    metadata:
+      code_range: "8xxxxx"
+
+  - id: classify_fc_services
+    name: "Finance Code - Services"
+    category: classification_finance_code_type
+    condition: "contains:service,professional,audit,legal,consultancy"
+    weight: 2.5
+    result: services
+    metadata:
+      code_range: "8xxxxx"
+
+  # ============================================================================
+  # S1 School Type Classification
+  # ============================================================================
+  - id: classify_school_primary
+    name: "School Type - Primary"
+    category: classification_school_type
+    condition: "contains:primary,infant,junior,first school"
+    weight: 2.5
+    result: primary
+    metadata:
+      age_range: "4-11"
+
+  - id: classify_school_secondary
+    name: "School Type - Secondary"
+    category: classification_school_type
+    condition: "contains:secondary,high school,grammar"
+    weight: 2.5
+    result: secondary
+    metadata:
+      age_range: "11-16"
+
+  - id: classify_school_allthrough
+    name: "School Type - All-Through"
+    category: classification_school_type
+    condition: "contains:all-through,all through,through school"
+    weight: 2.5
+    result: all_through
+    metadata:
+      age_range: "4-16"
+
+  - id: classify_school_sixthform
+    name: "School Type - Sixth Form"
+    category: classification_school_type
+    condition: "contains:sixth form,6th form,post-16,college"
+    weight: 2.5
+    result: sixth_form
+    metadata:
+      age_range: "16-18"
+
+  - id: classify_school_special
+    name: "School Type - Special"
+    category: classification_school_type
+    condition: "contains:special,sen,specialist,alternative provision"
+    weight: 2.5
+    result: special
+    metadata:
+      age_range: "varies"
+
+  # ============================================================================
+  # S1 London Weighting Classification
+  # ============================================================================
+  - id: classify_lw_inner
+    name: "London Weighting - Inner"
+    category: classification_london_weighting
+    condition: "contains:inner london,city of london,westminster,camden,islington,hackney,tower hamlets,greenwich,lewisham,southwark,lambeth,wandsworth"
+    weight: 2.5
+    result: Inner London
+    metadata:
+      weighting_factor: 1.25
+
+  - id: classify_lw_outer
+    name: "London Weighting - Outer"
+    category: classification_london_weighting
+    condition: "contains:outer london,barnet,brent,ealing,enfield,haringey,harrow,hillingdon,hounslow,kingston,merton,redbridge,richmond,sutton,waltham forest"
+    weight: 2.5
+    result: Outer London
+    metadata:
+      weighting_factor: 1.15
+
+  - id: classify_lw_fringe
+    name: "London Weighting - Fringe"
+    category: classification_london_weighting
+    condition: "contains:fringe,hertfordshire,essex,surrey,buckinghamshire,berkshire"
+    weight: 2.5
+    result: Fringe
+    metadata:
+      weighting_factor: 1.05
+
+  - id: classify_lw_england
+    name: "London Weighting - Rest of England"
+    category: classification_london_weighting
+    condition: "contains:england,wales,rest of england"
+    weight: 1.0
+    result: England & Wales
+    metadata:
+      weighting_factor: 1.0
+
+  # ============================================================================
+  # S3 Budget Type Classification (Income vs Expenditure)
+  # ============================================================================
+  - id: classify_budget_income_gag
+    name: "Budget - GAG Income"
+    category: classification_budget_type
+    condition: "contains:gag,general annual grant,esfa"
+    weight: 3.0
+    result: income
+    metadata:
+      budget_category: funding
+
+  - id: classify_budget_income_grants
+    name: "Budget - Grant Income"
+    category: classification_budget_type
+    condition: "contains:grant,funding,allocation,pupil premium,uifsm,pe grant,dfc,sca"
+    weight: 2.5
+    result: income
+    metadata:
+      budget_category: grants
+
+  - id: classify_budget_income_other
+    name: "Budget - Other Income"
+    category: classification_budget_type
+    condition: "contains:income,revenue,receipt,donation,lettings,catering income"
+    weight: 2.0
+    result: income
+    metadata:
+      budget_category: other_income
+
+  - id: classify_budget_exp_staff
+    name: "Budget - Staff Expenditure"
+    category: classification_budget_type
+    condition: "contains:salary,salaries,wage,pension,ni cost,staff cost"
+    weight: 2.5
+    result: expenditure
+    metadata:
+      budget_category: staffing
+
+  - id: classify_budget_exp_premises
+    name: "Budget - Premises Expenditure"
+    category: classification_budget_type
+    condition: "contains:premises,building,maintenance,repair,cleaning,utilities,rates,rent"
+    weight: 2.5
+    result: expenditure
+    metadata:
+      budget_category: premises
+
+  - id: classify_budget_exp_supplies
+    name: "Budget - Supplies Expenditure"
+    category: classification_budget_type
+    condition: "contains:supplies,equipment,resources,stationery,books,ict,computer"
+    weight: 2.5
+    result: expenditure
+    metadata:
+      budget_category: supplies
+
+  - id: classify_budget_exp_services
+    name: "Budget - Services Expenditure"
+    category: classification_budget_type
+    condition: "contains:service,professional,audit,legal,consultancy,contract"
+    weight: 2.5
+    result: expenditure
+    metadata:
+      budget_category: services
+
+  - id: classify_budget_exp_other
+    name: "Budget - Other Expenditure"
+    category: classification_budget_type
+    condition: "contains:expenditure,expense,cost,spend"
+    weight: 1.5
+    result: expenditure
+    metadata:
+      budget_category: other
+
+  # ============================================================================
+  # S3 Grant Type Classification
+  # ============================================================================
+  - id: classify_grant_dfc
+    name: "Grant - DFC"
+    category: classification_grant_type
+    condition: "contains:dfc,devolved formula capital"
+    weight: 3.0
+    result: DFC
+    metadata:
+      description: "Devolved Formula Capital"
+
+  - id: classify_grant_sca
+    name: "Grant - SCA"
+    category: classification_grant_type
+    condition: "contains:sca,school condition allocation"
+    weight: 3.0
+    result: SCA
+    metadata:
+      description: "School Condition Allocation"
+
+  - id: classify_grant_pe
+    name: "Grant - PE"
+    category: classification_grant_type
+    condition: "contains:pe grant,pe sport,sport premium,physical education"
+    weight: 3.0
+    result: PE
+    metadata:
+      description: "PE and Sport Premium"
+
+  - id: classify_grant_uifsm
+    name: "Grant - UIFSM"
+    category: classification_grant_type
+    condition: "contains:uifsm,universal infant,free school meal"
+    weight: 3.0
+    result: UIFSM
+    metadata:
+      description: "Universal Infant Free School Meals"
+
+  - id: classify_grant_pp
+    name: "Grant - Pupil Premium"
+    category: classification_grant_type
+    condition: "contains:pupil premium,pp,disadvantaged"
+    weight: 3.0
+    result: PP
+    metadata:
+      description: "Pupil Premium"
+
+  - id: classify_grant_recovery
+    name: "Grant - Recovery Premium"
+    category: classification_grant_type
+    condition: "contains:recovery premium,catch up,tutoring"
+    weight: 3.0
+    result: RECOVERY
+    metadata:
+      description: "Recovery Premium"
+
+  - id: classify_grant_sen
+    name: "Grant - SEN"
+    category: classification_grant_type
+    condition: "contains:sen,special needs,high needs,ehcp"
+    weight: 2.5
+    result: SEN
+    metadata:
+      description: "Special Educational Needs"
+
+  - id: classify_grant_sixth
+    name: "Grant - Sixth Form"
+    category: classification_grant_type
+    condition: "contains:sixth form,post-16,16-19"
+    weight: 2.5
+    result: SIXTH_FORM
+    metadata:
+      description: "16-19 Funding"
+
+  # ============================================================================
+  # S3 Data Category Classification
+  # ============================================================================
+  - id: classify_data_pupils
+    name: "Data Category - Pupils"
+    category: classification_s3_data
+    condition: "contains:pupil,student,enrol,census,headcount,fte"
+    weight: 2.5
+    result: pupils
+    metadata:
+      template_sheet: "Pupils"
+
+  - id: classify_data_funding
+    name: "Data Category - Funding"
+    category: classification_s3_data
+    condition: "contains:funding,grant,allocation,gag"
+    weight: 2.5
+    result: funding
+    metadata:
+      template_sheet: "Funding"
+
+  - id: classify_data_income
+    name: "Data Category - Income"
+    category: classification_s3_data
+    condition: "contains:income,revenue,receipt"
+    weight: 2.5
+    result: income
+    metadata:
+      template_sheet: "Income"
+
+  - id: classify_data_expenditure
+    name: "Data Category - Expenditure"
+    category: classification_s3_data
+    condition: "contains:expenditure,expense,cost,budget"
+    weight: 2.5
+    result: expenditure
+    metadata:
+      template_sheet: "Expenditure"
+
+  - id: classify_data_scenarios
+    name: "Data Category - Scenarios"
+    category: classification_s3_data
+    condition: "contains:scenario,forecast,projection,plan"
+    weight: 2.5
+    result: scenarios
+    metadata:
+      template_sheet: "ScenarioApBud"
+
+  # ============================================================================
+  # S1 Data Type Classification by Row Count (Heuristics)
+  # Key insight: Finance codes are ALWAYS the largest dataset
+  # ============================================================================
+  - id: classify_s1_finance_codes_by_count
+    name: "S1 Finance Codes - Row Count Heuristic"
+    category: classification_s1_data_type
+    condition: "row_count:>=50"
+    subcondition: "numeric_codes:>=50%"
+    weight: 3.0
+    confidence_boost: 0.15
+    result: finance_codes
+    metadata:
+      description: "Finance codes are always the largest dataset (typically 100-500+ rows)"
+      typical_range: "50-500"
+      code_pattern: "4-6 digit numeric"
+
+  - id: classify_s1_departments_by_count
+    name: "S1 Departments - Row Count Heuristic"
+    category: classification_s1_data_type
+    condition: "row_count:20-100"
+    subcondition: "alpha_codes:>=30%"
+    weight: 2.5
+    result: departments
+    metadata:
+      description: "Departments/Cost Centres are medium-sized datasets"
+      typical_range: "20-60"
+      code_pattern: "Alphanumeric with underscores (A_, C_, S_)"
+
+  - id: classify_s1_schools_by_count
+    name: "S1 Schools - Row Count Heuristic"
+    category: classification_s1_data_type
+    condition: "row_count:<25"
+    subcondition: "has_school_columns"
+    weight: 2.5
+    result: schools
+    metadata:
+      description: "Schools are small datasets (typically 1-20)"
+      typical_range: "1-20"
+
+  - id: classify_s1_funds_by_count
+    name: "S1 Funds - Row Count Heuristic"
+    category: classification_s1_data_type
+    condition: "row_count:<25"
+    subcondition: "alpha_codes:>=50%,short_codes:>=50%"
+    weight: 2.0
+    result: funds
+    metadata:
+      description: "Funds are small datasets with short alpha codes"
+      typical_range: "5-20"
+      code_pattern: "2-7 character alpha codes (GAG, PP, UIFSM)"
