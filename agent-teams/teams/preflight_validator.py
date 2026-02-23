@@ -246,7 +246,13 @@ class PreFlightValidator:
             else:
                 return self._create_error_result(file_path, f"Unsupported file type: {file_path.suffix}")
         except Exception as e:
-            return self._create_error_result(file_path, f"Error reading file: {e}")
+            error_msg = str(e).lower()
+            if "password" in error_msg or "encrypted" in error_msg:
+                return self._create_error_result(file_path, "File is password-protected. Please remove password and re-upload.")
+            elif "could not read" in error_msg or "no engine" in error_msg:
+                return self._create_error_result(file_path, "Cannot read file - may be corrupted, password-protected, or unsupported format. Try re-saving in Excel.")
+            else:
+                return self._create_error_result(file_path, f"Error reading file: {e}")
 
         # Detect strand if not provided
         detected_strand = strand
