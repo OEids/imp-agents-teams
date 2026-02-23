@@ -1,0 +1,14 @@
+FundCode,Title,FundEnabled
+BURS,Bursary Fund,True
+CAP,Capital,True
+CHIL,Childrens Centre,True
+COV,Covid,True
+DEFAULT,Default (no) Fund,True
+GAG,General Annual Grant,True
+NUR,Nursery,True
+PRIV,Private Fund,True
+REST,Restricted Fund,True
+RESTFA,Restricted Fixed Asset,True
+SEN,SEN,True
+SPPR,Sports premium,True
+UNRF,Unrestricted Fund,True

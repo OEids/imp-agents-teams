@@ -1,0 +1,763 @@
+FinanceCode,Title,GroupingCode,CustomGrouping,AvailableToAllSchools,SchoolCodes,FinanceCodeTypeCode,LedgerCode,FinanceCodeEnabled
+01FEE_NUR_01,Per Pupil Fee - Nursery - Term 1,Z10,ZZZ,True,,STATISTICS,DEFAULT,True
+01FEE_NUR_02,Per Pupil Fee - Nursery - Term 2,Z10,ZZZ,True,,STATISTICS,DEFAULT,True
+01FEE_NUR_03,Per Pupil Fee - Nursery - Term 3,Z10,ZZZ,True,,STATISTICS,DEFAULT,True
+02FEE_LOW_01,Per Pupil Fee - Lower - Term 1,Z10,ZZZ,True,,STATISTICS,DEFAULT,True
+02FEE_LOW_02,Per Pupil Fee - Lower - Term 2,Z10,ZZZ,True,,STATISTICS,DEFAULT,True
+02FEE_LOW_03,Per Pupil Fee - Lower - Term 3,Z10,ZZZ,True,,STATISTICS,DEFAULT,True
+03FEE_JUN_01,Per Pupil Fee - Junior - Term 1,Z10,ZZZ,True,,STATISTICS,DEFAULT,True
+03FEE_JUN_02,Per Pupil Fee - Junior - Term 2,Z10,ZZZ,True,,STATISTICS,DEFAULT,True
+03FEE_JUN_03,Per Pupil Fee - Junior - Term 3,Z10,ZZZ,True,,STATISTICS,DEFAULT,True
+03FEE_Y03_Y04_01,Per Pupil Fee - Year 3 & 4 - Term 1,Z10,ZZZ,True,,STATISTICS,DEFAULT,True
+03FEE_Y03_Y04_02,Per Pupil Fee - Year 3 & 4 - Term 2,Z10,ZZZ,True,,STATISTICS,DEFAULT,True
+03FEE_Y03_Y04_03,Per Pupil Fee - Year 3 & 4 - Term 3,Z10,ZZZ,True,,STATISTICS,DEFAULT,True
+03FEE_Y05_Y06_01,Per Pupil Fee - Year 5 & 6 - Term 1,Z10,ZZZ,True,,STATISTICS,DEFAULT,True
+03FEE_Y05_Y06_02,Per Pupil Fee - Year 5 & 6 - Term 2,Z10,ZZZ,True,,STATISTICS,DEFAULT,True
+03FEE_Y05_Y06_03,Per Pupil Fee - Year 5 & 6 - Term 3,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+04FEE_SEN_01,Per Pupil Fee - Senior - Term 1,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+04FEE_SEN_02,Per Pupil Fee - Senior - Term 2,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+04FEE_SEN_03,Per Pupil Fee - Senior - Term 3,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+510100,IN: DfE Revenue Grants: GAG (not stud supp and trust grants),510100,A0,True,,BUDGET,COSTCTR,True
+510110,IN: DfE Revenue Grants: GAG (student support),510110,A0,True,,BUDGET,COSTCTR,True
+510120,IN: DfE Revenue Grants: GAG (start up grants),510120,A0,True,,BUDGET,COSTCTR,True
+510130,IN: DfE Revenue Grants: Trust level grants,510130,A1,True,,BUDGET,COSTCTR,True
+510140,IN: DfE Revenue Grants: Pupil number adjustment,510140,A1,True,,BUDGET,COSTCTR,True
+510150,IN: DfE Revenue Grants: Rates reclaim,510150,A1,True,,BUDGET,COSTCTR,True
+510200,IN: DfE Revenue Grants: Pupil Premium,510200,A1,True,,BUDGET,COSTCTR,True
+510250,IN: DfE Revenue Grants: Universal Inf Free School Meals,510250,A1,True,,BUDGET,COSTCTR,True
+510300,IN: DfE Revenue Grants: Insurance top up,510300,A1,True,,BUDGET,COSTCTR,True
+510350,IN: DfE Revenue Grants: Sponsor capacity grant,510350,A1,True,,BUDGET,COSTCTR,True
+510400,IN: DfE Revenue Grants: PE & Sports grant,510400,A1,True,,BUDGET,COSTCTR,True
+510450,IN: DfE Revenue Grants: Year 7 catch up,510450,A1,True,,BUDGET,COSTCTR,True
+510500,IN: DfE Revenue Grants: Teachers Pay Grant,510500,A1,True,,BUDGET,COSTCTR,True
+510510,IN: DfE Revenue Grants: Teachers Pension Employer Contribution Grant,510510,A1,True,,BUDGET,COSTCTR,True
+510550,IN: DfE Revenue Grants: Teaching Schools grant,510550,A1,True,,BUDGET,COSTCTR,True
+510600,IN: DfE Revenue Grants: ITT Bursaries Grant,510600,A1,True,,BUDGET,COSTCTR,True
+510700,IN: DfE Revenue Grants: 16 to 19,510700,A0,False,"MIL,MAT,MAR,EDU",BUDGET,COSTCTR,True
+510950,IN: DfE Revenue Grants: Other DfE revenue grants,510950,A1,True,,BUDGET,COSTCTR,True
+510951,IN: DfE Revenue Grants: Mainstream Schools Additional Grant,510970,A1,True,,BUDGET,COSTCTR,True
+510952,IN: DfE Revenue Grants: Teachers Pay/Pension Additional Grant,510980,A1,True,,BUDGET,COSTCTR,True
+510953,IN: DfE Revenue Grants: Recovery Premium,510990,A1,True,,BUDGET,COSTCTR,True
+515100,IN: DfE Group Grants: Standards & Testing Agency,515100,A2,True,,BUDGET,COSTCTR,True
+515200,IN: DfE Group Grants: Office of Childrens Commissioner,515200,A2,True,,BUDGET,COSTCTR,True
+515250,IN: DfE Group Grants: Student Loans Company,515250,A2,True,,BUDGET,COSTCTR,True
+515300,IN: DfE Group Grants: Office for Students,515300,A2,True,,BUDGET,COSTCTR,True
+515350,IN: DfE Group Grants: Engineering Contraction ITB,515350,A2,True,,BUDGET,COSTCTR,True
+515400,IN: DfE Group Grants: Construction ITB,515400,A2,True,,BUDGET,COSTCTR,True
+520100,IN: Other Grants: LA - SEN,520100,A2,True,,BUDGET,COSTCTR,True
+520150,IN: Other Grants: LA - Early Years,520150,A2,False,"LEA,MIL,ALE,APP,LOR,GRE,MID,EDU,GOO,OUR",BUDGET,COSTCTR,True
+520200,IN: Other Grants: LA - Other grants,520200,A2,True,,BUDGET,COSTCTR,True
+520300,IN: Other Grants: Government grant - not DfE,520300,A2,True,,BUDGET,COSTCTR,True
+520350,IN: Other Grants: Other revenue grants,520350,A2,True,,BUDGET,COSTCTR,True
+525100,IN: Other Income: Academy trusts,525100,A4,True,,BUDGET,COSTCTR,True
+525150,IN: Other Income: Govt sources - not grant,525150,A2,True,,BUDGET,COSTCTR,True
+525200,IN: Other Income: Non-govt revenue,525200,A4,True,,BUDGET,COSTCTR,True
+525300,IN: Other Income: Catering income from pupils,525300,A4,True,,BUDGET,COSTCTR,True
+525400,IN: Other Income: Educational trips & visits,525400,A4,True,,BUDGET,TRIPS,True
+525500,IN: Other Income: Apprenticeship levy drawdown,525500,A4,True,,BUDGET,COSTCTR,True
+525600,IN: Other Income: Teaching School other income,525600,A4,True,,BUDGET,COSTCTR,True
+525750,IN: Other Income: Investment income,525750,A4,True,,BUDGET,COSTCTR,True
+530100,IN: Trading Income: Hire of facilities,530100,A4,True,,BUDGET,COSTCTR,True
+530200,IN: Trading Income: Catering inc (visitors & staff),530200,A4,True,,BUDGET,COSTCTR,True
+530250,IN: Trading Income: Rental Income,530250,A4,True,,BUDGET,COSTCTR,True
+530300,IN: Trading Income: Supply teacher insurance claim,530300,A4,True,,BUDGET,COSTCTR,True
+530350,IN: Trading Income: RPA claims,530350,A4,True,,BUDGET,COSTCTR,True
+530400,IN: Trading Income: Sale of uniforms,530400,A4,True,,BUDGET,COSTCTR,True
+530500,IN: Trading Income: Income from clubs,530500,A4,True,,BUDGET,COSTCTR,True
+530550,IN: Trading Income: Parental income from nursery provision,530550,A4,False,"MIL,ALE,APP",BUDGET,COSTCTR,True
+530580,IN: Trading Income: Parental income from wraparound provision,530580,A4,True,,BUDGET,COSTCTR,True
+530600,IN: Trading Income: Income from music,530600,A4,True,,BUDGET,COSTCTR,True
+530650,IN: Trading Income: Sale of goods or services,530650,A4,True,,BUDGET,COSTCTR,True
+530700,IN: Trading Income: Other trading income,530700,A4,True,,BUDGET,COSTCTR,True
+530990,IN: Trading Income: Trust contribution from academy,530990,A4,True,,BUDGET,COSTCTR,True
+550100,IN: DfE Capital Grants: Condition Improvement Fund,550100,W0,True,,BUDGET,CAPITAL,True
+550150,IN: DfE Capital Grants: MAT Condition Allowance,550150,W0,True,,BUDGET,CAPITAL,True
+550200,IN: DfE Capital Grants: Priority School Building Prog,550200,W0,True,,BUDGET,CAPITAL,True
+550250,IN: DfE Capital Grants: Devolved Formula Capital,550250,W0,True,,BUDGET,CAPITAL,True
+550300,IN: DfE Capital Grants: DfE Managed Free Schools,550300,W0,True,,BUDGET,CAPITAL,True
+550350,IN: DfE Capital Grants: Building Schools for the Future,550350,W0,True,,BUDGET,CAPITAL,True
+550400,IN: DfE Capital Grants: School Sponsorship Development,550400,W0,True,,BUDGET,CAPITAL,True
+550450,IN: DfE Capital Grants: Other DfE capital grants,550450,W0,True,,BUDGET,CAPITAL,True
+550500,IN: DfE Capital Grants: Teaching School capital grants,550500,W0,True,,BUDGET,CAPITAL,True
+555100,IN: DfE Group capital grants: Standards & Testing Agency,555100,W0,True,,BUDGET,CAPITAL,True
+555200,IN: DfE Group capital grants: Office of Childrens Commissioner,555200,W0,True,,BUDGET,CAPITAL,True
+555250,IN: DfE Group capital grants: Student Loans Company,555250,W0,True,,BUDGET,CAPITAL,True
+555300,IN: DfE Group capital grants: Office for Students,555300,W0,True,,BUDGET,CAPITAL,True
+555350,IN: DfE Group capital grants: Engineering Contraction ITB,555350,W0,True,,BUDGET,CAPITAL,True
+555400,IN: DfE Group capital grants: Construction ITB,555400,W0,True,,BUDGET,CAPITAL,True
+560100,IN: Other capital income: Local authority capital grants,560100,W0,True,,BUDGET,CAPITAL,True
+560200,IN: Other capital income: Government grant - not DfE,560200,W0,True,,BUDGET,CAPITAL,True
+560300,IN: Other capital income: Non-govt capital grants,560300,W0,True,,BUDGET,CAPITAL,True
+560400,IN: Other capital income: Contributions from revenue,560400,W0,True,,BUDGET,CAPITAL,True
+570100,IN: Boarding Income: Fee Income,570100,A4,True,,BUDGET,COSTCTR,True
+570200,IN: Boarding Income: DfE grants,570200,A1,True,,BUDGET,COSTCTR,True
+570220,IN: Boarding Income: Standards & Testing Agency,570220,A4,True,,BUDGET,COSTCTR,True
+570240,IN: Boarding Income: Office of Childrens Commissioner,570240,A4,True,,BUDGET,COSTCTR,True
+570250,IN: Boarding Income: Other government grants,570250,A2,True,,BUDGET,COSTCTR,True
+570300,IN: Boarding Income: Other boarding income,570300,A4,True,,BUDGET,COSTCTR,True
+580100,IN: Donations: Donated FA - DfE,580100,A1,True,,BUDGET,COSTCTR,True
+580120,IN: Donations: Donated FA - LA,580120,A2,True,,BUDGET,COSTCTR,True
+580150,IN: Donations: Donated FA - other,580150,A4,True,,BUDGET,COSTCTR,True
+580200,IN: Donations: Donated intangible assets,580200,A4,True,,BUDGET,COSTCTR,True
+580250,IN: Donations: Other capital donations,580250,W0,True,,BUDGET,CAPITAL,True
+580300,IN: Donations: Revenue donations - general,580300,A4,True,,BUDGET,COSTCTR,True
+580350,IN: Donations: Revenue donations - charity,580350,A4,True,,BUDGET,COSTCTR,True
+580400,IN: Donations: Revenue donations - gift aid,580400,A4,True,,BUDGET,COSTCTR,True
+590100,IN: Academy conversions: Local authority capital,590100,W0,True,,BUDGET,CAPITAL,True
+590200,IN: Academy conversions: Local authority revenue -surplus,590200,A4,True,,BUDGET,COSTCTR,True
+590210,IN: Academy conversions: Local authority revenue -deficit,590210,A4,True,,BUDGET,COSTCTR,True
+590300,IN: Academy conversions: Other body capital,590300,W0,True,,BUDGET,CAPITAL,True
+590350,IN: Academy conversions: Other body revenue,590350,A4,True,,BUDGET,COSTCTR,True
+595100,IN: Academy transfer in: Capital transferred in,595100,W0,True,,BUDGET,CAPITAL,True
+595200,IN: Academy transfer in: Revenue transferred in,595200,A4,True,,BUDGET,COSTCTR,True
+599100,IN: Academy transfer out: Capital transferred out,599100,W0,True,,BUDGET,CAPITAL,True
+599200,IN: Academy transfer out: Revenue transferred out,599200,A4,True,,BUDGET,COSTCTR,True
+610100,SF: Leadership - Teaching: Wages and salaries,610100,B0,True,,BUDGET,SALARY,True
+610150,SF: Leadership - Teaching: Overtime,610150,B0,True,,BUDGET,SALARY,True
+610200,SF: Leadership - Teaching: Employers national insurance,610200,B0,True,,BUDGET,SALARY,True
+610300,SF: Leadership - Teaching: Employers pension contribution,610300,B0,True,,BUDGET,SALARY,True
+611100,SF: Leadership - Non-teaching: Wages and salaries,611100,B3,True,,BUDGET,SALARY,True
+611150,SF: Leadership - Non-teaching: Overtime,611150,B3,True,,BUDGET,SALARY,True
+611200,SF: Leadership - Non-teaching: Employers national insurance,611200,B3,True,,BUDGET,SALARY,True
+611300,SF: Leadership - Non-teaching: Employers pension contribution,611300,B3,True,,BUDGET,SALARY,True
+612100,SF: Teachers: Wages and salaries,612100,B0,True,,BUDGET,SALARY,True
+612150,SF: Teachers: Overtime,612150,B0,True,,BUDGET,SALARY,True
+612200,SF: Teachers: Employers national insurance,612200,B0,True,,BUDGET,SALARY,True
+612300,SF: Teachers: Employers pension contribution,612300,B0,True,,BUDGET,SALARY,True
+615100,SF: Teaching Assistants: Wages and salaries,615100,B1,True,,BUDGET,SALARY,True
+615150,SF: Teaching Assistants: Overtime,615150,B1,True,,BUDGET,SALARY,True
+615200,SF: Teaching Assistants: Employers national insurance,615200,B1,True,,BUDGET,SALARY,True
+615300,SF: Teaching Assistants: Employers pension contribution,615300,B1,True,,BUDGET,SALARY,True
+620100,SF: Librarians: Wages and salaries,620100,B1,True,,BUDGET,SALARY,True
+620150,SF: Librarians: Overtime,620150,B1,True,,BUDGET,SALARY,True
+620200,SF: Librarians: Employers national insurance,620200,B1,True,,BUDGET,SALARY,True
+620300,SF: Librarians: Employers pension contribution,620300,B1,True,,BUDGET,SALARY,True
+622100,SF: Technicians: Wages and salaries,622100,B1,True,,BUDGET,SALARY,True
+622150,SF: Technicians: Overtime,622150,B1,True,,BUDGET,SALARY,True
+622200,SF: Technicians: Employers national insurance,622200,B1,True,,BUDGET,SALARY,True
+622300,SF: Technicians: Employers pension contribution,622300,B1,True,,BUDGET,SALARY,True
+623100,SF: Cover supervisors: Wages and salaries,623100,B1,True,,BUDGET,SALARY,True
+623150,SF: Cover supervisors: Overtime,623150,B1,True,,BUDGET,SALARY,True
+623200,SF: Cover supervisors: Employers national insurance,623200,B1,True,,BUDGET,SALARY,True
+623300,SF: Cover supervisors: Employers pension contribution,623300,B1,True,,BUDGET,SALARY,True
+625100,SF: Finance and Admin: Wages and salaries,625100,B3,True,,BUDGET,SALARY,True
+625150,SF: Finance and Admin: Overtime,625150,B3,True,,BUDGET,SALARY,True
+625200,SF: Finance and Admin: Employers national insurance,625200,B3,True,,BUDGET,SALARY,True
+625300,SF: Finance and Admin: Employers pension contribution,625300,B3,True,,BUDGET,SALARY,True
+627100,SF: Site Staff: Wages and salaries,627100,B2,True,,BUDGET,SALARY,True
+627150,SF: Site Staff: Overtime,627150,B2,True,,BUDGET,SALARY,True
+627200,SF: Site Staff: Employers national insurance,627200,B2,True,,BUDGET,SALARY,True
+627300,SF: Site Staff: Employers pension contribution,627300,B2,True,,BUDGET,SALARY,True
+630100,SF: Cleaning Staff: Wages and salaries,630100,B2,True,,BUDGET,SALARY,True
+630150,SF: Cleaning Staff: Overtime,630150,B2,True,,BUDGET,SALARY,True
+630200,SF: Cleaning Staff: Employers national insurance,630200,B2,True,,BUDGET,SALARY,True
+630300,SF: Cleaning Staff: Employers pension contribution,630300,B2,True,,BUDGET,SALARY,True
+632100,SF: Catering Staff: Wages and salaries,632100,B4,True,,BUDGET,SALARY,True
+632150,SF: Catering Staff: Overtime,632150,B4,True,,BUDGET,SALARY,True
+632200,SF: Catering Staff: Employers national insurance,632200,B4,True,,BUDGET,SALARY,True
+632300,SF: Catering Staff: Employers pension contribution,632300,B4,True,,BUDGET,SALARY,True
+635100,SF: Midday Supervisors: Wages and salaries,635100,B4,True,,BUDGET,SALARY,True
+635150,SF: Midday Supervisors: Overtime,635150,B4,True,,BUDGET,SALARY,True
+635200,SF: Midday Supervisors: Employers national insurance,635200,B4,True,,BUDGET,SALARY,True
+635300,SF: Midday Supervisors: Employers pension contribution,635300,B4,True,,BUDGET,SALARY,True
+637100,SF: Nursery Staff: Wages and salaries,637100,B1,True,,BUDGET,SALARY,True
+637150,SF: Nursery Staff: Overtime,637150,B1,True,,BUDGET,SALARY,True
+637200,SF: Nursery Staff: Employers national insurance,637200,B1,True,,BUDGET,SALARY,True
+637300,SF: Nursery Staff: Employers pension contribution,637300,B1,True,,BUDGET,SALARY,True
+640100,SF: Family Support Workers: Wages and salaries,640100,B4,True,,BUDGET,SALARY,True
+640150,SF: Family Support Workers: Overtime,640150,B4,True,,BUDGET,SALARY,True
+640200,SF: Family Support Workers: Employers national insurance,640200,B4,True,,BUDGET,SALARY,True
+640300,SF: Family Support Workers: Employers pension contribution,640300,B4,True,,BUDGET,SALARY,True
+642100,SF: Exam Invigilators: Wages and salaries,642100,B4,True,,BUDGET,SALARY,True
+642150,SF: Exam Invigilators: Overtime,642150,B4,True,,BUDGET,SALARY,True
+642200,SF: Exam Invigilators: Employers national insurance,642200,B4,True,,BUDGET,SALARY,True
+642300,SF: Exam Invigilators: Employers pension contribution,642300,B4,True,,BUDGET,SALARY,True
+645100,SF: Community Facilities Staff: Wages and salaries,645100,B4,True,,BUDGET,SALARY,True
+645150,SF: Community Facilities Staff: Overtime,645150,B4,True,,BUDGET,SALARY,True
+645200,SF: Community Facilities Staff: Employers national insurance,645200,B4,True,,BUDGET,SALARY,True
+645300,SF: Community Facilities Staff: Employers pension contribution,645300,B4,True,,BUDGET,SALARY,True
+647100,SF: Other Staff: Wages and salaries,647100,B4,True,,BUDGET,SALARY,True
+647150,SF: Other Staff: Overtime,647150,B4,True,,BUDGET,SALARY,True
+647200,SF: Other Staff: Employers national insurance,647200,B4,True,,BUDGET,SALARY,True
+647300,SF: Other Staff: Employers pension contribution,647300,B4,True,,BUDGET,SALARY,True
+650400,SF: Supply Staff: Teachers - long term cover:Wages and salaries,650400,B5,True,,BUDGET,SALARY,True
+650410,SF: Supply Staff: Teachers - long term cover:Employers national insurance,650410,B5,True,,BUDGET,SALARY,True
+650420,SF: Supply Staff: Teachers - long term cover:Employers pension,650420,B5,True,,BUDGET,SALARY,True
+650450,SF: Supply Staff: Teachers - short term cover:Wages and salaries,650450,B5,True,,BUDGET,SALARY,True
+650460,SF: Supply Staff: Teachers - short term cover:Employers national insurance,650460,B5,True,,BUDGET,SALARY,True
+650470,SF: Supply Staff: Teachers - short term cover:Employers pension,650470,B5,True,,BUDGET,SALARY,True
+650500,SF: Supply Staff: Teaching assistants:Wages and salaries,650500,B5,True,,BUDGET,SALARY,True
+650510,SF: Supply Staff: Teaching assistants:Employers national insurance,650510,B5,True,,BUDGET,SALARY,True
+650520,SF: Supply Staff: Teaching assistants:Employers pension,650520,B5,True,,BUDGET,SALARY,True
+650550,SF: Supply Staff: Support staff:Wages and salaries,650550,B5,True,,BUDGET,SALARY,True
+650560,SF: Supply Staff: Support staff:Employers national insurance,650560,B5,True,,BUDGET,SALARY,True
+650570,SF: Supply Staff: Support staff:Employers pension,650570,B5,True,,BUDGET,SALARY,True
+655100,SF: Boarding Staff - direct: Wages and salaries,655100,B4,True,,BUDGET,SALARY,True
+655150,SF: Boarding Staff - direct: Overtime,655150,B4,True,,BUDGET,SALARY,True
+655200,SF: Boarding Staff - direct: Employers national insurance,655200,B4,True,,BUDGET,SALARY,True
+655300,SF: Boarding Staff - direct: Employers pension contribution,655300,B4,True,,BUDGET,SALARY,True
+655500,SF: Boarding Staff - direct: Agency staff - direct staff,655500,B4,True,,BUDGET,SALARY,True
+655550,SF: Boarding Staff - direct: Compensation - direct staff,655550,B4,True,,BUDGET,SALARY,True
+656100,SF: Boarding Staff - indirect: Wages and salaries,656100,B5,True,,BUDGET,SALARY,True
+656150,SF: Boarding Staff - indirect: Overtime,656150,B5,True,,BUDGET,SALARY,True
+656200,SF: Boarding Staff - indirect: Employers national insurance,656200,B5,True,,BUDGET,SALARY,True
+656300,SF: Boarding Staff - indirect: Employers pension contribution,656300,B5,True,,BUDGET,SALARY,True
+656520,SF: Boarding Staff - indirect: Agency staff - support,656520,B5,True,,BUDGET,SALARY,True
+656570,SF: Boarding Staff - indirect: Compensation - support,656570,B5,True,,BUDGET,SALARY,True
+656600,SF: Boarding Staff - indirect: Staff Welfare,656600,B5,True,,BUDGET,SALARY,True
+656620,SF: Boarding Staff - indirect: Staff Development,656620,B5,True,,BUDGET,SALARY,True
+656650,SF: Boarding Staff - indirect: Staff training,656650,B5,True,,BUDGET,SALARY,True
+656700,SF: Boarding Staff - indirect: Staff insurance,656700,B5,True,,BUDGET,SALARY,True
+675100,SF: Ind Emp Exp: Apprenticeship levy,675100,G1,True,,BUDGET,COSTCTR,True
+675110,SF: Ind Emp Exp: Apprenticeship levy - support staff,675110,G1,True,,BUDGET,COSTCTR,True
+675150,SF: Ind Emp Exp: Ex-gratia/severance - teachers,675150,G1,True,,BUDGET,COSTCTR,True
+675170,SF: Ind Emp Exp: Ex-gratia/severance - support,675170,G1,True,,BUDGET,COSTCTR,True
+675200,SF: Ind Emp Exp: Redundancy - teachers,675200,G1,True,,BUDGET,COSTCTR,True
+675220,SF: Ind Emp Exp: Redundancy - support staff,675220,G1,True,,BUDGET,COSTCTR,True
+675250,SF: Ind Emp Exp: Other restructuring - teachers,675250,G1,True,,BUDGET,COSTCTR,True
+675270,SF: Ind Emp Exp: Other restructuring - support,675270,G1,True,,BUDGET,COSTCTR,True
+675300,SF: Ind Emp Exp: Secondment income - teachers,675300,G1,True,,BUDGET,COSTCTR,True
+675320,SF: Ind Emp Exp: Secondment income - support,675320,G1,True,,BUDGET,COSTCTR,True
+675400,SF: Ind Emp Exp: Staff travel,675400,G1,True,,BUDGET,COSTCTR,True
+675410,SF: Ind Emp Exp: Staff subsistence,675410,G1,True,,BUDGET,COSTCTR,True
+675420,SF: Ind Emp Exp: Interview expenses,675420,G1,True,,BUDGET,COSTCTR,True
+675430,SF: Ind Emp Exp: Staff uniforms,675430,G1,True,,BUDGET,COSTCTR,True
+675440,SF: Ind Emp Exp: Childcare vouchers,675440,G1,True,,BUDGET,COSTCTR,True
+675450,SF: Ind Emp Exp: Staff medical fees,675450,G1,True,,BUDGET,COSTCTR,True
+675460,SF: Ind Emp Exp: Duty meals,675460,G1,True,,BUDGET,COSTCTR,True
+675500,SF: Ind Emp Exp: Recruitment - teachers,675500,G1,True,,BUDGET,COSTCTR,True
+675510,SF: Ind Emp Exp: Recruitment - support staff,675510,G1,True,,BUDGET,COSTCTR,True
+675520,SF: Ind Emp Exp: Recruitment - leadership,675520,G1,True,,BUDGET,COSTCTR,True
+675550,SF: Ind Emp Exp: Staff Advertising - teachers,675550,G1,True,,BUDGET,COSTCTR,True
+675560,SF: Ind Emp Exp: Staff Advertising - support,675560,G1,True,,BUDGET,COSTCTR,True
+675570,SF: Ind Emp Exp: Staff Advertising - leadership,675570,G1,True,,BUDGET,COSTCTR,True
+675600,SF: Ind Emp Exp: DBS checks - teachers,675600,G1,True,,BUDGET,COSTCTR,True
+675620,SF: Ind Emp Exp: DBS checks - support staff,675620,G1,True,,BUDGET,COSTCTR,True
+675650,SF: Ind Emp Exp: Staff training - teachers,675650,G1,True,,BUDGET,COSTCTR,True
+675670,SF: Ind Emp Exp: Staff training - support staff,675670,G1,True,,BUDGET,COSTCTR,True
+675690,SF: Ind Emp Exp: Notional Apprenticeship levy exp,675690,G1,True,,BUDGET,COSTCTR,True
+675700,SF: Ind Emp Exp: Other Ind Emp Expense - teachers,675700,G1,True,,BUDGET,COSTCTR,True
+675720,SF: Ind Emp Exp: Other Ind Emp Expense - support,675720,G1,True,,BUDGET,COSTCTR,True
+675750,SF: Ind Emp Exp: Supply insurance - teachers,675750,G1,True,,BUDGET,COSTCTR,True
+675770,SF: Ind Emp Exp: Supply insurance - support,675770,G1,True,,BUDGET,COSTCTR,True
+675780,SF: Ind Emp Exp: Employers liability insurance,675780,G1,True,,BUDGET,COSTCTR,True
+675800,SF: Ind Emp Exp: Hospitality,675800,G1,True,,BUDGET,COSTCTR,True
+710100,PR: R&M: Building Repair and Maintenance,710100,C0,True,,BUDGET,COSTCTR,True
+710200,PR: R&M: Building Improvements,710200,C0,True,,BUDGET,COSTCTR,True
+715100,PR: Rates: Rates,715100,C1,True,,BUDGET,COSTCTR,True
+720100,PR: Energy: Gas,720100,C1,True,,BUDGET,COSTCTR,True
+720200,PR: Energy: Oil,720200,C1,True,,BUDGET,COSTCTR,True
+720300,PR: Energy: Electricity,720300,C1,True,,BUDGET,COSTCTR,True
+725100,PR: Insurance: Risk Protection Arrangement,725100,C1,True,,BUDGET,COSTCTR,True
+725200,PR: Insurance: Premises Insurance (not RPA),725200,C1,True,,BUDGET,COSTCTR,True
+725300,PR: Insurance: Boarding Insurance,725300,C1,True,,BUDGET,COSTCTR,True
+725400,PR: Insurance: Vehicle Insurance,725400,C1,True,,BUDGET,COSTCTR,True
+730100,PR: Cleaning & Caretaking: Cleaning contracts,730100,C0,True,,BUDGET,COSTCTR,True
+730200,PR: Cleaning & Caretaking: Cleaning equipment and materials,730200,C0,True,,BUDGET,COSTCTR,True
+730300,PR: Cleaning & Caretaking: Window Cleaning,730300,C0,True,,BUDGET,COSTCTR,True
+730400,PR: Cleaning & Caretaking: Caretaking Supplies and Equip,730400,C0,True,,BUDGET,COSTCTR,True
+735100,PR: Operating leases: Building rent payable,735100,C1,True,,BUDGET,COSTCTR,True
+735200,PR: Operating leases: Photocopiers,735200,C1,True,,BUDGET,COSTCTR,True
+735300,PR: Operating leases: Telephony,735300,C1,True,,BUDGET,COSTCTR,True
+735400,PR: Operating leases: Other equipment,735400,C1,True,,BUDGET,COSTCTR,True
+740100,PR: Security: Security Alarms / CCTV Services,740100,C1,True,,BUDGET,COSTCTR,True
+740200,PR: Security: Security Patrols,740200,C1,True,,BUDGET,COSTCTR,True
+750100,PR: Special Facilities: Swimming pool equipment/material,750100,C1,True,,BUDGET,COSTCTR,True
+750150,PR: Special Facilities: Sports centre equipment/materials,750150,C1,True,,BUDGET,COSTCTR,True
+750200,PR: Special Facilities: Before and After School clubs,750200,C1,True,,BUDGET,COSTCTR,True
+750250,PR: Special Facilities: Farm and Rural Studies,750250,C1,True,,BUDGET,COSTCTR,True
+750300,PR: Special Facilities: External cluster funding contrib,750300,C1,True,,BUDGET,COSTCTR,True
+750350,PR: Special Facilities: Pupil travel across the trust,750350,C1,True,,BUDGET,COSTCTR,True
+750400,PR: Special Facilities: Home to school transport,750400,C1,True,,BUDGET,COSTCTR,True
+760100,PR: Other Premises: Grounds Maintenance,760100,C0,True,,BUDGET,COSTCTR,True
+760150,PR: Other Premises: Water and Sewerage,760150,C1,True,,BUDGET,COSTCTR,True
+760200,PR: Other Premises: Septic Tanks,760200,C0,True,,BUDGET,COSTCTR,True
+760250,PR: Other Premises: Refuse Removal,760250,C0,True,,BUDGET,COSTCTR,True
+760300,PR: Other Premises: Hygiene Supplies & Services,760300,C0,True,,BUDGET,COSTCTR,True
+760350,PR: Other Premises: Health & Safety,760350,C0,True,,BUDGET,COSTCTR,True
+760400,PR: Other Premises: Electrical Service Contract,760400,C0,True,,BUDGET,COSTCTR,True
+760450,PR: Other Premises: Mechanical Service Contract,760450,C0,True,,BUDGET,COSTCTR,True
+760500,PR: Other Premises: Appliance Testing,760500,C0,True,,BUDGET,COSTCTR,True
+760550,PR: Other Premises: Fire Alarm and Extinguisher Serv,760550,C0,True,,BUDGET,COSTCTR,True
+760600,PR: Other Premises: Heating and Air Conditioning,760600,C0,True,,BUDGET,COSTCTR,True
+760650,PR: Other Premises: Pest Control,760650,C0,True,,BUDGET,COSTCTR,True
+760700,PR: Other Premises: Other Occupancy,760700,C0,True,,BUDGET,COSTCTR,True
+760710,PR: Other premises: Revenue expenditure from capital funding,760710,C1,True,,BUDGET,COSTCTR,True
+780100,PR: Boarding - premises: Rates,780100,C1,True,,BUDGET,COSTCTR,True
+780150,PR: Boarding - premises: Water rates,780150,C1,True,,BUDGET,COSTCTR,True
+780200,PR: Boarding - premises: Electricity,780200,C1,True,,BUDGET,COSTCTR,True
+780250,PR: Boarding - premises: Gas,780250,C1,True,,BUDGET,COSTCTR,True
+780300,PR: Boarding - premises: Heating oil,780300,C1,True,,BUDGET,COSTCTR,True
+780350,PR: Boarding - premises: Operating lease - Land and build,780350,C1,True,,BUDGET,COSTCTR,True
+780400,PR: Boarding - premises: Operating lease - Photocopiers,780400,C1,True,,BUDGET,COSTCTR,True
+780450,PR: Boarding - premises: Operating lease - Telephones,780450,C1,True,,BUDGET,COSTCTR,True
+780500,PR: Boarding - premises: Operating lease - Other equip,780500,C1,True,,BUDGET,COSTCTR,True
+780600,PR: Boarding - premises: Insurance - Commercial provider,780600,C1,True,,BUDGET,COSTCTR,True
+780700,PR: Boarding - premises: Reps & renewals - Property,780700,C1,True,,BUDGET,COSTCTR,True
+780720,PR: Boarding - premises: Reps & renewals - Grounds,780720,C1,True,,BUDGET,COSTCTR,True
+780750,PR: Boarding - premises: Reps & renewals - Motor vehicles,780750,C1,True,,BUDGET,COSTCTR,True
+780770,PR: Boarding - premises: Reps & renewals - Equipment,780770,C1,True,,BUDGET,COSTCTR,True
+780800,PR: Boarding - premises: Boarding - Security,780800,C1,True,,BUDGET,COSTCTR,True
+780850,PR: Boarding - premises: Boarding - Other premises costs,780850,C1,True,,BUDGET,COSTCTR,True
+810100,SP: Educ Supplies: Books,810100,D0,True,,BUDGET,COSTCTR,True
+810150,SP: Educ Supplies: Library Services,810150,D0,True,,BUDGET,COSTCTR,True
+810200,SP: Educ Supplies: Curriculum Materials,810200,D0,True,,BUDGET,COSTCTR,True
+810250,SP: Educ Supplies: Education Equipment (not IT),810250,D0,True,,BUDGET,COSTCTR,True
+810300,SP: Educ Supplies: Education Eqpmt repairs (not IT),810300,D0,True,,BUDGET,COSTCTR,True
+810350,SP: Educ Supplies: Educ Furniture,810350,D0,True,,BUDGET,COSTCTR,True
+810400,SP: Educ Supplies: Audio Visual,810400,D0,True,,BUDGET,COSTCTR,True
+810450,SP: Educ Supplies: Repair of PE/Musical Equipment,810450,D0,True,,BUDGET,COSTCTR,True
+810500,SP: Educ Supplies: External education providers,810500,D0,True,,BUDGET,COSTCTR,True
+810550,SP: Educ Supplies: Primary school PIP exam fees,810550,D0,True,,BUDGET,COSTCTR,True
+815100,SP: Examination Fees: Examination Fees,815100,D0,True,,BUDGET,COSTCTR,True
+815200,SP: Examination Fees: Examination Resources,815200,D0,True,,BUDGET,COSTCTR,True
+820100,SP: Technology Costs: Educational IT Equipment,820100,F0,True,,BUDGET,COSTCTR,True
+820150,SP: Technology Costs: Educational software & licences,820150,F0,True,,BUDGET,COSTCTR,True
+820300,SP: Technology Costs: ICT Support contract,820300,F0,True,,BUDGET,COSTCTR,True
+820320,SP: Technology Costs: ICT Hardware (not capital),820320,F0,True,,BUDGET,COSTCTR,True
+820350,SP: Technology Costs: ICT Repairs,820350,F0,True,,BUDGET,COSTCTR,True
+820370,SP: Technology Costs: ICT Software (not capital),820370,F0,True,,BUDGET,COSTCTR,True
+820400,SP: Technology Costs: ICT Licences,820400,F0,True,,BUDGET,COSTCTR,True
+820420,SP: Technology Costs: ICT Broadband,820420,F0,True,,BUDGET,COSTCTR,True
+820450,SP: Technology Costs: ICT Consumable,820450,F0,True,,BUDGET,COSTCTR,True
+820470,SP: Technology Costs: Printer Consumables,820470,F0,True,,BUDGET,COSTCTR,True
+820500,SP: Technology Costs: ICT Annual Maintenance,820500,F0,True,,BUDGET,COSTCTR,True
+820520,SP: Technology Costs: ICT Consultancy,820520,F0,True,,BUDGET,COSTCTR,True
+820550,SP: Technology Costs: ICT Hosting Fees,820550,F0,True,,BUDGET,COSTCTR,True
+820570,SP: Technology Costs: ICT Other,820570,F0,True,,BUDGET,COSTCTR,True
+825100,SP: Educ Consultancy: External sports coaches,825100,E0,True,,BUDGET,COSTCTR,True
+825101,SP: Educ Consultancy: External sports coaches,825100,E0,True,,BUDGET,SALARY,True
+825150,SP: Educ Consultancy: Peripatetic music teachers,825150,E0,True,,BUDGET,COSTCTR,True
+825200,SP: Educ Consultancy: Exam Invigilation costs,825200,E0,True,,BUDGET,COSTCTR,True
+825250,SP: Educ Consultancy: Courses - external providers,825250,E0,True,,BUDGET,COSTCTR,True
+825300,SP: Educ Consultancy: Behaviour support services,825300,E0,True,,BUDGET,COSTCTR,True
+825330,SP: Educ Consultancy: Education welfare and attendance services,825330,E0,True,,BUDGET,COSTCTR,True
+825350,SP: Educ Consultancy: Library & museum services,825350,E0,True,,BUDGET,COSTCTR,True
+825400,SP: Educ Consultancy: Other Educ consultancy,825400,E0,True,,BUDGET,COSTCTR,True
+830100,SP: School Trips: School Trips - Travel costs,830100,D0,True,,BUDGET,TRIPS,True
+830150,SP: School Trips: School Trips - Accom/Entrance,830150,D0,True,,BUDGET,TRIPS,True
+830200,SP: School Trips: School Trips -  Food & Drink,830200,D0,True,,BUDGET,TRIPS,True
+830250,SP: School Trips: School Trips - Sundry,830250,D0,True,,BUDGET,TRIPS,True
+830300,SP: School Trips: School Trips - Insurance,830300,D0,True,,BUDGET,TRIPS,True
+835100,SP: Administration: Subscriptions,835100,E0,True,,BUDGET,COSTCTR,True
+835120,SP: Administration: TV licences,835120,E0,True,,BUDGET,COSTCTR,True
+835150,SP: Administration: Non-ICT licences,835150,E0,True,,BUDGET,COSTCTR,True
+835170,SP: Administration: Contribs from academies to trust,835170,E0,True,,BUDGET,COSTCTR,True
+835200,SP: Administration: Admin Supplies & Stationery,835200,E0,True,,BUDGET,COSTCTR,True
+835220,SP: Administration: Admin Photocopying,835220,E0,True,,BUDGET,COSTCTR,True
+835250,SP: Administration: Printing,835250,E0,True,,BUDGET,COSTCTR,True
+835270,SP: Administration: PR (Literature & Brochures),835270,E0,True,,BUDGET,COSTCTR,True
+835300,SP: Administration: Advertising,835300,E0,True,,BUDGET,COSTCTR,True
+835320,SP: Administration: Postage and Carriage,835320,E0,True,,BUDGET,COSTCTR,True
+835350,SP: Administration: Telephone Costs,835350,E0,True,,BUDGET,COSTCTR,True
+835370,SP: Administration: Mobile Phones,835370,E0,True,,BUDGET,COSTCTR,True
+835400,SP: Administration: Admin Furniture,835400,E0,True,,BUDGET,COSTCTR,True
+835420,SP: Administration: Admin Equipment,835420,E0,True,,BUDGET,COSTCTR,True
+835450,SP: Administration: Admin ICT,835420,E0,True,,BUDGET,COSTCTR,True
+835470,SP: Administration: Admin Equipment repairs,835470,E0,True,,BUDGET,COSTCTR,True
+835500,SP: Administration: Medical,835500,E0,True,,BUDGET,COSTCTR,True
+835520,SP: Administration: Laundry,835520,E0,True,,BUDGET,COSTCTR,True
+835550,SP: Administration: Refreshments,835550,E0,True,,BUDGET,COSTCTR,True
+835570,SP: Administration: Bank charges,835570,E0,True,,BUDGET,COSTCTR,True
+840100,SP: Transport: Vehicle Costs,840100,E0,True,,BUDGET,COSTCTR,True
+840200,SP: Transport: Vehicle Hire,840200,E0,True,,BUDGET,COSTCTR,True
+845100,SP: Bought in supply cover: Agency teaching staff long term,845100,E0,True,,BUDGET,COSTCTR,True
+845101,SP: Bought in supply cover: Agency teaching staff long term,845100,E0,True,,BUDGET,SALARY,True
+845150,SP: Bought in supply cover: Agency teaching staff short term,845150,E0,True,,BUDGET,COSTCTR,True
+845200,SP: Bought in supply cover: Agency teaching assistants,845200,E0,True,,BUDGET,COSTCTR,True
+845260,SP: Bought in supply cover: Agency support staff - cleaning and caretaking,845260,E0,True,,BUDGET,COSTCTR,True
+845270,SP: Bought in supply cover: Agency support staff - grounds maintenance,845270,E0,True,,BUDGET,COSTCTR,True
+845280,SP: Bought in supply cover: Agency support staff - other occupational costs,845280,E0,True,,BUDGET,COSTCTR,True
+845290,SP: Bought in supply cover: Agency support staff - special facilities,845290,E0,True,,BUDGET,COSTCTR,True
+845300,SP: Bought in supply cover: Agency support staff - catering,845300,E0,True,,BUDGET,COSTCTR,True
+845310,SP: Bought in supply cover: Agency support staff - professional services - non-curriculum,845310,E0,True,,BUDGET,COSTCTR,True
+850100,SP: Catering: Catering contract,850100,E0,True,,BUDGET,COSTCTR,True
+850150,SP: Catering: Catering - Food & Drink,850150,E0,True,,BUDGET,COSTCTR,True
+850200,SP: Catering: Catering - Consumables,850200,E0,True,,BUDGET,COSTCTR,True
+850250,SP: Catering: Catering - Equipment,850250,E0,True,,BUDGET,COSTCTR,True
+850300,SP: Catering: Catering - Maint. and Repairs,850300,E0,True,,BUDGET,COSTCTR,True
+850350,SP: Catering: Vending Machines,850350,E0,True,,BUDGET,COSTCTR,True
+855100,SP: Non-educ contracts: Consultancy Fees,855100,E0,True,,BUDGET,COSTCTR,True
+855120,SP: Non-educ contracts: Counsellors,855120,E0,True,,BUDGET,COSTCTR,True
+855150,SP: Non-educ contracts: Financial,855150,E0,True,,BUDGET,COSTCTR,True
+855170,SP: Non-educ contracts: Legal - Other,855170,E0,True,,BUDGET,COSTCTR,True
+855180,SP: Non-educ contracts: Legal - Conversion,855180,E0,True,,BUDGET,COSTCTR,True
+855200,SP: Non-educ contracts: Personnel/HR,855200,E0,True,,BUDGET,COSTCTR,True
+855220,SP: Non-educ contracts: Payroll,855220,E0,True,,BUDGET,COSTCTR,True
+855250,SP: Non-educ contracts: Clerking board/governor meetings,855250,E0,True,,BUDGET,COSTCTR,True
+855270,SP: Non-educ contracts: Occupational Health,855200,E0,True,,BUDGET,COSTCTR,True
+855300,SP: Non-educ contracts: Property Management Services,855300,E0,True,,BUDGET,COSTCTR,True
+855320,SP: Non-educ contracts: Energy Management Services,855320,E0,True,,BUDGET,COSTCTR,True
+855350,SP: Non-educ contracts: Free School Meals - pupil checks,855350,E0,True,,BUDGET,COSTCTR,True
+855370,SP: Non-educ contracts: Admissions service,855370,E0,True,,BUDGET,COSTCTR,True
+855400,SP: Non-educ contracts: educ Psychologist,855400,E0,True,,BUDGET,COSTCTR,True
+855420,SP: Non-educ contracts: Speech & Language Therapist,855420,E0,True,,BUDGET,COSTCTR,True
+855450,SP: Non-educ contracts: External SEN consultancy,855450,E0,True,,BUDGET,COSTCTR,True
+855470,SP: Non-educ contracts: Cash Collection services,855470,E0,True,,BUDGET,COSTCTR,True
+855500,SP: Non-educ contracts: PFI contract management services,855500,E0,True,,BUDGET,COSTCTR,True
+855600,SP: Non-educ contracts: Other non-educational contracts,855600,E0,True,,BUDGET,COSTCTR,True
+860100,SP: Audit: Statutory audit fees,860100,E0,True,,BUDGET,COSTCTR,True
+860200,SP: Audit: Internal audit & other fees,860200,E0,True,,BUDGET,COSTCTR,True
+860300,SP: Audit: Accounts return,860300,E0,True,,BUDGET,COSTCTR,True
+865100,SP: Governance: Academy governor - travel,865100,E0,True,,BUDGET,COSTCTR,True
+865150,SP: Governance: Academy governor - subsistence,865150,E0,True,,BUDGET,COSTCTR,True
+865200,SP: Governance: Academy governor - other reimb.,865200,E0,True,,BUDGET,COSTCTR,True
+865300,SP: Governance: Trust Director - travel,865300,E0,True,,BUDGET,COSTCTR,True
+865350,SP: Governance: Trust Director - subsistence,865350,E0,True,,BUDGET,COSTCTR,True
+865400,SP: Governance: Trust Director - other reimb.,865400,E0,True,,BUDGET,COSTCTR,True
+865410,SP: Administration-support costs: Revenue expenditure from capital funding,865410,E0,True,,BUDGET,COSTCTR,True
+870200,SP: Cost of raising funds: Cost of raising funds - premises,870200,E0,True,,BUDGET,COSTCTR,True
+870220,SP: Cost of raising funds: Cost of raising funds - Depr'n,870220,E0,True,,BUDGET,COSTCTR,True
+870240,SP: Cost of raising funds: Cost of raising funds - amortisation,870240,E0,True,,BUDGET,COSTCTR,True
+870260,SP: Cost of raising funds: Cost of raising funds - Impair't,870260,E0,True,,BUDGET,COSTCTR,True
+870300,SP: Cost of raising funds: Cost of raising funds - teaching/learning,870300,E0,True,,BUDGET,COSTCTR,True
+870350,SP: Cost of raising funds: Cost of raising funds - technology,870350,E0,True,,BUDGET,COSTCTR,True
+870400,SP: Cost of raising funds: Cost of raising funds - governance,870400,E0,True,,BUDGET,COSTCTR,True
+870500,SP: Cost of raising funds: Cost of raising funds - other,870500,E0,True,,BUDGET,COSTCTR,True
+872100,SP: Teaching School Hub: Staff costs - direct,ZZZ,G0,True,,BUDGET,COSTCTR,True
+872150,SP: Teaching School Hub: Staff Development,ZZZ,G0,True,,BUDGET,COSTCTR,True
+872200,SP: Teaching School Hub: Other Direct costs,ZZZ,G0,True,,BUDGET,COSTCTR,True
+872500,SP: Teaching School Hub: Staff costs - support,ZZZ,G0,True,,BUDGET,COSTCTR,True
+872550,SP: Teaching School Hub: Depr'n,ZZZ,G0,True,,BUDGET,COSTCTR,True
+872600,SP: Teaching School Hub: Technology costs,ZZZ,G0,True,,BUDGET,COSTCTR,True
+872650,SP: Teaching School Hub: Recruitment and support,ZZZ,G0,True,,BUDGET,COSTCTR,True
+872700,SP: Teaching School Hub: Security and support,ZZZ,G0,True,,BUDGET,COSTCTR,True
+872750,SP: Teaching School Hub: Governance costs,ZZZ,G0,True,,BUDGET,COSTCTR,True
+872950,SP: Teaching School Hub: Other support costs,ZZZ,G0,True,,BUDGET,COSTCTR,True
+880100,SP: Other supplies & services: Pupil gifts and prizes,880100,E0,True,,BUDGET,COSTCTR,True
+880150,SP: Other supplies & services: Student bursary expenditure,880150,E0,True,,BUDGET,COSTCTR,True
+880170,SP: Other supplies & services: Welfare payments to pupils/students,880170,E0,True,,BUDGET,COSTCTR,True
+880200,SP: Other supplies & services: Increase in provisions,880200,E0,True,,BUDGET,COSTCTR,True
+880220,SP: Other supplies & services: Release of provisions,880220,E0,True,,BUDGET,COSTCTR,True
+880250,SP: Other supplies & services: Bad Debt written off,880250,E0,True,,BUDGET,COSTCTR,True
+880300,SP: Other supplies & services: Excluded pupils,880300,E0,True,,BUDGET,COSTCTR,True
+880350,SP: Other supplies & services: Academy performances,880350,E0,True,,BUDGET,COSTCTR,True
+880400,SP: Other supplies & services: Parent evenings/meetings,880400,E0,True,,BUDGET,COSTCTR,True
+880450,SP: Other supplies & services: Room Hire,880450,E0,True,,BUDGET,COSTCTR,True
+880500,SP: Other supplies & services: Other not attributable expend,880500,E0,True,,BUDGET,COSTCTR,True
+880530,SP: Other supplies & services: Donations to charities,880530,E0,True,,BUDGET,COSTCTR,True
+880550,SP: Other supplies & services: School uniforms (cost),880550,E0,True,,BUDGET,COSTCTR,True
+890100,SP: Financing costs: PFI Specialist concession acct,890100,E0,True,,BUDGET,COSTCTR,True
+890150,SP: Financing costs: PFI payment to LA,890150,E0,True,,BUDGET,COSTCTR,True
+890200,SP: Financing costs: Loan Interest paid - DfE Group,890200,E0,True,,BUDGET,COSTCTR,True
+890300,SP: Financing costs: Loan Interest paid - other,890300,E0,True,,BUDGET,COSTCTR,True
+890400,SP: Financing costs: Finance lease interest,890400,E0,True,,BUDGET,COSTCTR,True
+892100,SP: Asset financing: Depr'n - direct costs - buildings,892100,W1,True,,BUDGET,CAPITAL,True
+892110,SP: Asset financing: Depr'n - direct costs - other assets,892110,W1,True,,BUDGET,CAPITAL,True
+892150,SP: Asset financing: Depr'n - indirect costs - buildings,892150,W1,True,,BUDGET,CAPITAL,True
+892160,SP: Asset financing: Depr'n - indirect costs - other assets,892160,W1,True,,BUDGET,CAPITAL,True
+892200,SP: Asset financing: Amortisation - direct costs,892200,W1,True,,BUDGET,CAPITAL,True
+892250,SP: Asset financing: Amortisation - indirect costs,892250,W1,True,,BUDGET,CAPITAL,True
+892300,SP: Asset financing: Impair't - direct costs,892300,W1,True,,BUDGET,CAPITAL,True
+892350,SP: Asset financing: Impair't - indirect costs,892350,W1,True,,BUDGET,CAPITAL,True
+892500,SP: Asset financing: (Gain)/loss on disp of tang FA,892500,W1,True,,BUDGET,CAPITAL,True
+892600,SP: Asset financing: (Gain)/loss on disp of Intang FA,892600,W1,True,,BUDGET,CAPITAL,True
+892700,SP: Asset financing: (Gain)/loss on disp of invest's,892700,W1,True,,BUDGET,CAPITAL,True
+892800,SP: Asset financing: Revenue contributions to capital,892800,E0,True,,BUDGET,COSTCTR,True
+893100,SP: Other recognised gains/losses: Actuarial gain/loss pension fund,893100,E0,True,,BUDGET,COSTCTR,True
+893200,SP: Other recognised gains/losses: Valuation of FA,893200,E0,True,,BUDGET,COSTCTR,True
+893300,SP: Other recognised gains/losses: Valuation of investments,893300,E0,True,,BUDGET,COSTCTR,True
+895100,SP: Boarding - supplies: Direct Goods & services,895100,D0,True,,BUDGET,COSTCTR,True
+895150,SP: Boarding - supplies: Direct Travel,895150,D0,True,,BUDGET,COSTCTR,True
+895200,SP: Boarding - supplies: Direct subsistence,895200,D0,True,,BUDGET,COSTCTR,True
+895250,SP: Boarding - supplies: Catering,895250,D0,True,,BUDGET,COSTCTR,True
+895300,SP: Boarding - supplies: Other direct cost,895300,D0,True,,BUDGET,COSTCTR,True
+895350,SP: Boarding - supplies: Bad debt expense,895350,D0,True,,BUDGET,COSTCTR,True
+895400,SP: Boarding - supplies: Travel,895400,D0,True,,BUDGET,COSTCTR,True
+895450,SP: Boarding - supplies: Subsistence,895450,D0,True,,BUDGET,COSTCTR,True
+895500,SP: Boarding - supplies: Other support cost,895500,D0,True,,BUDGET,COSTCTR,True
+895550,SP: Boarding - supplies: Other support cost Academy Trusts,895550,D0,True,,BUDGET,COSTCTR,True
+895600,SP: Boarding - supplies: (Gain)/loss on disp of tang FA,895600,D0,True,,BUDGET,COSTCTR,True
+895650,SP: Boarding - supplies: (Gain)/loss on disp of Intang FA,895650,D0,True,,BUDGET,COSTCTR,True
+895700,SP: Boarding - supplies: (Gain)/loss on disp of invest's,895700,D0,True,,BUDGET,COSTCTR,True
+895750,SP: Boarding - supplies: Depr'n - boarding - buildings,895750,D0,True,,BUDGET,COSTCTR,True
+895760,SP: Boarding - supplies: Depr'n - boarding - other assets,895760,D0,True,,BUDGET,COSTCTR,True
+895800,SP: Boarding - supplies: Amortisation - boarding,895800,D0,True,,BUDGET,COSTCTR,True
+895850,SP: Boarding - supplies: Impair't - boarding,895850,D0,True,,BUDGET,COSTCTR,True
+A_FTE_ADM,Finance Admin Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_CAT,Catering Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_CLE,Cleaning Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_COM,Community Facilities Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_COV,Cover Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_EDS,Education Support Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_ESTF,External Staff Annual FTE,ZZZ,ZZZ,True,,STATISTICS,COSTCTR,True
+A_FTE_EXT,Extended Schools Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_FLA,FLA Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_FSW,Family Support Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_INV,Invigilator Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_ADM,Finance Admin Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_CAT,Catering Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_CLE,Cleaning Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_COM,Community Facilities Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_COV,Cover Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_EDS,Education Support Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_ESTF,External Staff Annual FTE Leave Adjustment,ZZZ,ZZZ,True,,STATISTICS,COSTCTR,True
+A_FTE_LEAVE_ADJ_EXT,Extended Schools Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_FLA,FLA Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_FSW,Family Support Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_INV,Invigilator Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_LIB,Librarian Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_LSN,Leadership Non-Teaching Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_LST,Leadership Teaching Annual FTE Leave Adjustment,Z16,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_MDS,Mid Day Supervisors Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_NUR,Nursery Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_OTH,Other Staff Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_PAS,Pastoral Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_PRE,Premises Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_TA,Teaching Assistants Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_TEA,Teaching Annual FTE Leave Adjustment,Z16,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LEAVE_ADJ_TEC,Technicians Annual FTE Leave Adjustment,Z17,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LIB,Librarian Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LSN,Leadership Non-Teaching Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_LST,Leadership Teaching Annual FTE,Z04,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_MDS,Mid Day Supervisors Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_NUR,Nursery Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_OTH,Other Staff Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_PAS,Pastoral Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_PRE,Premises Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_TA,Teaching Assistants Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_TEA,Teaching Annual FTE,Z04,ZZZ,True,,STATISTICS,SALARY,True
+A_FTE_TEC,Technicians Annual FTE,Z05,ZZZ,True,,STATISTICS,SALARY,True
+AWPU01_BRM_PRI,AWPU-PRI-Bromley,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+AWPU01_HCK_PRI,AWPU-PRI-Hackney,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+AWPU01_KEN_PRI,AWPU-PRI-Kent,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+AWPU01_LNS_PRI,AWPU-PRI-Lancashire,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+AWPU01_NTS_PRI,AWPU-PRI-Nottinghamshire,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+AWPU02_BRM_KS3,AWPU-KS3-Bromley,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+AWPU02_HCK_KS3,AWPU-KS3-Hackney,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+AWPU02_KEN_KS3,AWPU-KS3-Kent,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+AWPU02_NTS_KS3,AWPU-KS3-Nottinghamshire,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+AWPU03_BRM_KS4,AWPU-KS4 -Bromley,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+AWPU03_HCK_KS4,AWPU-KS4 -Hackney,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+AWPU03_KEN_KS4,AWPU-KS4 -Kent,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+AWPU03_NTS_KS4,AWPU-KS4 -Nottinghamshire,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+BFWD_RES,Brought Forward Reserves,Z01,ZZZ,True,,STATISTICS,DEFAULT,True
+BOARD_BOY_FT,Boarders Boys (Full Time),ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+BOARD_BOY_WK,Boarders Boys (Weekly),ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+BOARD_GIRL_FT,Boarders Girls (Full Time),ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+BOARD_GIRL_WK,Boarders Girls (Weekly),ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+BRD_FT_01,Boarders Rate - Full Time - Term 1,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+BRD_FT_02,Boarders Rate - Full Time - Term 2,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+BRD_FT_03,Boarders Rate - Full Time - Term 3,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+BRD_WK_01,Boarders Rate - Weekly - Term 1,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+BRD_WK_02,Boarders Rate - Weekly - Term 2,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+BRD_WK_03,Boarders Rate - Weekly - Term 3,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+CAP_BFWD_RES,Fixed Capital Fund B/F Balances,Z06,ZZZ,True,,CAPITALFUND,DEFAULT,True
+CENCHG,Central Charge,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+CENCHG_GAG,Central Charge - GAG Income %,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+CENCHG_PUP,Central Charge - Per Pupil Costs,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+CENTRAL_COST,Central Costs For GAG Pool,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+CENTRAL_FTE,Central Charge - Pool FTE Split,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+CENTRAL_GAG,Central Charge - GAG Income Split,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+CENTRAL_PUP,Central Charge - Pool Pupil Split,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+CENTRAL_RES,Central Charge - Reserves Pool,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+CENTRAL_TOP,Central Charge - Top Slice,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+CENTRALCHG_PRI,Central Charge - Primary,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+CENTRALCHG_SEC,Central Charge - Secondary,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+DFC,DFC Funding,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+DFC_CORE,DFC Core Amount,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+DFC_PUPIL_NUR,DFC Primary Nursery,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+DFC_PUPIL_POST16,DFC Post16 Pupil,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+DFC_PUPIL_PRI,DFC Primary Pupil,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+DFC_PUPIL_SEC,DFC Secondary Pupil,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+DFC_PUPIL_SPS,DFC Special Pupil,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+ESFA_POST16_TOTAL,Total ESFA Post 16 Funding Statement,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+ESFA_TOTAL,Total ESFA Pre 16 Funding Statement,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+FTE_KS5,FTE for Post 16 Pupils,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+FUNDED_FS,Funded Pupil Numbers Foundation,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+FUNDED_KS1,Funded Pupil Numbers KS1,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+FUNDED_KS2,Funded Pupil Numbers KS2,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+FUNDED_KS3,Funded Pupil Numbers KS3,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+FUNDED_KS3_ADJ,Funding Statement Adjustment KS3,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+FUNDED_KS4,Funded Pupil Numbers KS4,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+FUNDED_KS4_ADJ,Funding Statement Adjustment KS4,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+FUNDED_KS5,Funded Pupil Numbers KS5,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+FUNDED_KS5_ADJ,Funding Statement Adjustment KS5,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+FUNDED_PPPOST16,Unoccupied Post 16 Pupil Paces Special Provision,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+FUNDED_PPPOST16O,Occupied Post 16 Pupil Paces Special Provision,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+FUNDED_PPPRE16,Unoccupied Pre 16 Pupil Places Special Provision,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+FUNDED_PPPRE16O,Occupied Pre 16 Pupil Places Special Provision,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+FUNDED_PRI,Funded Pupil Numbers Primary Total,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+FUNDED_PRI_ADJ,Funding Statement Adjustment Primary,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+FUNDING_16_19,Funding GAG - Post 16,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+FUNDING_GAG,Funding GAG,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+FUNDING_HNPOST16,Funding Statement Unoccupied Post 16 Special Provision,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+FUNDING_HNPOST16O,Funding Statement Occupied Post 16 Special Provision,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+FUNDING_HNPRE16,Funding Statement Unoccupied Pre 16 Special Provision,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+FUNDING_HNPRE16O,Funding Statement Occupied Pre 16 Special Provision,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+FUNDING_PRI,Funding Primary,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+FUNDING_PUPPREM_PLAC,Pupil Premium Post Looked After Children Income,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+FUNDING_PUPPREM_PRI,Pupil Premium Income Primary,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+FUNDING_PUPPREM_SEC,Pupil Premium Income Secondary,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+FUNDING_PUPPREM_SER,Pupil Premium Service Children Income,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+FUNDING_SCA,Funding SCA,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+FUNDING_SEC,Funding Secondary,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+FUNDING_SFS,Funding Student Financial Support,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+HNPF_RATE,High Needs Place Funding Per Pupil Rate,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+HNPFO_RATE,Occupied High Needs Place Funding Per Pupil Rate,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+ICFP_TEST,Icfp_test,ZZZ,ZZZ,False,ALE,PUPILNUMBERS,DEFAULT,True
+INCOME_BOARD_FT,Income Boarders - Full Time,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+INCOME_BOARD_WK,Income Boarders - Weekly,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+INCOME_FEE_00,Fee Income - Nursery,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+INCOME_FEE_01,Fee Income - Reception and Lower,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+INCOME_FEE_02,Fee Income - Junior,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+INCOME_FEE_03,Fee Income - Senior,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+INCOME_LUNCH,Income Lunch,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+LEVY_ALL,Apprentice Allowance,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LEVY_SUP,Apprentice Levy - Support,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LEVY_TEA,Apprentice Levy - Teaching,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LIVWAGE,Living Wage Topup,ZZZ,ZZZ,True,,STATISTICS,SALARY,True
+LIVWAGE_ESTF,Living Wage Topup - External Staff,ZZZ,ZZZ,True,,STATISTICS,COSTCTR,True
+LNCH_01,Lunch Rate - Term 1,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LNCH_02,Lunch Rate - Term 2,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LNCH_03,Lunch Rate - Term 3,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LNCH_NO50_01,Pupils Not Charged for Lunches - 50% Uptake - Term 1,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LNCH_NO50_02,Pupils Not Charged for Lunches - 50% Uptake - Term 2,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LNCH_NO50_03,Pupils Not Charged for Lunches - 50% Uptake - Term 3,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LNCH_NOCRG_01,Pupils Not Charged for Lunches - Term 1,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LNCH_NOCRG_02,Pupils Not Charged for Lunches - Term 2,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LNCH_NOCRG_03,Pupils Not Charged for Lunches - Term 3,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LUMP_BRM_PRI,Lump Sum Primary Bromley,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LUMP_BRM_SEC,Lump Sum Secondary Bromley,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LUMP_HCK_PRI,Lump Sum Primary Hackney,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LUMP_HCK_SEC,Lump Sum Secondary Hackney,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LUMP_KEN_PRI,Lump Sum Primary Kent,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LUMP_KEN_SEC,Lump Sum Secondary Kent,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LUMP_LNS_PRI,Lump Sum Primary Lancashire,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LUMP_NTS_PRI,Lump Sum Primary Nottinghamshire,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+LUMP_NTS_SEC,Lump Sum Secondary Nottinghamshire,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+MINWAGE,Minimum Wage Top Up,ZZZ,ZZZ,True,,STATISTICS,SALARY,True
+MINWAGE_ESTF,Minimum Wage Top Up - External Staff,ZZZ,ZZZ,True,,STATISTICS,COSTCTR,True
+PAYGRANT,Teachers Pay Grant,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+PAYGRANT_SPS_FRINGE,Teachers Pay Grant Special School Fringe,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+PAYGRANT_SPS_OUTER,Teachers Pay Grant Special School Outer,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+PE_GRANT,PE Grant Allocation,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+PEG_CORE,PE Grant Core Amount,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+PEG_PUPIL,PE Grant Per Pupil,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+PENS,Opted Out Pension Costs,ZZZ,ZZZ,True,,STATISTICS,SALARY,True
+PENS_ESTF,Opted Out Pension Costs - External Staff,ZZZ,ZZZ,True,,STATISTICS,COSTCTR,True
+PENS_KS5_APR_EW,Teachers Pensions Grant Post 16 Rate April - August (EW),ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+PENS_KS5_APR_FRI,Teachers Pensions Grant Post 16 Rate April - August (Fringe),ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+PENS_KS5_APR_INN,Teachers Pensions Grant Post 16 Rate April - August (Inner),ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+PENS_KS5_APR_OUT,Teachers Pensions Grant Post 16 Rate April - August (Outer),ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+PENS_KS5_SEP_EW,Teachers Pensions Grant Post 16 Rate September - March (EW),ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+PENS_KS5_SEP_FRI,Teachers Pensions Grant Post 16 Rate September - March (Fringe),ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+PENS_KS5_SEP_INN,Teachers Pensions Grant Post 16 Rate September - March (Inner),ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+PENS_KS5_SEP_OUT,Teachers Pensions Grant Post 16 Rate September - March (Outer),ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+PUPIL_CEN,Nursery Census Pupil Numbers,Z10,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_CEN_00,Reception Census Pupil Numbers,Z10,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_CEN_01,Year 1 Census Pupil Numbers,Z10,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_CEN_02,Year 2 Census Pupil Numbers,Z10,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_CEN_03,Year 3 Census Pupil Numbers,Z10,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_CEN_04,Year 4 Census Pupil Numbers,Z10,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_CEN_05,Year 5 Census Pupil Numbers,Z10,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_CEN_06,Year 6 Census Pupil Numbers,Z10,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_CEN_07,Year 7 Census Pupil Numbers,Z10,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_CEN_08,Year 8 Census Pupil Numbers,Z10,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_CEN_09,Year 9 Census Pupil Numbers,Z10,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_CEN_10,Year 10 Census Pupil Numbers,Z10,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_CEN_11,Year 11 Census Pupil Numbers,Z10,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_CEN_12,Year 12 Census Pupil Numbers,Z10,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_CEN_13,Year 13 Census Pupil Numbers,Z10,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_CEN_14,Year 14 Census Pupil Numbers,Z10,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_SPRING_FS,Foundation Spring Census Pupil Numbers,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_SPRING_KS1,KS1 Spring Census Pupil Numbers,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_SPRING_KS2,KS2 Spring Census Pupil Numbers,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_SPRING_KS3,KS3 Spring Census Pupil Numbers,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_SPRING_KS4,KS4 Spring Census Pupil Numbers,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_SPRING_KS5,KS5 Spring Census Pupil Numbers,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_SPRING_NUR,Nursery Spring Census Pupil Numbers,ZZZ,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_UIFSM,Pupils taking UIFSM,Z11,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_UIFSM_JAN,Pupils taking UIFSM in January Census,Z11,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPIL_UIFSM_OCT,Pupils taking UIFSM in October Census,Z11,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPILPREMIUM_PRI,Pupil Premium Numbers Primary,Z12,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPILPREMIUM_SEC,Pupil Premium Numbers Secondary,Z12,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPILPREMIUMPLAC,Pupil Premium Post Looked After Children Numbers,Z12,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPILPREMIUMSER,Pupil Premium Service Children Numbers,Z12,ZZZ,True,,PUPILNUMBERS,DEFAULT,True
+PUPLAC_RATE,Pupil Premium Post Looked After Child Rate,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+PUPPRI_RATE,Pupil Premium Rate Primary,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+PUPSEC_RATE,Pupil Premium Rate Secondary,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+PUPSER_RATE,Pupil Premium Service Child Rate,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+REV_BFWD_RES,Fixed Revenue Fund B/F Balances,Z06,ZZZ,True,,REVENUEFUND,DEFAULT,True
+RPA_RATE,Risk Protection Arrangement Insurance,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+SCA,SCA Funding,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+SCA_BAND,SCA Condition Band Calc,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+SCA_BAND_RATE,SCA Condition Band Rate,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+SCA_LOC_RATE,SCA Location Factor Rate,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+SCA_PFI_PUPIL_POST16,SCA Post16 Pupil PFI Rate,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+SCA_PFI_PUPIL_PRI,SCA Primary Pupil PFI Rate,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+SCA_PFI_PUPIL_SEC,SCA Secondary Pupil PFI Rate,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+SCA_PFI_PUPIL_SPS,SCA Special Pupil PFI Rate,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+SCA_PUPIL_POST16,SCA Post16 Pupil Rate,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+SCA_PUPIL_PRI,SCA Primary Pupil Rate,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+SCA_PUPIL_SEC,SCA Secondary Pupil Rate,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+SCA_PUPIL_SPS,SCA Special Pupil Rate,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+SCA_TOTAL,SCA Total Income,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UIFSM_ANNUAL,UIFSM - Annual calc,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+UIFSM_FIN,UIFSM - Final Payment,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+UIFSM_PRO,UIFSM Provisional Allocation,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+UIFSM_PRO_CALC,UIFSM - Provisional calc,ZZZ,ZZZ,True,,FUNDING,DEFAULT,True
+UIFSM_RATE,UIFSM Per Pupil Per Annum,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UIFSM_RATE_FIN,UIFSM Per Pupil Per Annum (Final),ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UIFSM_RATE_PRO,UIFSM Per Pupil Per Annum (Provisional),ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UPLIFT_ASCL,ASCL Guidance on Non Staffing Uplifts,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UPLIFT_CPI,CPI,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UPLIFT_EXP,Expenditure Uplifts,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UPLIFT_FEE,Uplift Fees,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UPLIFT_GAG,GAG Uplifts,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UPLIFT_INC,Income Uplifts,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UPLIFT_POST16,Post 16 GAG Uplifts,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UPLIFT_PUPILASCL%,Pupil plus ASCL % Uplift,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UPLIFT_PUPILEXP%,Pupil plus Expenditure % Uplift,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UPLIFT_PUPILFEE%,Uplift Pupil Fee %,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UPLIFT_PUPILGAG%,Pupil plus GAG % Uplift,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UPLIFT_PUPILINC%,Pupil plus Income % Uplift,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UPLIFT_PUPILPOST16%,Pupil plus Post 16 GAG % Uplift,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UPLIFT_PUPILRPI%,Pupil plus RPI % Uplift,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UPLIFT_RPI,RPI,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UPLIFT_SUPSTF,Support Staff Uplift %,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+UPLIFT_TEACH,Teacher Uplift %,ZZZ,ZZZ,True,,STATISTICS,DEFAULT,True
+WK_FTE_ADM,Finance Admin Weekly FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_CAT,Catering Weekly FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_CLE,Cleaning Weekly FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_COM,Community Facilities Weekly FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_COV,Cover Weekly FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_EDS,Education Support Weekly FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_ESTF,External Staff Weekly FTE,ZZZ,ZZZ,True,,STATISTICS,COSTCTR,True
+WK_FTE_EXT,Extended Schools Weekly FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_FLA,FLA Weekly  FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_FSW,Family Support Weekly  FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_INV,Invigilator Weekly  FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_ADM,Finance Admin Weekly FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_CAT,Catering Weekly FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_CLE,Cleaning Weekly FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_COM,Community Facilities Weekly FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_COV,Cover Weekly FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_EDS,Education Support Weekly FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_ESTF,External Staff Weekly FTE Leave Adjustment,ZZZ,ZZZ,True,,STATISTICS,COSTCTR,True
+WK_FTE_LEAVE_ADJ_EXT,Extended Schools Weekly FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_FLA,FLA Weekly  FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_FSW,Family Support Weekly  FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_INV,Invigilator Weekly  FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_LIB,Librarian Weekly FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_LSN,Leadership Non-Teaching Weekly FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_LST,Leadership Teaching Weekly FTE Leave Adjustment,Z14,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_MDS,Mid Day Supervisors Weekly FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_NUR,Nursery Weekly FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_OTH,Other Staff Weekly FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_PAS,Pastoral Weekly FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_PRE,Premises Weekly FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_TA,Teaching Assistants Weekly FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_TEA,Teaching Weekly FTE Leave Adjustment,Z14,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LEAVE_ADJ_TEC,Technicians Weekly FTE Leave Adjustment,Z15,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LIB,Librarian Weekly FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LSN,Leadership Non-Teaching Weekly FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_LST,Leadership Teaching Weekly FTE,Z02,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_MDS,Mid Day Supervisors Weekly FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_NUR,Nursery Weekly FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_OTH,Other Staff Weekly FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_PAS,Pastoral Weekly FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_PRE,Premises Weekly FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_TA,Teaching Assistants Weekly FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_TEA,Teaching Weekly FTE,Z02,ZZZ,True,,STATISTICS,SALARY,True
+WK_FTE_TEC,Technicians Weekly FTE,Z03,ZZZ,True,,STATISTICS,SALARY,True

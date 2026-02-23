@@ -527,7 +527,7 @@ def get_srg_for_role(role_title: str) -> str:
     if any(kw in role_lower for kw in ['support', 'welfare', 'pastoral', 'mentor']):
         return 'EDS'
 
-    # Default to OTH
+    # Default to OTH (Other) when role cannot be classified by expert knowledge
     return 'OTH'
 
 

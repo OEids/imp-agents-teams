@@ -1,0 +1,51 @@
+CustomGroupingCode,Title,CustomGroupingEnabled
+A0,GAG funding,True
+A1,Other DfE Grants - Standards Funds,True
+A2,Other Govt Grants,True
+A3,Private Sector Funding,True
+A4,Other Income,True
+B0,Teaching Staff,True
+B1,Educational Support Staff,True
+B2,Premises Staffing,True
+B3,Admin Staffing,True
+B4,Other Staff,True
+B5,Agency Staff,True
+C0,Maintenance of Premises,True
+C1,Other Occupational Costs,True
+C2,Other Occupational Costs,True
+D0,Educational Supplies and Services,True
+E0,Other Supplies and Services,True
+F0,ICT Costs (Non Capital),True
+G0,Staff Development,True
+G1,Indirect Employees Expenses,True
+H0,Other GAG Expenses,True
+I0,Depreciation,True
+L0,Direct Revenue Financing,True
+W0,Capital Income,True
+W1,Capital Expenditure,True
+ZB900,Land & Buildings,True
+ZB902,Asset Under Construction,True
+ZB904,IT Equipment,True
+ZB906,Furniture and Equipment,True
+ZB908,Motor Vehicle,True
+ZB910,Plant & Machinery,True
+ZB920,Stock,True
+ZB922,Debtors,True
+ZB923,VAT,True
+ZB924,Cash at Bank and in Hand,True
+ZB926,Prepayment,True
+ZB930,Trip Balances,True
+ZB950,Creditors,True
+ZB952,Salary Control,True
+ZB954,PAYE / NI Control,True
+ZB956,Expenses Control Account,True
+ZB958,Accruals,True
+ZB960,Long Term Liabilities,True
+ZB965,Pension Scheme Liability,True
+ZB968,Intra Company balances,True
+ZB970,Restricted Fixed Asset Fund,True
+ZB972,Restricted General Fund,True
+ZB974,Current Year Income & Expenditure,True
+ZB980,Unrestricted General Fund,True
+ZB982,Unrestricted Pension Reserve,True
+ZZZ,Not Applicable,True

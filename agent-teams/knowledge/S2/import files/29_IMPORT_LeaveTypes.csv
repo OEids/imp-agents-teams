@@ -1,0 +1,33 @@
+ScenarioCode,LeaveTypeCode,LeaveTypeTitle,AvailableToAllSchools,RebatePercentage,SchoolCodes,LeaveTypeEnabled,WeeksFrom,WeeksTo,StatutoryPayPercentage,OtherPayPercentage,TopUpToPercentage,MinimumStatutoryWeeklyValue,MaximumStatutoryWeeklyValue,UseGrossValueForPension
+,MAT_STAT,Statutory Maternity /Adoption,True,92,,True,1,6,90,0,0,0,99999.0,True
+,MAT_STAT,Statutory Maternity /Adoption,True,92,,True,7,39,90,0,0,0,184.03,True
+,MAT_STAT,Statutory Maternity /Adoption,True,92,,True,40,52,0,0,0,0,0.0,False
+,MAT_SUP_<26W,Support - Less than 26 wks service,True,92,,True,1,52,0,0,0,0,0.0,False
+,MAT_SUP_>1YR,Support - At Least 1 yr service,True,92,,True,1,6,90,0,90,0,99999.0,True
+,MAT_SUP_>1YR,Support - At Least 1 yr service,True,92,,True,7,18,90,50,0,0,184.03,True
+,MAT_SUP_>1YR,Support - At Least 1 yr service,True,92,,True,19,39,90,0,0,0,184.03,True
+,MAT_SUP_>1YR,Support - At Least 1 yr service,True,92,,True,40,52,0,0,0,0,0.0,False
+,MAT_SUP_>26W_<1YR,Support - At Least 26 wks and less than 1 yr service,True,92,,True,1,6,90,0,90,0,99999.0,True
+,MAT_SUP_>26W_<1YR,Support - At Least 26 wks and less than 1 yr service,True,92,,True,7,39,90,0,0,0,184.03,True
+,MAT_SUP_>26W_<1YR,Support - At Least 26 wks and less than 1 yr service,True,92,,True,40,52,0,0,0,0,0.0,False
+,MAT_TEA_<26W,Teacher - Less than 26 wks service,True,92,,True,1,52,0,0,0,0,0.0,False
+,MAT_TEA_>1YR,Teacher - At Least 1 yr service,True,92,,True,1,4,90,0,100,0,99999.0,True
+,MAT_TEA_>1YR,Teacher - At Least 1 yr service,True,92,,True,5,6,90,0,0,0,99999.0,True
+,MAT_TEA_>1YR,Teacher - At Least 1 yr service,True,92,,True,7,18,90,50,0,0,184.03,True
+,MAT_TEA_>1YR,Teacher - At Least 1 yr service,True,92,,True,19,39,90,0,0,0,184.03,True
+,MAT_TEA_>1YR,Teacher - At Least 1 yr service,True,92,,True,40,52,0,0,0,0,0.0,False
+,MAT_TEA_>26W_<1YR,Teacher - At Least 26 wks and less than 1 yr service,True,92,,True,1,6,90,0,0,0,99999.0,True
+,MAT_TEA_>26W_<1YR,Teacher - At Least 26 wks and less than 1 yr service,True,92,,True,7,39,90,0,0,0,184.03,True
+,MAT_TEA_>26W_<1YR,Teacher - At Least 26 wks and less than 1 yr service,True,92,,True,40,52,0,0,0,0,0.0,False
+,PAT_100,Paternity - 100% salary,True,92,,True,1,2,90,0,100,0,184.03,True
+,PAT_50,Paternity - 50% salary,True,92,,True,1,2,90,0,50,0,184.03,True
+,PAT_STAT,Paternity - SPP only,True,92,,True,1,2,90,0,0,0,184.03,True
+,SICK_0,Sickness - unpaid,True,0,,True,1,52,0,0,0,0,0.0,False
+,SICK_100,Sickness - 100% salary,True,0,,True,1,52,0,0,100,0,0.0,False
+,SICK_50,Sickness - 50% salary,True,0,,True,1,52,0,0,50,0,0.0,False
+,SPL_0,Shared Parental  - unpaid leave,True,92,,True,1,52,0,0,0,0,0.0,False
+,SPL_100,Shared Parental  - 100% salary,True,92,,True,1,6,90,0,100,0,99999.0,True
+,SPL_50,Shared Parental  - 50% salary including (lower of) 90% /Statutory,True,92,,True,1,52,90,0,50,0,184.03,True
+,SPL_90,Shared Parental  - 90% salary,True,92,,True,1,6,90,0,0,0,99999.0,True
+,SPL_90/STAT,Shared Parental  - (lower of) 90% salary /Statutory,True,92,,True,1,52,90,0,0,0,184.03,True
+,SPL_90/STAT+50,Shared Parental  - (lower of) 90% salary /Statutory + 50% salary,True,92,,True,1,52,90,50,0,0,184.03,True

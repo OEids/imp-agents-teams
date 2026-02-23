@@ -1,0 +1,9 @@
+ActivityCode,Title,ActivityEnabled
+BOARDING,Boarding,True
+CATERING,Catering,True
+DEFAULT,Default (no) Activity,True
+EXTENDED,Extended,True
+LETTINGS,Lettings,True
+NURSERY,Nursery,True
+SCHOOL,School,True
+SENUNIT,SEN Unit,True

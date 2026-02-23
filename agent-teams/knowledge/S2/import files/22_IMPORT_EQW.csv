@@ -1,0 +1,157 @@
+ScenarioCode,EquatedWeekPatternCode,EquatedWeekPatternTitle,AvailableToAllSchools,FullTimeWeeks,SchoolCodes,EquatedWeekPatternEnabled,ServiceYearsFrom,ServiceYearsTo,EquatedWeeks
+,AYR,All Year Round,True,52.143,,True,0,99,52.143
+,BNT_38_01-20,38 Weeks SCP 01-20 - Barnet,False,52.1429,LEA,True,0,4,43.6
+,BNT_38_01-20,38 Weeks SCP 01-20 - Barnet,False,52.1429,LEA,True,5,99,44.1
+,BNT_38_21-36,38 Weeks SCP 21-36 - Barnet,False,52.1429,LEA,True,0,4,43.7
+,BNT_38_21-36,38 Weeks SCP 21-36 - Barnet,False,52.1429,LEA,True,5,99,44.3
+,BNT_38_37+,38 Weeks SCP 37+ - Barnet,False,52.1429,LEA,True,0,4,43.9
+,BNT_38_37+,38 Weeks SCP 37+ - Barnet,False,52.1429,LEA,True,5,99,44.5
+,BNT_39_01-20,39 Weeks SCP 01-20 - Barnet,False,52.1429,LEA,True,0,4,44.7
+,BNT_39_01-20,39 Weeks SCP 01-20 - Barnet,False,52.1429,LEA,True,5,99,45.3
+,BNT_39_21-36,39 Weeks SCP 21-36 - Barnet,False,52.1429,LEA,True,0,4,44.9
+,BNT_39_21-36,39 Weeks SCP 21-36 - Barnet,False,52.1429,LEA,True,5,99,45.5
+,BNT_39_37+,39 Weeks SCP 37+ - Barnet,False,52.1429,LEA,True,0,4,45.1
+,BNT_39_37+,39 Weeks SCP 37+ - Barnet,False,52.1429,LEA,True,5,99,45.7
+,BNT_40_01-20,40 Weeks SCP 01-20 - Barnet,False,52.1429,LEA,True,0,4,45.8
+,BNT_40_01-20,40 Weeks SCP 01-20 - Barnet,False,52.1429,LEA,True,5,99,46.4
+,BNT_40_21-36,40 Weeks SCP 21-36 - Barnet,False,52.1429,LEA,True,0,4,46.0
+,BNT_40_21-36,40 Weeks SCP 21-36 - Barnet,False,52.1429,LEA,True,5,99,46.6
+,BNT_40_37+,40 Weeks SCP 37+ - Barnet,False,52.1429,LEA,True,0,4,46.2
+,BNT_40_37+,40 Weeks SCP 37+ - Barnet,False,52.1429,LEA,True,5,99,46.8
+,BNT_41_01-20,41 Weeks SCP 01-20 - Barnet,False,52.1429,LEA,True,0,4,46.9
+,BNT_41_01-20,41 Weeks SCP 01-20 - Barnet,False,52.1429,LEA,True,5,99,47.6
+,BNT_41_21-36,41 Weeks SCP 21-36 - Barnet,False,52.1429,LEA,True,0,4,47.2
+,BNT_41_21-36,41 Weeks SCP 21-36 - Barnet,False,52.1429,LEA,True,5,99,47.8
+,BNT_41_37+,41 Weeks SCP 37+ - Barnet,False,52.1429,LEA,True,0,4,47.4
+,BNT_41_37+,41 Weeks SCP 37+ - Barnet,False,52.1429,LEA,True,5,99,48.0
+,BNT_42_01-20,42 Weeks SCP 01-20 - Barnet,False,52.1429,LEA,True,0,4,48.1
+,BNT_42_01-20,42 Weeks SCP 01-20 - Barnet,False,52.1429,LEA,True,5,99,48.7
+,BNT_42_21-36,42 Weeks SCP 21-36 - Barnet,False,52.1429,LEA,True,0,4,48.3
+,BNT_42_21-36,42 Weeks SCP 21-36 - Barnet,False,52.1429,LEA,True,5,99,48.9
+,BNT_42_37+,42 Weeks SCP 37+ - Barnet,False,52.1429,LEA,True,0,4,48.5
+,BNT_42_37+,42 Weeks SCP 37+ - Barnet,False,52.1429,LEA,True,5,99,49.2
+,BNT_43_01-20,43 Weeks SCP 01-20 - Barnet,False,52.1429,LEA,True,0,4,49.2
+,BNT_43_01-20,43 Weeks SCP 01-20 - Barnet,False,52.1429,LEA,True,5,99,49.9
+,BNT_43_21-36,43 Weeks SCP 21-36 - Barnet,False,52.1429,LEA,True,0,4,49.5
+,BNT_43_21-36,43 Weeks SCP 21-36 - Barnet,False,52.1429,LEA,True,5,99,50.1
+,BNT_43_37+,43 Weeks SCP 37+ - Barnet,False,52.1429,LEA,True,0,4,49.7
+,BNT_43_37+,43 Weeks SCP 37+ - Barnet,False,52.1429,LEA,True,5,99,50.3
+,BNT_44_01-20,44 Weeks SCP 01-20 - Barnet,False,52.1429,LEA,True,0,4,50.4
+,BNT_44_01-20,44 Weeks SCP 01-20 - Barnet,False,52.1429,LEA,True,5,99,51.1
+,BNT_44_21-36,44 Weeks SCP 21-36 - Barnet,False,52.1429,LEA,True,0,4,50.6
+,BNT_44_21-36,44 Weeks SCP 21-36 - Barnet,False,52.1429,LEA,True,5,99,51.3
+,BNT_44_37+,44 Weeks SCP 37+ - Barnet,False,52.1429,LEA,True,0,4,50.8
+,BNT_44_37+,44 Weeks SCP 37+ - Barnet,False,52.1429,LEA,True,5,99,51.5
+,BRM_190_/_226.25,190 / 226.25 Days - Bromley,False,52.143,MID,True,0,4,43.7886
+,BRM_190_/_226.25,190 / 226.25 Days - Bromley,False,52.143,MID,True,5,99,44.2284
+,BRM_192_/_226.25,192 / 226.25 Days - Bromley,False,52.143,MID,True,0,4,44.2495
+,BRM_192_/_226.25,192 / 226.25 Days - Bromley,False,52.143,MID,True,5,99,44.694
+,BRM_195_/_226.25,195 / 226.25 Days - Bromley,False,52.143,MID,True,0,4,44.9409
+,BRM_195_/_226.25,195 / 226.25 Days - Bromley,False,52.143,MID,True,5,99,45.5959
+,BRM_241_/_260,241 / 260 Days - Bromley,False,52.143,MID,True,0,4,48.3326
+,BRM_241_/_260,241 / 260 Days - Bromley,False,52.143,MID,True,5,99,48.8339
+,HCK_38.0,38.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,0,4,43.6
+,HCK_38.0,38.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,5,9,44.2849
+,HCK_38.0,38.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,10,99,44.4963
+,HCK_39.0,39.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,0,4,44.6642
+,HCK_39.0,39.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,5,9,45.4503
+,HCK_39.0,39.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,10,99,45.6672
+,HCK_40.0,40.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,0,4,45.7968
+,HCK_40.0,40.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,5,9,46.6157
+,HCK_40.0,40.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,10,99,46.825
+,HCK_41.0,41.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,0,4,46.9418
+,HCK_41.0,41.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,5,9,47.6157
+,HCK_41.0,41.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,10,99,47.9956
+,HCK_42.0,42.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,0,4,48.0867
+,HCK_42.0,42.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,5,9,48.9465
+,HCK_42.0,42.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,10,99,49.1663
+,HCK_43.0,43.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,0,4,49.2316
+,HCK_43.0,43.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,5,9,50.1119
+,HCK_43.0,43.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,10,99,50.3369
+,HCK_44.0,44.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,0,4,50.3765
+,HCK_44.0,44.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,5,9,51.2773
+,HCK_44.0,44.0 Weeks - Hackney,False,52.143,"LOR,GRE,GOO,OUR",True,10,99,51.5075
+,KEN_38.0_KR13+,38.0 Weeks KR13 and above - Kent,False,52.143,MIL,True,0,4,44.6844
+,KEN_38.0_KR13+,38.0 Weeks KR13 and above - Kent,False,52.143,MIL,True,5,99,44.6844
+,KEN_38.0_KR3-7,38.0 Weeks KR3-KR7 - Kent,False,52.143,MIL,True,0,4,44.0878
+,KEN_38.0_KR3-7,38.0 Weeks KR3-KR7 - Kent,False,52.143,MIL,True,5,99,44.4838
+,KEN_38.0_KR8-12,38.0 Weeks KR8-KR12 - Kent,False,52.143,MIL,True,0,4,44.4838
+,KEN_38.0_KR8-12,38.0 Weeks KR8-KR12 - Kent,False,52.143,MIL,True,5,99,44.6844
+,KEN_39.0_KR13+,39.0 Weeks KR13 and above - Kent,False,52.143,MIL,True,0,4,45.8603
+,KEN_39.0_KR13+,39.0 Weeks KR13 and above - Kent,False,52.143,MIL,True,5,99,45.8603
+,KEN_39.0_KR3-7,39.0 Weeks KR3-KR7 - Kent,False,52.143,MIL,True,0,4,45.2481
+,KEN_39.0_KR3-7,39.0 Weeks KR3-KR7 - Kent,False,52.143,MIL,True,5,99,45.6544
+,KEN_39.0_KR8-12,39.0 Weeks KR8-KR12 - Kent,False,52.143,MIL,True,0,4,45.6544
+,KEN_39.0_KR8-12,39.0 Weeks KR8-KR12 - Kent,False,52.143,MIL,True,5,99,45.8603
+,KEN_40.0_KR13+,40.0 Weeks KR13 and above - Kent,False,52.143,MIL,True,0,4,47.0362
+,KEN_40.0_KR13+,40.0 Weeks KR13 and above - Kent,False,52.143,MIL,True,5,99,47.0362
+,KEN_40.0_KR3-7,40.0 Weeks KR3-KR7 - Kent,False,52.143,MIL,True,0,4,46.4083
+,KEN_40.0_KR3-7,40.0 Weeks KR3-KR7 - Kent,False,52.143,MIL,True,5,99,46.825
+,KEN_40.0_KR8-12,40.0 Weeks KR8-KR12 - Kent,False,52.143,MIL,True,0,4,46.825
+,KEN_40.0_KR8-12,40.0 Weeks KR8-KR12 - Kent,False,52.143,MIL,True,5,99,47.0362
+,KEN_41.0_KR13+,41.0 Weeks KR13 and above - Kent,False,52.143,MIL,True,0,4,48.2121
+,KEN_41.0_KR13+,41.0 Weeks KR13 and above - Kent,False,52.143,MIL,True,5,99,48.2121
+,KEN_41.0_KR3-7,41.0 Weeks KR3-KR7 - Kent,False,52.143,MIL,True,0,4,47.5685
+,KEN_41.0_KR3-7,41.0 Weeks KR3-KR7 - Kent,False,52.143,MIL,True,5,99,47.9956
+,KEN_41.0_KR8-12,41.0 Weeks KR8-KR12 - Kent,False,52.143,MIL,True,0,4,47.9956
+,KEN_41.0_KR8-12,41.0 Weeks KR8-KR12 - Kent,False,52.143,MIL,True,5,99,48.2121
+,KEN_42.0_KR13+,42.0 Weeks KR13 and above - Kent,False,52.143,MIL,True,0,4,49.388
+,KEN_42.0_KR13+,42.0 Weeks KR13 and above - Kent,False,52.143,MIL,True,5,99,49.388
+,KEN_42.0_KR3-7,42.0 Weeks KR3-KR7 - Kent,False,52.143,MIL,True,0,4,48.7287
+,KEN_42.0_KR3-7,42.0 Weeks KR3-KR7 - Kent,False,52.143,MIL,True,5,99,49.1663
+,KEN_42.0_KR8-12,42.0 Weeks KR8-KR12 - Kent,False,52.143,MIL,True,0,4,49.1663
+,KEN_42.0_KR8-12,42.0 Weeks KR8-KR12 - Kent,False,52.143,MIL,True,5,99,49.388
+,KEN_43.0_KR13+,43.0 Weeks KR13 and above - Kent,False,52.143,MIL,True,0,4,50.5639
+,KEN_43.0_KR13+,43.0 Weeks KR13 and above - Kent,False,52.143,MIL,True,5,99,50.5639
+,KEN_43.0_KR3-7,43.0 Weeks KR3-KR7 - Kent,False,52.143,MIL,True,0,4,49.8889
+,KEN_43.0_KR3-7,43.0 Weeks KR3-KR7 - Kent,False,52.143,MIL,True,5,99,50.3369
+,KEN_43.0_KR8-12,43.0 Weeks KR8-KR12 - Kent,False,52.143,MIL,True,0,4,50.3369
+,KEN_43.0_KR8-12,43.0 Weeks KR8-KR12 - Kent,False,52.143,MIL,True,5,99,50.5639
+,KEN_44.0_KR13+,44.0 Weeks KR13 and above - Kent,False,52.143,MIL,True,0,4,51.7398
+,KEN_44.0_KR13+,44.0 Weeks KR13 and above - Kent,False,52.143,MIL,True,5,99,51.7398
+,KEN_44.0_KR3-7,44.0 Weeks KR3-KR7 - Kent,False,52.143,MIL,True,0,4,51.0491
+,KEN_44.0_KR3-7,44.0 Weeks KR3-KR7 - Kent,False,52.143,MIL,True,5,99,51.5075
+,KEN_44.0_KR8-12,44.0 Weeks KR8-KR12 - Kent,False,52.143,MIL,True,0,4,51.5075
+,KEN_44.0_KR8-12,44.0 Weeks KR8-KR12 - Kent,False,52.143,MIL,True,5,99,51.7398
+,LNS_38.0,38.0 Weeks - Lancashire,False,52.14,ALE,True,0,4,43.6
+,LNS_38.0,38.0 Weeks - Lancashire,False,52.14,ALE,True,5,99,44.58
+,LNS_39.0,39.0 Weeks - Lancashire,False,52.14,ALE,True,0,4,44.75
+,LNS_39.0,39.0 Weeks - Lancashire,False,52.14,ALE,True,5,99,45.76
+,LNS_40.0,40.0 Weeks - Lancashire,False,52.14,ALE,True,0,4,45.9
+,LNS_40.0,40.0 Weeks - Lancashire,False,52.14,ALE,True,5,99,46.93
+,LNS_41.0,41.0 Weeks - Lancashire,False,52.14,ALE,True,0,4,47.04
+,LNS_41.0,41.0 Weeks - Lancashire,False,52.14,ALE,True,5,99,48.1
+,LNS_42.0,42.0 Weeks - Lancashire,False,52.14,ALE,True,0,4,48.19
+,LNS_42.0,42.0 Weeks - Lancashire,False,52.14,ALE,True,5,99,49.28
+,LNS_43.0,43.0 Weeks - Lancashire,False,52.14,ALE,True,0,4,49.34
+,LNS_43.0,43.0 Weeks - Lancashire,False,52.14,ALE,True,5,99,50.45
+,LNS_44.0,44.0 Weeks - Lancashire,False,52.14,ALE,True,0,4,50.49
+,LNS_44.0,44.0 Weeks - Lancashire,False,52.14,ALE,True,5,99,51.62
+,NTS_38.0,38.0 Weeks - Notts,False,52.14,"MAT,APP,MAR",True,0,4,43.6
+,NTS_38.0,38.0 Weeks - Notts,False,52.14,"MAT,APP,MAR",True,5,99,44.58
+,NTS_39.0,39.0 Weeks - Notts,False,52.14,"MAT,APP,MAR",True,0,4,44.75
+,NTS_39.0,39.0 Weeks - Notts,False,52.14,"MAT,APP,MAR",True,5,99,45.76
+,NTS_40.0,40.0 Weeks - Notts,False,52.14,"MAT,APP,MAR",True,0,4,45.9
+,NTS_40.0,40.0 Weeks - Notts,False,52.14,"MAT,APP,MAR",True,5,99,46.93
+,NTS_41.0,41.0 Weeks - Notts,False,52.14,"MAT,APP,MAR",True,0,4,47.04
+,NTS_41.0,41.0 Weeks - Notts,False,52.14,"MAT,APP,MAR",True,5,99,48.1
+,NTS_42.0,42.0 Weeks - Notts,False,52.14,"MAT,APP,MAR",True,0,4,48.19
+,NTS_42.0,42.0 Weeks - Notts,False,52.14,"MAT,APP,MAR",True,5,99,49.28
+,NTS_43.0,43.0 Weeks - Notts,False,52.14,"MAT,APP,MAR",True,0,4,49.34
+,NTS_43.0,43.0 Weeks - Notts,False,52.14,"MAT,APP,MAR",True,5,99,50.45
+,NTS_44.0,44.0 Weeks - Notts,False,52.14,"MAT,APP,MAR",True,0,4,50.49
+,NTS_44.0,44.0 Weeks - Notts,False,52.14,"MAT,APP,MAR",True,5,99,51.62
+,SUR_38.0,38.0 Weeks - Surrey,False,52.0,EDU,True,0,4,43.6
+,SUR_38.0,38.0 Weeks - Surrey,False,52.0,EDU,True,5,99,44.58
+,SUR_39.0,39.0 Weeks - Surrey,False,52.0,EDU,True,0,4,44.75
+,SUR_39.0,39.0 Weeks - Surrey,False,52.0,EDU,True,5,99,45.76
+,SUR_40.0,40.0 Weeks - Surrey,False,52.0,EDU,True,0,4,45.9
+,SUR_40.0,40.0 Weeks - Surrey,False,52.0,EDU,True,5,99,46.93
+,SUR_41.0,41.0 Weeks - Surrey,False,52.0,EDU,True,0,4,47.04
+,SUR_41.0,41.0 Weeks - Surrey,False,52.0,EDU,True,5,99,48.1
+,SUR_42.0,42.0 Weeks - Surrey,False,52.0,EDU,True,0,4,48.19
+,SUR_42.0,42.0 Weeks - Surrey,False,52.0,EDU,True,5,99,49.28
+,SUR_43.0,43.0 Weeks - Surrey,False,52.0,EDU,True,0,4,49.34
+,SUR_43.0,43.0 Weeks - Surrey,False,52.0,EDU,True,5,99,50.45
+,SUR_44.0,44.0 Weeks - Surrey,False,52.0,EDU,True,0,4,50.49
+,SUR_44.0,44.0 Weeks - Surrey,False,52.0,EDU,True,5,99,51.62

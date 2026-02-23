@@ -1,0 +1,8 @@
+ScenarioCode,AdjustmentTypeCode,Title,AnniversaryDate,IncreasePercentage,AvailableToAllSchools,SchoolCodes,AdjustmentTypeEnabled,ExcludePension,ExcludeNI
+,ESTF,External Staff,2026-09-01,0,True,,True,True,True
+,FAA,First Aid Allowance,2024-09-01,0,True,,True,False,False
+,HON,Honorarium,2024-09-01,0,True,,True,False,False
+,MORE,More,2025-09-01,1,True,,True,False,False
+,OTH,Other,2024-09-01,0,False,"ALE,APP,MID",True,False,False
+,RR,R&R,2024-09-01,0,True,,True,False,False
+,TLR3,TLR3 Other,2024-09-01,3,True,,True,False,False

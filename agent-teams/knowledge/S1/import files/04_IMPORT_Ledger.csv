@@ -1,0 +1,7 @@
+LedgerCode,Title,LedgerEnabled
+CAPITAL,CAPITAL,True
+COSTCTR,COSTCTR,True
+DEFAULT,Default (no) Ledger,True
+PURCH,Purchase Ledger,True
+SALARY,SALARY,True
+TRIPS,TRIPS,True

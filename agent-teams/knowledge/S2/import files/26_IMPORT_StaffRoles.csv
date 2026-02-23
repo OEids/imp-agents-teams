@@ -1,0 +1,169 @@
+ScenarioCode,StaffRoleGroupCode,StaffRoleCode,Title,PayScaleCode,AvailableToAllSchools,SchoolCodes,FullTimeHoursPerWeek,StaffRoleEnabled,MonthsServiceBeforeIncrement,DaysServiceBeforeIncrement,IsFinanceRole
+,ADM,APP_ADM_37_NMW,Apprentice Admin 37 FTE - NMW,APP/NMW,True,,37.0,True,0,0,False
+,ADM,SBM_37_KEN,School Business Manager 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,ADM,FIN_AST_37_KEN,Finance Assistant 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,ADM,FIN_MGR_37_KEN,Finance Manager 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,ADM,ADM_AST_37_KEN,Admin Assistant 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,ADM,HR_AST_37_KEN,HR Assistant 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,ADM,HR_MGR_37_KEN,HR Manager 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,ADM,ADM_MGR_37_KEN,Admin Manager 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,ADM,REC_37_KEN,Receptionist 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,ADM,HR_AST_37_EW,HR Assistant 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,ADM,HR_MGR_37_EW,HR Manager 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,ADM,FIN_AST_37_EW,Finance Assistant 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,ADM,REC_37_EW,Receptionist 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,ADM,FIN_MGR_37_EW,Finance Manager 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,ADM,ADM_MGR_37_EW,Admin Manager 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,ADM,ADM_AST_37_EW,Admin Assistant 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,ADM,SBM_37_EW,School Business Manager 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,ADM,SBM_37_FRI,School Business Manager 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,ADM,ADM_MGR_37_FRI,Admin Manager 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,ADM,HR_MGR_37_FRI,HR Manager 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,ADM,FIN_AST_37_FRI,Finance Assistant 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,ADM,HR_AST_37_FRI,HR Assistant 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,ADM,REC_37_FRI,Receptionist 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,ADM,ADM_AST_37_FRI,Admin Assistant 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,ADM,FIN_MGR_37_FRI,Finance Manager 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,ADM,FIN_MGR_36_IL,Finance Manager 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,ADM,REC_36_IL,Receptionist 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,ADM,HR_MGR_36_IL,HR Manager 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,ADM,SBM_36_IL,School Business Manager 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,ADM,HR_AST_36_IL,HR Assistant 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,ADM,FIN_AST_36_IL,Finance Assistant 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,ADM,ADM_AST_36_IL,Admin Assistant 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,ADM,ADM_MGR_36_IL,Admin Manager 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,ADM,FIN_MGR_37.5_OL,Finance Manager 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,ADM,FIN_AST_37.5_OL,Finance Assistant 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,ADM,REC_37.5_OL,Receptionist 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,ADM,HR_AST_37.5_OL,HR Assistant 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,ADM,ADM_MGR_37.5_OL,Admin Manager 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,ADM,HR_MGR_37.5_OL,HR Manager 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,ADM,SBM_37.5_OL,School Business Manager 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,ADM,ADM_AST_37.5_OL,Admin Assistant 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,ADM,ADM_H_37,Admin Staff - Hourly Paid 37 FTE,SPOT_H,True,,37.0,True,0,0,False
+,CAT,CAT_MGR_37_KEN,Catering Manager 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,CAT,CAT_AST_37_KEN,Catering Assistant 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,CAT,CAT_AST_37_EW,Catering Assistant 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,CAT,CAT_MGR_37_EW,Catering Manager 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,CAT,CAT_AST_37_FRI,Catering Assistant 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,CAT,CAT_MGR_37_FRI,Catering Manager 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,CAT,CAT_MGR_36_IL,Catering Manager 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,CAT,CAT_AST_36_IL,Catering Assistant 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,CAT,CAT_AST_37.5_OL,Catering Assistant 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,CAT,CAT_MGR_37.5_OL,Catering Manager 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,CLE,CLE_37_KEN,Cleaner 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,CLE,CLE_37_EW,Cleaner 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,CLE,CLE_37_FRI,Cleaner 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,CLE,CLE_36_IL,Cleaner 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,CLE,CLE_37.5_OL,Cleaner 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,COM,BASC_37_KEN,Before and After School Staff 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,COM,BASC_37_EW,Before and After School Staff 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,COM,BASC_37_FRI,Before and After School Staff 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,COM,BASC_36_IL,Before and After School Staff 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,COM,BASC_37.5_OL,Before and After School Staff 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,COV,COV_SUP_37_KEN,Cover Supervisor 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,COV,COV_SUP_37_EW,Cover Supervisor 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,COV,COV_SUP_37_FRI,Cover Supervisor 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,COV,COV_SUP_36_IL,Cover Supervisor 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,COV,COV_SUP_37.5_OL,Cover Supervisor 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,ESTF_SPO,ESTF_SPO,External Staff Sports Coach,ESTF,True,,32.5,True,0,0,False
+,ESTF_TEA,ESTF_TEA,External Staff Teaching,ESTF,True,,32.5,True,0,0,False
+,FSW,FSW_37_KEN,Family Support Worker 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,FSW,FSW_37_EW,Family Support Worker 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,FSW,FSW_37_FRI,Family Support Worker 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,FSW,FSW_36_IL,Family Support Worker 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,FSW,FSW_37.5_OL,Family Support Worker 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,LIB,LIB_37_KEN,Librarian 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,LIB,LIB_37_EW,Librarian 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,LIB,LIB_37_FRI,Librarian 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,LIB,LIB_36_IL,Librarian 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,LIB,LIB_37.5_OL,Librarian 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,LSN,CFO_32.5_EW,Chief Financial Officer 32.5 FTE - EW,LS_EW,False,"MAT,ALE,APP,MAR",32.5,True,0,0,False
+,LSN,COO_32.5_EW,Chief Operations Officer 32.5 FTE - EW,LS_EW,False,"MAT,ALE,APP,MAR",32.5,True,0,0,False
+,LSN,CEO_32.5_SPOT,Chief Executive Officer 32.5 FTE - EW,SPOT_CEO,False,MAT,32.5,True,0,0,False
+,LST,HT_32.5_EW,Headteacher 32.5 FTE - EW,LS_EW,False,"MAT,ALE,APP,MAR",32.5,True,0,0,False
+,LST,EHT_32.5_EW,Executive Headteacher 32.5 FTE - EW,LS_EW,False,"MAT,ALE,APP,MAR",32.5,True,0,0,False
+,LST,DHT_32.5_EW,Deputy Headteacher 32.5 FTE - EW,LS_EW,False,"MAT,ALE,APP,MAR",32.5,True,0,0,False
+,LST,AHT_32.5_EW,Assistant Headteacher 32.5 FTE - EW,LS_EW,False,"MAT,ALE,APP,MAR",32.5,True,0,0,False
+,LST,DHT_32.43_FRI,Deputy Headteacher 32.43 FTE - Fringe,LS_FRI,False,"MIL,EDU",32.43,True,0,0,False
+,LST,HT_32.43_FRI,Headteacher 32.43 FTE - Fringe,LS_FRI,False,"MIL,EDU",32.43,True,0,0,False
+,LST,EHT_32.43_FRI,Executive Headteacher 32.43 FTE - Fringe,LS_FRI,False,"MIL,EDU",32.43,True,0,0,False
+,LST,AHT_32.43_FRI,Assistant Headteacher 32.43 FTE - Fringe,LS_FRI,False,"MIL,EDU",32.43,True,0,0,False
+,LST,AHT_25_IL,Assistant Headteacher 25 FTE - Inner,LS_IL,False,"LOR,GRE,GOO,OUR",25.0,True,0,0,False
+,LST,HT_25_IL,Headteacher 25 FTE - Inner,LS_IL,False,"LOR,GRE,GOO,OUR",25.0,True,0,0,False
+,LST,DHT_25_IL,Deputy Headteacher 25 FTE - Inner,LS_IL,False,"LOR,GRE,GOO,OUR",25.0,True,0,0,False
+,LST,EHT_25_IL,Executive Headteacher 25 FTE - Inner,LS_IL,False,"LOR,GRE,GOO,OUR",25.0,True,0,0,False
+,LST,HT_27.5_OL,Headteacher 27.5 FTE - Outer,LS_OL,False,"LEA,MID",27.5,True,0,0,False
+,LST,DHT_27.5_OL,Deputy Headteacher 27.5 FTE - Outer,LS_OL,False,"LEA,MID",27.5,True,0,0,False
+,LST,AHT_27.5_OL,Assistant Headteacher 27.5 FTE - Outer,LS_OL,False,"LEA,MID",27.5,True,0,0,False
+,LST,EHT_27.5_OL,Executive Headteacher 27.5 FTE - Outer,LS_OL,False,"LEA,MID",27.5,True,0,0,False
+,LST,HT_SPOT_32.5_EW,Headteacher - Group Max Point 32.5 FTE - EW,SPOT_HTG_EW,False,"MAT,ALE,APP,MAR",32.5,True,0,0,False
+,MDS,MDS_37_KEN,Midday Supervisors 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,MDS,MDS_37_EW,Midday Supervisors 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,MDS,MDS_37_FRI,Midday Supervisors 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,MDS,MDS_36_IL,Midday Supervisors 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,MDS,MDS_37.5_OL,Midday Supervisors 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,NUR,NUR_MGR_37_KEN,Nursery Manager 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,NUR,NUR_NUR_37_KEN,Nursery Nurse 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,NUR,NUR_MGR_37_EW,Nursery Manager 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,NUR,NUR_NUR_37_EW,Nursery Nurse 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,NUR,NUR_NUR_37_FRI,Nursery Nurse 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,NUR,NUR_MGR_37_FRI,Nursery Manager 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,NUR,NUR_MGR_36_IL,Nursery Manager 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,NUR,NUR_NUR_36_IL,Nursery Nurse 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,NUR,NUR_NUR_37.5_OL,Nursery Nurse 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,NUR,NUR_MGR_37.5_OL,Nursery Manager 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,OTH,OTH_37_KEN,Other Staff 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,OTH,OTH_37_EW,Other Staff 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,OTH,OTH_37_FRI,Other Staff 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,OTH,OTH_36_IL,Other Staff 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,OTH,OTH_37.5_OL,Other Staff 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,PRE,AST_CT_37_KEN,Assistant Caretaker 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,PRE,SITE_MGR_37_KEN,Site Manager 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,PRE,CT_37_KEN,Caretaker 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,PRE,SITE_AST_37_KEN,Site Assistant 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,PRE,SITE_MGR_37_EW,Site Manager 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,PRE,SITE_AST_37_EW,Site Assistant 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,PRE,AST_CT_37_EW,Assistant Caretaker 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,PRE,CT_37_EW,Caretaker 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,PRE,SITE_MGR_37_FRI,Site Manager 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,PRE,SITE_AST_37_FRI,Site Assistant 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,PRE,AST_CT_37_FRI,Assistant Caretaker 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,PRE,CT_37_FRI,Caretaker 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,PRE,SITE_AST_36_IL,Site Assistant 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,PRE,CT_36_IL,Caretaker 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,PRE,SITE_MGR_36_IL,Site Manager 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,PRE,AST_CT_36_IL,Assistant Caretaker 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,PRE,CT_37.5_OL,Caretaker 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,PRE,AST_CT_37.5_OL,Assistant Caretaker 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,PRE,SITE_AST_37.5_OL,Site Assistant 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,PRE,SITE_MGR_37.5_OL,Site Manager 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False
+,TA,APP_TA_37_NMW,Apprentice TA 37 FTE - NMW,APP/NMW,True,,37.0,True,0,0,False
+,TA,HLTA_37_KEN,Higher Level Teaching Assistant 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,TA,TA_37_KEN,Teaching Assistant 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,TA,HLTA_37_EW,Higher Level Teaching Assistant 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,TA,TA_37_EW,Teaching Assistant 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,TA,TA_37_FRI,Teaching Assistant 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,TA,HLTA_37_FRI,Higher Level Teaching Assistant 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,TA,TA_36_IL,Teaching Assistant 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,TA,HLTA_36_IL,Higher Level Teaching Assistant 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,TA,TA_32.5_OL,Teaching Assistant 32.5 FTE - Outer,NJC_OL,False,LEA,32.5,True,0,0,False
+,TA,HLTA_32.5_OL,Higher Level Teaching Assistant 32.5 FTE - Outer,NJC_OL,False,LEA,32.5,True,0,0,False
+,TEA,LP_32.5_EW,Lead Practitioner 32.5 FTE - EW,LP_EW,False,"MAT,ALE,APP,MAR",32.5,True,0,0,False
+,TEA,LP_32.43_FRI,Lead Practitioner 32.43 FTE - Fringe,LP_FRI,False,"MIL,EDU",32.43,True,0,0,False
+,TEA,LP_25_IL,Lead Practitioner 25 FTE - Inner,LP_IL,False,"LOR,GRE,GOO,OUR",25.0,True,0,0,False
+,TEA,LP_27.5_OL,Lead Practitioner 27.5 FTE - Outer,LP_OL,False,"LEA,MID",27.5,True,0,0,False
+,TEA,TEA_32.5_EW,Teacher 32.5 FTE - EW,MAIN_EW,False,"MAT,ALE,APP,MAR",32.5,True,0,0,False
+,TEA,TEA_32.43_FRI,Teacher 32.43 FTE - Fringe,MAIN_FRI,False,"MIL,EDU",32.43,True,0,0,False
+,TEA,TEA_25_IL,Teacher 25 FTE - Inner,MAIN_IL,False,"LOR,GRE,GOO,OUR",25.0,True,0,0,False
+,TEA,TEA_MS_27.5_OL,Teacher Main 27.5 FTE - Outer,MAIN_OL,False,"LEA,MID",27.5,True,0,0,False
+,TEA,TEA_UPS_27.5_OL,Teacher Upper 27.5 FTE - Outer,UPS_OL,False,"LEA,MID",27.5,True,0,0,False
+,TEA,UQT_32.5_EW,Unqualified Teacher 32.5 FTE - EW,UQ_EW,False,"MAT,ALE,APP,MAR",32.5,True,0,0,False
+,TEA,UQT_32.43_FRI,Unqualified Teacher 32.43 FTE - Fringe,UQ_FRI,False,"MIL,EDU",32.43,True,0,0,False
+,TEA,UQT_25_IL,Unqualified Teacher 25 FTE - Inner,UQ_IL,False,"LOR,GRE,GOO,OUR",25.0,True,0,0,False
+,TEA,UQT_27.5_OL,Unqualified Teacher 27.5 FTE - Outer,UQ_OL,False,"LEA,MID",27.5,True,0,0,False
+,TEC,TEC_37_KEN,Support Technician 37 FTE - Kent,KENT,False,MIL,37.0,True,0,0,False
+,TEC,TEC_37_EW,Support Technician 37 FTE - EW,NJC_EW,False,"MAT,ALE,APP,MAR,MID",37.0,True,6,0,False
+,TEC,TEC_37_FRI,Support Technician 37 FTE - Fringe,NJC_FRI,False,EDU,37.0,True,0,0,False
+,TEC,TEC_36_IL,Support Technician 36 FTE - Inner,NJC_IL,False,"LOR,GRE,GOO,OUR",36.0,True,0,0,False
+,TEC,TEC_37.5_OL,Support Technician 37.5 FTE - Outer,NJC_OL,False,LEA,37.5,True,0,0,False

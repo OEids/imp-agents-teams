@@ -1,6 +1,0 @@
-LedgerCode,Title,LedgerEnabled
-CAPITAL,"Capital ",True
-COSTCTR,Cost Centres,True
-DEFAULT,Default Ledger needs remapping,True
-TRIPS,Trips,True
-ZZZ_IMP,IMP codes,True

@@ -15,30 +15,37 @@ import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import threading
-from config.settings import TEAMS as SETTINGS_TEAMS
 
+# Import config settings
+from config.settings import (
+    TEAMS as SETTINGS_TEAMS,
+    get_data_directory,
+    set_data_directory,
+    get_templates_directory,
+    set_templates_directory,
+    get_reports_directory,
+    set_reports_directory,
+    load_user_config,
+    refresh_paths,
+    INTELLIGENCE_CONFIG,
+    get_intelligence_config,
+)
+
+# Import Intelligence Module (optional)
+try:
+    from intelligence import InferenceEngine, ConfidenceLevel
+    INFERENCE_AVAILABLE = True
+except ImportError:
+    INFERENCE_AVAILABLE = False
+
+# Import PreFlightValidator (optional)
+try:
+    from teams.preflight_validator import PreFlightValidator, validate_files
+    PREFLIGHT_AVAILABLE = True
+except ImportError:
+    PREFLIGHT_AVAILABLE = False
 
 import os
-
-def env_path(name: str, default: Path) -> Path:
-    return Path(os.getenv(name, str(default))).expanduser()
-
-BASE_DIR = Path(__file__).parent
-
-# Use env vars, fall back to project-local folders (portable)
-DATA_ROOT = env_path("IMP_DATA_ROOT", BASE_DIR / "data")
-CUSTOMER_DATA_DIR = env_path("IMP_CUSTOMER_DATA_DIR", DATA_ROOT / "customer_data")
-TEMPLATES_DIR = env_path("IMP_TEMPLATES_DIR", DATA_ROOT / "templates")
-
-KNOWLEDGE_DIR = BASE_DIR / "knowledge"
-REPORTS_DIR = env_path("IMP_REPORTS_DIR", BASE_DIR / "reports")
-
-SCOPE_DOCS_DIR = REPORTS_DIR / "scope_docs"
-LC_DOCS_DIR = REPORTS_DIR / "lc_docs"
-
-LC_LOCATIONS_FILE = BASE_DIR / "config" / "lc_locations.json"
-PROJECTS_FILE = BASE_DIR / "config" / "projects.json"
-
 
 # Page config
 st.set_page_config(
@@ -48,12 +55,15 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Paths
+# Base paths
 BASE_DIR = Path(__file__).parent
-CUSTOMER_DATA_DIR = Path(r"C:\claude\customer data")
+
+# Load paths from config
+CUSTOMER_DATA_DIR = get_data_directory()
+TEMPLATES_DIR = get_templates_directory()
+REPORTS_DIR = get_reports_directory()
+
 KNOWLEDGE_DIR = BASE_DIR / "knowledge"
-REPORTS_DIR = BASE_DIR / "reports"
-TEMPLATES_DIR = Path(r"C:\claude\database planner\templates")
 SCOPE_DOCS_DIR = REPORTS_DIR / "scope_docs"
 LC_LOCATIONS_FILE = BASE_DIR / "config" / "lc_locations.json"
 PROJECTS_FILE = BASE_DIR / "config" / "projects.json"
@@ -77,10 +87,11 @@ TEAMS = {
         "description": "Specialist Agent - Handles finance codes, schools, departments, and Chart of Accounts",
         "capabilities": [
             "🤖 Deep analysis of customer structure data",
+            "📊 Auto Chart of Accounts extraction from customer files",
             "DFE COA mapping & finance code normalization",
-            "School/department/fund extraction",
-            "System grouping codes & ledger setup",
-            "Auto-builds: FinanceCodes, Schools, Depts, Funds, Activity, Ledger",
+            "School/department extraction with URN/LA lookup",
+            "Validation & External Audit with scoring",
+            "Auto-builds: FinanceCodes, Schools, Depts, Activity, Ledger",
         ],
         "template": "AA_New - Strand 1 Standard Workbook API",
         "knowledge_files": ["Strand 1 Process Notes.xlsx", "Strand 1 Training Notes.xlsx"],
@@ -92,6 +103,7 @@ TEAMS = {
         "description": "Specialist Agent - Processes staff contracts, pay scales, and personnel data",
         "capabilities": [
             "🤖 Deep analysis extracts ALL pay scales & points",
+            "📊 Auto pay scale extraction from customer Excel files",
             "Pay scale setup (MPS, UPS, Leadership, NJC)",
             "Staff role classification (15 DFE groups)",
             "Contract building (Teaching FTE / Support Hours)",
@@ -108,9 +120,10 @@ TEAMS = {
         "description": "Specialist Agent - Manages budgets, grants, funding, and pupil numbers",
         "capabilities": [
             "🤖 Deep analysis of budget & financial data",
+            "📊 Auto pupil number extraction from census data",
             "Grant calculations (DFC, SCA, PE, UIFSM, Pupil Premium)",
-            "Pupil number processing (Spring/Autumn census)",
-            "Budget manipulation and scenarios",
+            "Income/Expenditure line processing",
+            "Validation & External Audit with scoring",
             "Auto-builds: Pupils, Funding, Calculators, Income, Expenditure",
         ],
         "template": "AA_New - Strand 3 Standard Workbook API",
@@ -129,7 +142,80 @@ if "auto_process" not in st.session_state:
     st.session_state.auto_process = False
 if "selected_team" not in st.session_state:
     st.session_state.selected_team = "S2"
+# Pre-flight validation state
+if "column_mappings" not in st.session_state:
+    st.session_state.column_mappings = {}  # team_id -> mapping dict
+if "mapping_validated" not in st.session_state:
+    st.session_state.mapping_validated = {}  # team_id -> bool
+if "validation_results" not in st.session_state:
+    st.session_state.validation_results = {}  # team_id -> FileValidationResult dict
+if "preflight_validator" not in st.session_state:
+    st.session_state.preflight_validator = None
+if "custom_mappings" not in st.session_state:
+    st.session_state.custom_mappings = {}  # stores custom typed mappings
 
+
+# =============================================================================
+# STANDARD FIELD NAMES FOR COLUMN MAPPING
+# =============================================================================
+
+# All valid S2 field names that users can map to
+S2_FIELD_OPTIONS = [
+    # Staff identification
+    "payroll_number", "employee_id", "staff_code", "staff_id",
+    # Names
+    "surname", "forename", "first_name", "last_name", "name", "title",
+    # Job/Role
+    "job_title", "position", "role", "post", "staff_role_code", "staff_role_group",
+    # School/Location
+    "school_code", "school", "cost_centre", "department", "location",
+    # Hours & FTE
+    "weekly_hours", "ft_hours", "full_time_hours", "fte", "weekly_fte",
+    "hours_per_week", "contracted_hours", "hours",
+    # Pay scales
+    "pay_scale", "pay_scale_type", "pay_scale_code", "scale", "grade",
+    "scale_point", "current_scale_point", "scp", "point", "spine_point",
+    # Salary
+    "annual_salary", "salary", "actual_salary", "gross_salary", "rate",
+    # Pension
+    "pension", "pension_code", "pension_scheme",
+    # Dates
+    "service_start_date", "start_date", "contract_start", "hire_date",
+    "end_date", "leave_date", "date_of_birth", "dob",
+    # Contract
+    "contract_ref", "contract_type", "reference", "contract_code",
+    # Other
+    "gender", "ni_number", "national_insurance",
+    "eqw", "eqw_pattern", "weeks_worked", "weeks_paid",
+    "finance_code", "fund_code", "nominal_code",
+    # Allowances
+    "allowance_type", "allowance_code", "tlr", "sen_allowance",
+]
+
+# All valid S1 field names
+S1_FIELD_OPTIONS = [
+    "finance_code", "fund_code", "activity_code", "ledger_code",
+    "school_code", "school_name", "urn", "la_code",
+    "department_code", "department_name",
+    "cost_centre", "nominal_code", "description",
+]
+
+# All valid S3 field names
+S3_FIELD_OPTIONS = [
+    "school_code", "pupil_count", "fte_pupils",
+    "grant_code", "grant_name", "grant_amount",
+    "income_code", "expenditure_code", "budget_amount",
+]
+
+def get_field_options_for_strand(strand: str) -> list:
+    """Get all valid field names for a strand."""
+    if strand == "S1":
+        return S1_FIELD_OPTIONS
+    elif strand == "S2":
+        return S2_FIELD_OPTIONS
+    elif strand == "S3":
+        return S3_FIELD_OPTIONS
+    return []
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -161,14 +247,26 @@ def get_recent_reports(team_id: str, limit: int = 5) -> list:
     return reports[:limit]
 
 
-def run_team_processing(team_id: str) -> dict:
-    """Run the data processing for a team using specialist agents."""
+def run_team_processing(team_id: str, column_mappings: dict = None) -> dict:
+    """Run the data processing for a team using specialist agents.
+
+    Args:
+        team_id: The team/strand to process (S1, S2, S3)
+        column_mappings: Optional dict of validated column mappings from pre-flight validation
+
+    Returns:
+        Processing result dictionary
+    """
     customer_dir = CUSTOMER_DATA_DIR / team_id
     output_dir = REPORTS_DIR
 
+    # Get validated mappings from session state if not provided
+    if column_mappings is None:
+        column_mappings = st.session_state.column_mappings.get(team_id, {})
+
     if team_id == "S1":
         from teams.s1_specialist import run_s1_specialist
-        result = run_s1_specialist(customer_dir, output_dir)
+        result = run_s1_specialist(customer_dir, output_dir, column_mappings=column_mappings)
         return {
             "success": result.get("success", False),
             "summary": result.get("summary", {}),
@@ -179,7 +277,7 @@ def run_team_processing(team_id: str) -> dict:
         }
     elif team_id == "S2":
         from teams.s2_specialist import run_s2_specialist
-        result = run_s2_specialist(customer_dir, output_dir)
+        result = run_s2_specialist(customer_dir, output_dir, column_mappings=column_mappings)
         return {
             "success": result.get("success", False),
             "summary": result.get("summary", {}),
@@ -190,7 +288,7 @@ def run_team_processing(team_id: str) -> dict:
         }
     elif team_id == "S3":
         from teams.s3_specialist import run_s3_specialist
-        result = run_s3_specialist(customer_dir, output_dir)
+        result = run_s3_specialist(customer_dir, output_dir, column_mappings=column_mappings)
         return {
             "success": result.get("success", False),
             "summary": result.get("summary", {}),
@@ -469,9 +567,19 @@ def render_sidebar():
         auto = st.toggle("Enable auto-processing", value=st.session_state.auto_process)
         st.session_state.auto_process = auto
         if auto:
-            st.success("Watching for new files...")
+            st.success("✅ ON - Auto-process uploads")
+            # Show process all button when auto-processing is on
+            if st.button("🚀 Process All Teams", use_container_width=True):
+                for tid in TEAMS:
+                    files = get_customer_files(tid)
+                    if files:
+                        with st.spinner(f"Processing {tid}..."):
+                            result = run_team_processing(tid)
+                            st.session_state.processing_status[tid] = result
+                st.success("All teams processed!")
+                st.rerun()
         else:
-            st.info("Manual processing mode")
+            st.info("Manual mode")
 
         st.markdown("---")
 
@@ -481,6 +589,175 @@ def render_sidebar():
             files = get_customer_files(team_id)
             reports = get_recent_reports(team_id)
             st.metric(f"{team_id} Files", len(files), f"{len(reports)} reports")
+
+        st.markdown("---")
+
+        # App Sync Check
+        st.subheader("🔄 App Sync")
+        if st.button("Check Sync Status", use_container_width=True):
+            try:
+                from teams.app_sync_agent import run_app_sync_check
+                result = run_app_sync_check()
+                if result["synced"]:
+                    st.success("All teams synchronized!")
+                else:
+                    for tid, report in result["reports"].items():
+                        if report["missing_in_app"]:
+                            st.warning(f"{tid}: Missing {report['missing_in_app']}")
+            except Exception as e:
+                st.error(f"Sync check failed: {e}")
+
+        st.markdown("---")
+
+        # Cleanup Controls
+        st.subheader("🧹 Cleanup")
+        cleanup_col1, cleanup_col2 = st.columns(2)
+        with cleanup_col1:
+            if st.button("End of Day", use_container_width=True, help="Keep only latest file per strand"):
+                try:
+                    from teams.cleanup_agent import run_end_of_day_cleanup
+                    result = run_end_of_day_cleanup()
+                    if result["files_removed"] > 0:
+                        st.success(f"Removed {result['files_removed']} files")
+                    else:
+                        st.info("No files to clean up")
+                except Exception as e:
+                    st.error(f"Cleanup failed: {e}")
+        with cleanup_col2:
+            if st.button("View Storage", use_container_width=True):
+                try:
+                    from teams.cleanup_agent import get_storage_summary
+                    summary = get_storage_summary()
+                    st.caption(f"Total: {summary['total_files']} files ({summary['total_size']/1024:.1f} KB)")
+                    for strand, data in summary["by_strand"].items():
+                        st.caption(f"  {strand}: {data['count']} files")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
+        # Remove Customer Data button
+        if st.button("🗑️ Remove Customer Data", use_container_width=True, help="Remove all customer data files"):
+            st.session_state.show_remove_confirm = True
+
+        if st.session_state.get("show_remove_confirm", False):
+            st.warning("⚠️ This will delete all customer data files!")
+            remove_scope = st.radio(
+                "Select scope:",
+                ["Current team only", "All teams"],
+                key="remove_scope",
+                horizontal=True
+            )
+            col_confirm, col_cancel = st.columns(2)
+            with col_confirm:
+                if st.button("✅ Confirm Delete", use_container_width=True, type="primary"):
+                    try:
+                        files_removed = 0
+                        if remove_scope == "Current team only":
+                            team_dir = CUSTOMER_DATA_DIR / st.session_state.selected_team
+                            if team_dir.exists():
+                                for f in team_dir.rglob("*"):
+                                    if f.is_file() and not f.name.startswith("~$"):
+                                        f.unlink()
+                                        files_removed += 1
+                        else:
+                            for strand in ["S1", "S2", "S3"]:
+                                strand_dir = CUSTOMER_DATA_DIR / strand
+                                if strand_dir.exists():
+                                    for f in strand_dir.rglob("*"):
+                                        if f.is_file() and not f.name.startswith("~$"):
+                                            f.unlink()
+                                            files_removed += 1
+                        st.session_state.show_remove_confirm = False
+                        st.success(f"Removed {files_removed} customer data file(s)")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error removing files: {e}")
+            with col_cancel:
+                if st.button("❌ Cancel", use_container_width=True):
+                    st.session_state.show_remove_confirm = False
+                    st.rerun()
+
+        st.markdown("---")
+
+        # Settings Section
+        st.subheader("⚙️ Settings")
+
+        # Data Directory Setting
+        current_data_dir = str(get_data_directory())
+        st.caption("Data Directory:")
+        new_data_dir = st.text_input(
+            "Data Directory",
+            value=current_data_dir,
+            key="data_dir_input",
+            label_visibility="collapsed",
+            help="Path to customer data folder"
+        )
+
+        if new_data_dir != current_data_dir:
+            if st.button("Save Data Directory", use_container_width=True):
+                if Path(new_data_dir).exists():
+                    if set_data_directory(new_data_dir):
+                        st.success("Data directory updated!")
+                        st.rerun()  # Reloads module with new config
+                    else:
+                        st.error("Failed to save config")
+                else:
+                    st.warning("Directory does not exist")
+
+        # Templates Directory Setting
+        current_templates_dir = str(get_templates_directory())
+        st.caption("Templates Directory:")
+        new_templates_dir = st.text_input(
+            "Templates Directory",
+            value=current_templates_dir,
+            key="templates_dir_input",
+            label_visibility="collapsed",
+            help="Path to template workbooks"
+        )
+
+        if new_templates_dir != current_templates_dir:
+            if st.button("Save Templates Directory", use_container_width=True):
+                if Path(new_templates_dir).exists():
+                    if set_templates_directory(new_templates_dir):
+                        st.success("Templates directory updated!")
+                        st.rerun()  # Reloads module with new config
+                    else:
+                        st.error("Failed to save config")
+                else:
+                    st.warning("Directory does not exist")
+
+        # Show current config
+        with st.expander("View Config"):
+            config = load_user_config()
+            st.json(config)
+
+        # Intelligence Module Settings
+        if INFERENCE_AVAILABLE:
+            st.markdown("---")
+            st.subheader("🧠 Intelligence")
+
+            intel_config = get_intelligence_config()
+            conf_thresholds = intel_config.get("confidence", {})
+
+            st.caption(f"High: >{conf_thresholds.get('high_threshold', 0.9):.0%}")
+            st.caption(f"Medium: >{conf_thresholds.get('medium_threshold', 0.7):.0%}")
+
+            behavior = intel_config.get("behavior", {})
+            if behavior.get("enable_learning"):
+                st.success("Learning: ON")
+            else:
+                st.info("Learning: OFF")
+
+            with st.expander("Intelligence Stats"):
+                try:
+                    from teams.expert_agents import get_inference_engine
+                    engine = get_inference_engine()
+                    if engine:
+                        stats = engine.get_stats()
+                        st.json(stats)
+                    else:
+                        st.info("InferenceEngine not initialized")
+                except Exception as e:
+                    st.error(f"Error: {e}")
 
 
 def render_team_overview(team_id: str):
@@ -499,35 +776,25 @@ def render_team_overview(team_id: str):
     st.markdown("")
 
     # Capabilities
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.subheader("🎯 Capabilities")
-        for cap in team["capabilities"]:
-            st.markdown(f"- {cap}")
-
-    with col2:
-        st.subheader("📚 Knowledge Base")
-        knowledge_dir = KNOWLEDGE_DIR / team_id
-        if knowledge_dir.exists():
-            for f in knowledge_dir.iterdir():
-                if not f.name.startswith("."):
-                    icon = "📄" if f.suffix in [".docx", ".doc"] else "📊"
-                    st.markdown(f"{icon} {f.name}")
-        else:
-            st.info("No knowledge files found")
+    st.subheader("🎯 Capabilities")
+    for cap in team["capabilities"]:
+        st.markdown(f"- {cap}")
 
 
 def render_data_upload(team_id: str):
     """Render the data upload section."""
     st.subheader("📤 Upload Customer Data")
 
+    # Show auto-processing status
+    if st.session_state.auto_process:
+        st.success("⚡ Auto-processing is **ON** - Files will be processed immediately after upload")
+
     upload_dir = CUSTOMER_DATA_DIR / team_id
     st.caption(f"Upload to: {upload_dir}")
 
     uploaded_files = st.file_uploader(
         f"Upload files for {team_id}",
-        type=["xlsx", "xlsm", "xls", "csv"],
+        type=["xlsx", "xlsm", "xls", "csv", "pdf", "png", "jpg", "jpeg"],
         accept_multiple_files=True,
         key=f"upload_{team_id}"
     )
@@ -543,7 +810,13 @@ def render_data_upload(team_id: str):
 
         if st.session_state.auto_process:
             st.info("🔄 Auto-processing triggered...")
-            run_team_processing(team_id)
+            with st.spinner(f"Running {team_id} Specialist Agent..."):
+                result = run_team_processing(team_id)
+                st.session_state.processing_status[team_id] = result
+                if result.get("success"):
+                    st.success("✅ Auto-processing completed!")
+                else:
+                    st.warning("⚠️ Auto-processing completed with issues")
 
 
 def render_customer_files(team_id: str):
@@ -586,6 +859,12 @@ def render_customer_files(team_id: str):
 def render_processing(team_id: str):
     """Render the processing section."""
     st.subheader("⚙️ Process Data")
+
+    # Show auto-processing status
+    if st.session_state.auto_process:
+        st.success("⚡ **Auto-Processing ENABLED** - Files will be processed automatically on upload")
+    else:
+        st.caption("💡 Enable auto-processing in sidebar to automatically process uploaded files")
 
     # Show specialist agent info
     agent_info = {
@@ -635,20 +914,174 @@ def render_processing(team_id: str):
                 cols2 = st.columns(4)
                 cols2[0].metric("Pay Scales", summary.get("pay_scales", 0))
                 cols2[1].metric("Pay Scale Points", summary.get("pay_scale_points", 0))
-                cols2[2].metric("Allowances", summary.get("allowances", 0))
-                cols2[3].metric("Schools", len(summary.get("schools", [])))
+                audit_score = summary.get("audit_score", 0)
+                cols2[2].metric("Audit Score", f"{audit_score:.1f}%")
+                cols2[3].metric("Audit Passed", "YES" if summary.get("audit_passed", False) else "NO")
+
+                # Show customer data load status
+                customer_data_loaded = result.get("customer_data_loaded", False)
+                if customer_data_loaded:
+                    st.success("✅ Customer data successfully loaded and processed")
+                else:
+                    st.warning("⚠️ No customer data files found - using defaults")
+
+                # Show audit status
+                if summary.get("audit_passed", False):
+                    st.success(f"✅ External Audit PASSED with score {audit_score:.1f}%")
+                elif audit_score > 0:
+                    st.warning(f"⚠️ External Audit FAILED with score {audit_score:.1f}%")
+
+                # Show data source warnings
+                data_warnings = result.get("data_source_warnings", [])
+                if data_warnings:
+                    with st.expander(f"📋 Data Source Warnings ({len(data_warnings)})", expanded=False):
+                        for warning in data_warnings:
+                            st.warning(warning)
+
+                # Show detailed audit report for S2
+                audit_data = result.get("audit", {})
+                detailed_report = audit_data.get("detailed_report", {})
+                if detailed_report:
+                    issues = detailed_report.get("issues", [])
+                    recommendations = detailed_report.get("recommendations", [])
+
+                    if issues:
+                        with st.expander(f"🔍 Audit Details - What's Missing & Why ({len(issues)} issues)", expanded=not summary.get("audit_passed", False)):
+                            for issue in issues:
+                                severity_icon = "🔴" if issue.get("severity") == "error" else "🟡" if issue.get("severity") == "warning" else "🔵"
+                                st.markdown(f"### {severity_icon} {issue.get('check', 'Unknown Issue')}")
+                                st.markdown(f"**Category:** {issue.get('category', '').replace('_', ' ').title()}")
+
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    st.markdown("**What's Missing:**")
+                                    st.info(issue.get("what_is_missing", "N/A"))
+                                with col2:
+                                    st.markdown("**Why It Matters:**")
+                                    st.warning(issue.get("why_it_matters", "N/A"))
+
+                                st.markdown("**How To Fix:**")
+                                st.success(issue.get("how_to_fix", "N/A"))
+                                st.markdown("---")
+
+                    if recommendations:
+                        with st.expander(f"💡 Recommendations ({len(recommendations)})", expanded=False):
+                            for rec in recommendations:
+                                priority_color = "🔴" if rec.get("priority") == "HIGH" else "🟡" if rec.get("priority") == "MEDIUM" else "🟢"
+                                st.markdown(f"{priority_color} **[{rec.get('priority', '')}]** {rec.get('action', '')}")
+                                st.caption(f"Reason: {rec.get('reason', '')}")
+
             elif team_id == "S1":
                 cols = st.columns(4)
                 cols[0].metric("Finance Codes", summary.get("finance_codes", 0))
                 cols[1].metric("Schools", summary.get("schools", 0))
                 cols[2].metric("Departments", summary.get("departments", 0))
-                cols[3].metric("Funds", summary.get("funds", 0))
+                cols[3].metric("Validation Errors", summary.get("validation_errors", 0))
+
+                cols2 = st.columns(4)
+                cols2[0].metric("Validation Warnings", summary.get("validation_warnings", 0))
+                audit_score = summary.get("audit_score", 0)
+                cols2[1].metric("Audit Score", f"{audit_score:.1f}%")
+                cols2[2].metric("Audit Passed", "YES" if summary.get("audit_passed", False) else "NO")
+                cols2[3].empty()  # Placeholder
+
+                # Show audit status
+                if summary.get("audit_passed", False):
+                    st.success(f"✅ External Audit PASSED with score {audit_score:.1f}%")
+                elif audit_score > 0:
+                    st.warning(f"⚠️ External Audit FAILED with score {audit_score:.1f}%")
+
+                # Show detailed audit report if available
+                audit_data = result.get("audit", {})
+                detailed_report = audit_data.get("detailed_report", {})
+                if detailed_report:
+                    issues = detailed_report.get("issues", [])
+                    recommendations = detailed_report.get("recommendations", [])
+
+                    if issues:
+                        with st.expander(f"🔍 Audit Details - What's Missing & Why ({len(issues)} issues)", expanded=not summary.get("audit_passed", False)):
+                            for issue in issues:
+                                severity_icon = "🔴" if issue.get("severity") == "error" else "🟡" if issue.get("severity") == "warning" else "🔵"
+                                st.markdown(f"### {severity_icon} {issue.get('check', 'Unknown Issue')}")
+                                st.markdown(f"**Category:** {issue.get('category', '').replace('_', ' ').title()}")
+
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    st.markdown("**What's Missing:**")
+                                    st.info(issue.get("what_is_missing", "N/A"))
+                                with col2:
+                                    st.markdown("**Why It Matters:**")
+                                    st.warning(issue.get("why_it_matters", "N/A"))
+
+                                st.markdown("**How To Fix:**")
+                                st.success(issue.get("how_to_fix", "N/A"))
+
+                                affected = issue.get("affected_records", [])
+                                if affected:
+                                    st.markdown(f"**Affected Records:** `{', '.join(affected[:10])}`" +
+                                              (f" (+{len(affected)-10} more)" if len(affected) > 10 else ""))
+                                st.markdown("---")
+
+                    if recommendations:
+                        with st.expander(f"💡 Recommendations ({len(recommendations)})", expanded=False):
+                            for rec in recommendations:
+                                priority_color = "🔴" if rec.get("priority") == "HIGH" else "🟡" if rec.get("priority") == "MEDIUM" else "🟢"
+                                st.markdown(f"{priority_color} **[{rec.get('priority', '')}]** {rec.get('action', '')}")
+                                st.caption(f"Reason: {rec.get('reason', '')}")
+
             elif team_id == "S3":
                 cols = st.columns(4)
                 cols[0].metric("Pupil Records", summary.get("pupils", 0))
                 cols[1].metric("Grants", summary.get("grants", 0))
-                cols[2].metric("Budget Lines", summary.get("budget_lines", 0))
-                cols[3].metric("Scenarios", summary.get("scenarios", 0))
+                cols[2].metric("Income Lines", summary.get("income_lines", 0))
+                cols[3].metric("Expenditure Lines", summary.get("expenditure_lines", 0))
+
+                cols2 = st.columns(4)
+                schools = summary.get("schools", [])
+                cols2[0].metric("Schools", len(schools) if isinstance(schools, list) else schools)
+                audit_score = summary.get("audit_score", 0)
+                cols2[1].metric("Audit Score", f"{audit_score:.1f}%")
+                cols2[2].metric("Audit Passed", "YES" if summary.get("audit_passed", False) else "NO")
+                cols2[3].empty()  # Placeholder
+
+                # Show audit status
+                if summary.get("audit_passed", False):
+                    st.success(f"✅ External Audit PASSED with score {audit_score:.1f}%")
+                elif audit_score > 0:
+                    st.warning(f"⚠️ External Audit FAILED with score {audit_score:.1f}%")
+
+                # Show detailed audit report for S3
+                audit_data = result.get("audit", {})
+                detailed_report = audit_data.get("detailed_report", {})
+                if detailed_report:
+                    issues = detailed_report.get("issues", [])
+                    recommendations = detailed_report.get("recommendations", [])
+
+                    if issues:
+                        with st.expander(f"🔍 Audit Details - What's Missing & Why ({len(issues)} issues)", expanded=not summary.get("audit_passed", False)):
+                            for issue in issues:
+                                severity_icon = "🔴" if issue.get("severity") == "error" else "🟡" if issue.get("severity") == "warning" else "🔵"
+                                st.markdown(f"### {severity_icon} {issue.get('check', 'Unknown Issue')}")
+                                st.markdown(f"**Category:** {issue.get('category', '').replace('_', ' ').title()}")
+
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    st.markdown("**What's Missing:**")
+                                    st.info(issue.get("what_is_missing", "N/A"))
+                                with col2:
+                                    st.markdown("**Why It Matters:**")
+                                    st.warning(issue.get("why_it_matters", "N/A"))
+
+                                st.markdown("**How To Fix:**")
+                                st.success(issue.get("how_to_fix", "N/A"))
+                                st.markdown("---")
+
+                    if recommendations:
+                        with st.expander(f"💡 Recommendations ({len(recommendations)})", expanded=False):
+                            for rec in recommendations:
+                                priority_color = "🔴" if rec.get("priority") == "HIGH" else "🟡" if rec.get("priority") == "MEDIUM" else "🟢"
+                                st.markdown(f"{priority_color} **[{rec.get('priority', '')}]** {rec.get('action', '')}")
+                                st.caption(f"Reason: {rec.get('reason', '')}")
 
         # Template sheets built
         template_sheets = result.get("template_sheets", {})
@@ -661,17 +1094,82 @@ def render_processing(team_id: str):
                     status = "✅" if rows > 0 else "⚪"
                     sheet_cols[col_idx].markdown(f"{status} **{sheet_name}**: {rows} rows")
 
+        # S2-specific: Quick summary of processing details (full data in Excel output)
+        if team_id == "S2":
+            created_codes = result.get("created_role_codes", [])
+            created_groups = result.get("created_role_groups", [])
+            assumptions_list = result.get("assumptions", [])
+            skipped_staff = result.get("skipped_staff", [])
+
+            if created_codes or created_groups or assumptions_list or skipped_staff:
+                with st.expander("📋 Processing Details (see output file for full data)", expanded=False):
+                    col1, col2, col3, col4 = st.columns(4)
+                    col1.metric("Role Codes Created", len(created_codes))
+                    col2.metric("Role Groups Created", len(created_groups))
+                    col3.metric("Assumptions Made", len(assumptions_list))
+                    col4.metric("Staff Skipped", len(skipped_staff))
+
+                    st.caption("Full details available in output Excel file sheets: _CreatedRoleCodes, _CreatedRoleGroups, _Assumptions, _SkippedStaff")
+
+                    if skipped_staff:
+                        st.warning(f"⚠️ {len(skipped_staff)} staff records were skipped - check _SkippedStaff sheet for details")
+
         # Issues
         if result.get("issues"):
             with st.expander(f"⚠️ Issues ({len(result['issues'])})", expanded=True):
                 for issue in result["issues"]:
                     st.error(issue)
 
-        # Assumptions
-        if result.get("assumptions"):
+        # Assumptions (for non-S2 teams, or as fallback)
+        if team_id != "S2" and result.get("assumptions"):
             with st.expander(f"📝 Assumptions ({len(result['assumptions'])})"):
                 for assumption in result["assumptions"]:
                     st.info(assumption)
+
+        # Inference Details (if available)
+        inference_result = result.get("inference_result")
+        if inference_result:
+            with st.expander("🧠 Inference Details", expanded=False):
+                st.markdown("**Strand Detection Analysis**")
+
+                # Confidence display
+                confidence = inference_result.get("confidence", 0)
+                conf_level = inference_result.get("confidence_level", "unknown")
+                decision = inference_result.get("decision", "N/A")
+
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Decision", decision)
+                with col2:
+                    st.metric("Confidence", f"{confidence:.0%}")
+                with col3:
+                    # Color-code confidence level
+                    level_colors = {"high": "🟢", "medium": "🟡", "low": "🔴"}
+                    st.metric("Level", f"{level_colors.get(conf_level, '⚪')} {conf_level.upper()}")
+
+                # Reasoning
+                reasoning = inference_result.get("reasoning", [])
+                if reasoning:
+                    st.markdown("**Reasoning:**")
+                    for reason in reasoning:
+                        st.markdown(f"- {reason}")
+
+                # Alternatives
+                alternatives = inference_result.get("alternatives", [])
+                if alternatives:
+                    st.markdown("**Alternatives Considered:**")
+                    for alt in alternatives[:3]:
+                        st.caption(f"• {alt.get('strand', 'N/A')}: {alt.get('confidence', 0):.0%}")
+
+                # Review flag
+                if inference_result.get("requires_review"):
+                    st.warning("⚠️ This decision was flagged for review due to low confidence")
+
+        # Reasoning Trail (for debugging)
+        reasoning_trail = result.get("reasoning_trail")
+        if reasoning_trail and st.checkbox("Show Full Reasoning Trail", key=f"trail_{team_id}"):
+            with st.expander("🔍 Full Reasoning Trail (Debug)", expanded=False):
+                st.json(reasoning_trail)
 
         # Download output
         output_file = result.get("output_file")
@@ -754,6 +1252,289 @@ def render_preview(team_id: str):
 
 
 # =============================================================================
+# VALIDATE & MAP TAB
+# =============================================================================
+
+def render_validate_and_map(team_id: str):
+    """Render the Validate & Map tab for pre-flight column validation."""
+    st.subheader("Validate & Map Columns")
+
+    if not PREFLIGHT_AVAILABLE:
+        st.warning("Pre-flight validation module not available. Install required dependencies.")
+        return
+
+    # Initialize validator if needed
+    if st.session_state.preflight_validator is None:
+        try:
+            st.session_state.preflight_validator = PreFlightValidator()
+        except Exception as e:
+            st.error(f"Failed to initialize validator: {e}")
+            return
+
+    validator = st.session_state.preflight_validator
+
+    # Step 1: File Selection
+    st.markdown("### Step 1: Select Files to Validate")
+
+    files = get_customer_files(team_id)
+
+    if not files:
+        st.info(f"No customer data files found for {team_id}. Upload files in the 'Upload & Files' tab first.")
+        return
+
+    # File checkboxes
+    selected_files = []
+    cols = st.columns(2)
+    for idx, f in enumerate(files[:10]):  # Limit to 10 files
+        col_idx = idx % 2
+        with cols[col_idx]:
+            if st.checkbox(f.name, key=f"validate_file_{f.name}_{team_id}", value=True):
+                selected_files.append(f)
+
+    if not selected_files:
+        st.info("Select at least one file to validate.")
+        return
+
+    # Validate button
+    if st.button("Analyze Selected Files", type="primary", use_container_width=True):
+        with st.spinner("Analyzing columns..."):
+            results = {}
+            for file_path in selected_files:
+                try:
+                    result = validator.validate_file(file_path, strand=team_id)
+                    key = f"{result.file_name}:{result.sheet_name or 'default'}"
+                    results[key] = result
+                except Exception as e:
+                    st.error(f"Error validating {file_path.name}: {e}")
+
+            st.session_state.validation_results[team_id] = results
+            st.success(f"Analyzed {len(results)} file(s)")
+
+    # Step 2: Show Results
+    if team_id in st.session_state.validation_results and st.session_state.validation_results[team_id]:
+        results = st.session_state.validation_results[team_id]
+
+        st.markdown("### Step 2: Column Analysis Results")
+
+        for file_key, result in results.items():
+            with st.expander(f"**{result.file_name}** ({result.row_count} rows, {result.column_count} columns)", expanded=True):
+                # Summary metrics
+                summary = result.mapping_summary
+                cols = st.columns(5)
+                cols[0].metric("Matched", summary['matched'], help="Exact or variation matches")
+                cols[1].metric("Review", summary['review'], help="Fuzzy matches needing review")
+                cols[2].metric("Unmapped", summary['unmapped'], help="Could not map")
+                cols[3].metric("Corrected", summary['corrected'], help="User corrections applied")
+                cols[4].metric("Ignored", summary['ignored'], help="Columns marked to ignore")
+
+                # Strand detection
+                if result.detected_strand:
+                    confidence_color = "green" if result.strand_confidence >= 0.8 else "orange" if result.strand_confidence >= 0.6 else "red"
+                    st.markdown(f"**Detected Strand:** {result.detected_strand} (:{confidence_color}[{result.strand_confidence:.0%}])")
+
+                # Warnings
+                if result.warnings:
+                    for warning in result.warnings:
+                        st.warning(warning)
+
+                # Column mappings by status
+                if result.matched_columns:
+                    st.markdown("**Matched Columns (auto-accepted)**")
+                    matched_df = pd.DataFrame([
+                        {"Source": c.source_column, "Mapped To": c.mapped_to, "Confidence": f"{c.confidence:.0%}"}
+                        for c in result.matched_columns
+                    ])
+                    st.dataframe(matched_df, use_container_width=True, hide_index=True)
+
+                if result.review_columns:
+                    st.markdown("**Review Suggested (fuzzy matches)**")
+                    for mapping in result.review_columns:
+                        col1, col2, col3, col4 = st.columns([3, 3, 2, 2])
+                        mapping_key = f"{file_key}_{mapping.source_column}"
+                        with col1:
+                            st.text(mapping.source_column)
+                        with col2:
+                            # Dropdown with fuzzy matches + all standard fields + custom option
+                            fuzzy_options = [mapping.mapped_to or ""] + [alt[0] for alt in mapping.alternatives]
+                            fuzzy_options = [opt for opt in fuzzy_options if opt]  # Remove empty
+
+                            # Add all standard field options (exclude duplicates)
+                            all_fields = get_field_options_for_strand(team_id)
+                            standard_options = [f for f in all_fields if f not in fuzzy_options]
+
+                            # Build final options: fuzzy matches first, then separator, then all fields
+                            options = fuzzy_options.copy()
+                            if standard_options:
+                                options.append("── All Fields ──")
+                                options.extend(standard_options)
+                            options.append("-- Type custom --")
+                            options.append("-- Ignore this column --")
+                            options.append("-- Keep original --")
+
+                            selected = st.selectbox(
+                                "Map to",
+                                options,
+                                key=f"map_{mapping_key}",
+                                label_visibility="collapsed"
+                            )
+
+                            if selected == "-- Type custom --":
+                                custom_value = st.text_input(
+                                    "Custom mapping",
+                                    key=f"custom_{mapping_key}",
+                                    placeholder="Type column name...",
+                                    label_visibility="collapsed"
+                                )
+                                # Store in session state for persistence
+                                if custom_value.strip():
+                                    if "custom_mappings" not in st.session_state:
+                                        st.session_state.custom_mappings = {}
+                                    st.session_state.custom_mappings[mapping_key] = custom_value.strip()
+                                    mapping.user_override = custom_value.strip()
+                                elif mapping_key in st.session_state.get("custom_mappings", {}):
+                                    # Retrieve from session state if already set
+                                    mapping.user_override = st.session_state.custom_mappings[mapping_key]
+                            elif selected == "-- Ignore this column --":
+                                mapping.ignored = True
+                                mapping.user_override = None
+                            elif selected == "-- Keep original --":
+                                mapping.user_override = mapping.source_column
+                            elif selected == "── All Fields ──":
+                                pass  # Separator, do nothing
+                            elif selected != mapping.mapped_to:
+                                mapping.user_override = selected
+                        with col3:
+                            st.caption(f"Score: {mapping.confidence:.0%}")
+                        with col4:
+                            # Sample values
+                            if mapping.sample_values:
+                                st.caption(f"e.g., {str(mapping.sample_values[0])[:20]}")
+
+                if result.unmapped_columns:
+                    st.markdown("**Unmapped Columns (needs manual mapping)**")
+                    for mapping in result.unmapped_columns:
+                        col1, col2, col3 = st.columns([3, 4, 3])
+                        mapping_key = f"unmap_{file_key}_{mapping.source_column}"
+                        with col1:
+                            st.text(mapping.source_column)
+                        with col2:
+                            # Get suggestions + all standard fields + custom option
+                            suggestions = [alt[0] for alt in mapping.alternatives] if mapping.alternatives else []
+
+                            # Add all standard field options (exclude duplicates)
+                            all_fields = get_field_options_for_strand(team_id)
+                            standard_options = [f for f in all_fields if f not in suggestions]
+
+                            # Build options: suggestions first, then all fields, then actions
+                            options = suggestions.copy()
+                            if standard_options:
+                                options.append("── All Fields ──")
+                                options.extend(standard_options)
+                            options.append("-- Type custom --")
+                            options.append("-- Ignore this column --")
+                            options.append("-- Keep original --")
+
+                            # Default to first option
+                            default_idx = 0
+
+                            selected = st.selectbox(
+                                "Map to",
+                                options,
+                                key=f"select_{mapping_key}",
+                                label_visibility="collapsed",
+                                index=default_idx
+                            )
+
+                            if selected == "-- Type custom --":
+                                custom_value = st.text_input(
+                                    "Custom mapping",
+                                    key=f"custom_{mapping_key}",
+                                    placeholder="Type column name...",
+                                    label_visibility="collapsed"
+                                )
+                                # Store in session state for persistence
+                                if custom_value.strip():
+                                    if "custom_mappings" not in st.session_state:
+                                        st.session_state.custom_mappings = {}
+                                    st.session_state.custom_mappings[mapping_key] = custom_value.strip()
+                                    mapping.user_override = custom_value.strip()
+                                elif mapping_key in st.session_state.get("custom_mappings", {}):
+                                    # Retrieve from session state if already set
+                                    mapping.user_override = st.session_state.custom_mappings[mapping_key]
+                            elif selected == "-- Ignore this column --":
+                                mapping.ignored = True
+                            elif selected == "-- Keep original --":
+                                mapping.user_override = mapping.source_column
+                            elif selected == "── All Fields ──":
+                                pass  # Separator, do nothing
+                            else:
+                                mapping.user_override = selected
+                        with col3:
+                            if mapping.sample_values:
+                                st.caption(f"e.g., {str(mapping.sample_values[0])[:20]}")
+
+        # Step 3: Confirm & Proceed
+        st.markdown("### Step 3: Confirm & Proceed")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Confirm Mappings", type="primary", use_container_width=True):
+                # Collect all final mappings, including custom values from session state
+                all_mappings = {}
+                custom_maps = st.session_state.get("custom_mappings", {})
+
+                for file_key, result in results.items():
+                    file_mappings = {}
+                    for mapping in result.column_mappings:
+                        # Check for custom mapping in session state first
+                        review_key = f"{file_key}_{mapping.source_column}"
+                        unmap_key = f"unmap_{file_key}_{mapping.source_column}"
+
+                        if review_key in custom_maps:
+                            file_mappings[mapping.source_column] = custom_maps[review_key]
+                        elif unmap_key in custom_maps:
+                            file_mappings[mapping.source_column] = custom_maps[unmap_key]
+                        elif mapping.final_mapping:
+                            file_mappings[mapping.source_column] = mapping.final_mapping
+
+                    all_mappings[file_key] = file_mappings
+
+                st.session_state.column_mappings[team_id] = all_mappings
+                st.session_state.mapping_validated[team_id] = True
+                st.success("Mappings confirmed! You can now proceed to Process tab.")
+
+        with col2:
+            if st.button("Clear & Re-analyze", use_container_width=True):
+                if team_id in st.session_state.validation_results:
+                    del st.session_state.validation_results[team_id]
+                if team_id in st.session_state.column_mappings:
+                    del st.session_state.column_mappings[team_id]
+                if team_id in st.session_state.mapping_validated:
+                    del st.session_state.mapping_validated[team_id]
+                # Clear custom mappings for this team
+                st.session_state.custom_mappings = {k: v for k, v in st.session_state.custom_mappings.items() if team_id not in k}
+                st.rerun()
+
+        # Show validation status
+        if st.session_state.mapping_validated.get(team_id, False):
+            st.success("Mappings have been validated and confirmed.")
+
+            # Show final mappings summary
+            with st.expander("View Final Mappings"):
+                all_mappings = st.session_state.column_mappings.get(team_id, {})
+                for file_key, mappings in all_mappings.items():
+                    st.markdown(f"**{file_key}**")
+                    if mappings:
+                        mapping_df = pd.DataFrame([
+                            {"Source": k, "Mapped To": v}
+                            for k, v in mappings.items()
+                        ])
+                        st.dataframe(mapping_df, use_container_width=True, hide_index=True)
+                    else:
+                        st.caption("No mappings")
+
+
+# =============================================================================
 # MAIN APP
 # =============================================================================
 
@@ -769,8 +1550,9 @@ def main():
     st.markdown("---")
 
     # Tabs for different sections
-    tab1, tab2, tab3, tab4 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "📤 Upload & Files",
+        "Validate & Map",
         "⚙️ Process",
         "📊 Reports",
         "👁️ Preview"
@@ -782,12 +1564,15 @@ def main():
         render_customer_files(team_id)
 
     with tab2:
-        render_processing(team_id)
+        render_validate_and_map(team_id)
 
     with tab3:
-        render_reports(team_id)
+        render_processing(team_id)
 
     with tab4:
+        render_reports(team_id)
+
+    with tab5:
         render_preview(team_id)
 
     # Footer

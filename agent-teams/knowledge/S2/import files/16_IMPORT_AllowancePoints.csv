@@ -1,0 +1,16 @@
+ScenarioCode,AllowanceTypeCode,AllowancePointCode,AllowancePointTitle,AvailableToAllSchools,SchoolCodes,AllowancePointEnabled,RateDateFrom,RateDateTo,AnnualRate
+,FIRSTAID,FA1,Fa1,True,,True,,,0
+,FIRSTAID,FA2,Fa2,True,,True,,,0
+,LW,LWOL,Outer London Weighting,False,MID,True,2024-04-01,,3000
+,MORE,MORE1,MORE1,True,"MIL,GRE",True,2025-09-01,,10
+,MORE,MORE2,More2,True,,True,2025-09-01,,15
+,SEN,SEN_MAX,SEN Maximum,False,"MIL,GRE,GOO,OUR",True,2024-09-01,,5285
+,SEN,SEN_MIN,SEN Minimum,False,"MIL,GRE,GOO,OUR",True,2024-09-01,,2679
+,TLR,TLR1A,TLR1A,True,,True,2024-09-01,,9782
+,TLR,TLR1B,TLR1B,True,,True,2024-09-01,,12041
+,TLR,TLR1C,TLR1C,True,,True,2024-09-01,,16553
+,TLR,TLR2A,TLR2A,True,,True,2024-09-01,,3391
+,TLR,TLR2B,TLR2B,True,,True,2024-09-01,,5648
+,TLR,TLR2C,TLR2C,True,,True,2024-09-01,,8279
+,TLR,TLR3_MAX,TLR3 Maximum,True,,True,2024-09-01,,3344
+,TLR,TLR3_MIN,TLR2 Minimum,True,,True,2024-09-01,,675

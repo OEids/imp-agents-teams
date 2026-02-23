@@ -1,0 +1,24 @@
+ScenarioCode,PensionCode,Title,AvailableToAllSchools,SchoolCodes,PensionEnabled,RateDateFrom,RateDateTo,PensionPercentage
+,LGPS_BNT,LGPS Barnet,False,LEA,True,2024-04-01,2025-03-31,17.5
+,LGPS_BNT,LGPS Barnet,False,LEA,True,2025-04-01,2026-03-31,18.5
+,LGPS_BNT,LGPS Barnet,False,LEA,True,2026-04-01,,19.5
+,LGPS_BRM,LGPS Bromley,False,MID,True,2024-04-01,2025-03-31,17.5
+,LGPS_BRM,LGPS Bromley,False,MID,True,2025-04-01,2026-03-31,18.5
+,LGPS_BRM,LGPS Bromley,False,MID,True,2026-04-01,,19.5
+,LGPS_HCK,LGPS Hackney,False,"LOR,GRE,GOO,OUR",True,2024-04-01,2025-03-31,17.5
+,LGPS_HCK,LGPS Hackney,False,"LOR,GRE,GOO,OUR",True,2025-04-01,2026-03-31,18.5
+,LGPS_HCK,LGPS Hackney,False,"LOR,GRE,GOO,OUR",True,2026-04-01,,19.5
+,LGPS_KEN,LGPS Kent,False,MIL,True,2024-04-01,2025-03-31,17.5
+,LGPS_KEN,LGPS Kent,False,MIL,True,2025-04-01,2026-03-31,18.5
+,LGPS_KEN,LGPS Kent,False,MIL,True,2026-04-01,,19.5
+,LGPS_LNS,LGPS Lancashire,False,ALE,True,2024-04-01,2025-03-31,17.5
+,LGPS_LNS,LGPS Lancashire,False,ALE,True,2025-04-01,2026-03-31,18.5
+,LGPS_LNS,LGPS Lancashire,False,ALE,True,2026-04-01,,19.5
+,LGPS_NTS,LGPS Nottinghamshire,False,"MAT,APP,MAR",True,2024-04-01,2025-03-31,19.5
+,LGPS_NTS,LGPS Nottinghamshire,False,"MAT,APP,MAR",True,2025-04-01,2026-03-31,18.5
+,LGPS_NTS,LGPS Nottinghamshire,False,"MAT,APP,MAR",True,2026-04-01,,17.5
+,LGPS_SUR,LGPS Surrey,False,EDU,True,2024-04-01,2025-03-31,17.5
+,LGPS_SUR,LGPS Surrey,False,EDU,True,2025-04-01,2026-03-31,18.5
+,LGPS_SUR,LGPS Surrey,False,EDU,True,2026-04-01,,19.5
+,OPTOUT,Opted Out 0%,True,,True,2022-09-01,,0.0
+,TPS,Teachers Pension Scheme,True,,True,2024-04-01,,28.68

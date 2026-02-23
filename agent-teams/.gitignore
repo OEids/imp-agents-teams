@@ -1,0 +1,27 @@
+# Customer data - DO NOT COMMIT
+customer data/
+reports/*.xlsx
+reports/*.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Temp files
+~$*
+*.tmp
+nul
+
+# User config (contains local paths)
+config/user_config.json
+
+# Memory/cache
+memory/
+.claude/

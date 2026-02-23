@@ -1,0 +1,206 @@
+ScenarioCode,PayScaleCode,PayScaleGradeCode,Title,ScalePointNumberFrom,ScalePointNumberTo,AvailableToAllSchools,SchoolCodes,PayScaleGradeEnabled
+,APP/NMW,NMW_Y1,Apprentice Y1,1,1,True,,True
+,APP/NMW,NMW_<18,NMW <18,2,2,True,,True
+,APP/NMW,NMW_18-20,NMW 18-20,3,3,True,,True
+,APP/NMW,NMW_>21,NLW >21,4,4,True,,True
+,ESTF,ESTF_00,External Staff 00,0,0,True,,True
+,KENT,25891064,KR03,1,1,False,MIL,True
+,KENT,46291663,KR03,2,2,False,MIL,True
+,KENT,70605543,KR03,3,3,False,MIL,True
+,KENT,34670661,KR08,4,4,False,MIL,True
+,KENT,12387327,KR05,5,5,False,MIL,True
+,KENT,38191388,KR05,6,6,False,MIL,True
+,KENT,44544902,KR05,7,7,False,MIL,True
+,KENT,20303520,KR05,8,8,False,MIL,True
+,KENT,16583736,KR05,9,9,False,MIL,True
+,KENT,76992654,KR05,10,10,False,MIL,True
+,KENT,21005460,KR05,11,11,False,MIL,True
+,KENT,18461984,KR06,12,12,False,MIL,True
+,KENT,48836308,KR06,13,13,False,MIL,True
+,KENT,79445180,KR06,14,14,False,MIL,True
+,KENT,31008481,KR06,15,15,False,MIL,True
+,KENT,51446585,KR04,16,16,False,MIL,True
+,KENT,92982577,KR04,17,17,False,MIL,True
+,KENT,43697238,KR04,18,18,False,MIL,True
+,KENT,60613534,KR03,19,19,False,MIL,True
+,KENT,85286584,KR03,20,20,False,MIL,True
+,KENT,92353899,KR03,21,21,False,MIL,True
+,KENT,40149804,KR03,22,22,False,MIL,True
+,KENT,50161874,KR03,23,23,False,MIL,True
+,LP_EW,LP_EW_01-04,Lead Practitioner Range LP01 -LP04 - EW,1,4,False,"MAT,ALE,APP,MAR",True
+,LP_EW,LP_EW_01-18,Lead Practitioner Range LP01-LP18 - EW,1,18,False,"MAT,ALE,APP,MAR",True
+,LP_EW,LP_EW_05-09,Lead Practitioner Range LP05 -LP09 - EW,5,9,False,"MAT,ALE,APP,MAR",True
+,LP_EW,LP_EW_10-14,Lead Practitioner Range LP10 -LP14 - EW,10,14,False,"MAT,ALE,APP,MAR",True
+,LP_EW,LP_EW_12-12,Lead Practitioner Fixed Point LP12 - EW,12,12,False,"MAT,ALE,APP,MAR",True
+,LP_EW,LP_EW_15-18,Lead Practitioner Range LP15 -LP18 - EW,15,18,False,"MAT,ALE,APP,MAR",True
+,LP_FRI,LP_FRI_01-04,Lead Practitioner Range LP01 -LP04 - Fringe,1,4,False,"MIL,EDU",True
+,LP_FRI,LP_FRI_01-18,Lead Practitioner Range LP01-LP18 - Fringe,1,18,False,"MIL,EDU",True
+,LP_FRI,LP_FRI_05-09,Lead Practitioner Range LP05 -LP09 - Fringe,5,9,False,"MIL,EDU",True
+,LP_FRI,LP_FRI_10-14,Lead Practitioner Range LP10 -LP14 - Fringe,10,14,False,"MIL,EDU",True
+,LP_FRI,LP_FRI_12-12,Lead Practitioner Fixed Point LP12 - Fringe,12,12,False,"MIL,EDU",True
+,LP_FRI,LP_FRI_15-18,Lead Practitioner Range LP15 -LP18 - Fringe,15,18,False,"MIL,EDU",True
+,LP_IL,LP_IL_01-18,Lead Practitioner Range LP01-LP18 - Inner,1,18,False,"LOR,GRE,GOO,OUR",True
+,LP_IL,LP_IL_01-04,Lead Practitioner Range LP01 -LP04 - Inner,1,4,False,"LOR,GRE,GOO,OUR",True
+,LP_IL,LP_IL_05-09,Lead Practitioner Range LP05 -LP09 - Inner,5,9,False,"LOR,GRE,GOO,OUR",True
+,LP_IL,LP_IL_10-14,Lead Practitioner Range LP10 -LP14 - Inner,10,14,False,"LOR,GRE,GOO,OUR",True
+,LP_IL,LP_IL_12-12,Lead Practitioner Fixed Point LP12 - Inner,12,12,False,"LOR,GRE,GOO,OUR",True
+,LP_IL,LP_IL_15-18,Lead Practitioner Range LP15 -LP18 - Inner,15,18,False,"LOR,GRE,GOO,OUR",True
+,LP_OL,LP_OL_01-04,Lead Practitioner Range LP01 -LP04 - Outer,1,4,False,"LEA,MID",True
+,LP_OL,LP_OL_01-18,Lead Practitioner Range LP01-LP18 - Outer,1,18,False,"LEA,MID",True
+,LP_OL,LP_OL_05-09,Lead Practitioner Range LP05 -LP09 - Outer,5,9,False,"LEA,MID",True
+,LP_OL,LP_OL_10-14,Lead Practitioner Range LP10 -LP14 - Outer,10,14,False,"LEA,MID",True
+,LP_OL,LP_OL_12-12,Lead Practitioner Fixed Point LP12 - Outer,12,12,False,"LEA,MID",True
+,LP_OL,LP_OL_15-18,Lead Practitioner Range LP15 -LP18 - Outer,15,18,False,"LEA,MID",True
+,LS_EW,LS_EW_01-06,Leadership Range L01-L06 - EW,1,6,False,"MAT,ALE,APP,MAR",True
+,LS_EW,LS_EW_01-43,Leadership Range L01-L43 - EW,1,43,False,"MAT,ALE,APP,MAR",True
+,LS_EW,LS_EW_06-18,Leadership Range L06-L18 - EW,6,18,False,"MAT,ALE,APP,MAR",True
+,LS_EW,LS_EW_07-13,Leadership Range L07-L13 - EW,7,13,False,"MAT,ALE,APP,MAR",True
+,LS_EW,LS_EW_08-21,Leadership Range L08-L21 - EW,8,21,False,"MAT,ALE,APP,MAR",True
+,LS_EW,LS_EW_12-12,Leadership Fixed Point L12 - EW,12,12,False,"MAT,ALE,APP,MAR",True
+,LS_EW,LS_EW_12-24,Leadership Range L12-L24 - EW,12,24,False,"MAT,ALE,APP,MAR",True
+,LS_EW,LS_EW_14-20,Leadership Range L14-L20 - EW,14,20,False,"MAT,ALE,APP,MAR",True
+,LS_EW,LS_EW_16-27,Leadership Range L16-L27 - EW,16,27,False,"MAT,ALE,APP,MAR",True
+,LS_EW,LS_EW_18-31,Leadership Range L18-L31 - EW,18,31,False,"MAT,ALE,APP,MAR",True
+,LS_EW,LS_EW_21-27,Leadership Range L21-L27 - EW,21,27,False,"MAT,ALE,APP,MAR",True
+,LS_EW,LS_EW_21-35,Leadership Range L21-L35 - EW,21,35,False,"MAT,ALE,APP,MAR",True
+,LS_EW,LS_EW_28-43,Leadership Range L28-L43 - EW,28,43,False,"MAT,ALE,APP,MAR",True
+,LS_EW,LS_EW_28-34,Leadership Range L28-L34 - EW,28,34,False,"MAT,ALE,APP,MAR",True
+,LS_EW,LS_EW_35-43,Leadership Range L35-L43 - EW,35,43,False,"MAT,ALE,APP,MAR",True
+,LS_FRI,LS_FRI_01-06,Leadership Range L01-L06 - Fringe,1,6,False,"MIL,EDU",True
+,LS_FRI,LS_FRI_01-43,Leadership Range L01-L43 - Fringe,1,43,False,"MIL,EDU",True
+,LS_FRI,LS_FRI_07-13,Leadership Range L07-L13 - Fringe,7,13,False,"MIL,EDU",True
+,LS_FRI,LS_FRI_12-12,Leadership Fixed Point L12 - Fringe,12,12,False,"MIL,EDU",True
+,LS_FRI,LS_FRI_14-20,Leadership Range L14-L20 - Fringe,14,20,False,"MIL,EDU",True
+,LS_FRI,LS_FRI_21-27,Leadership Range L21-L27 - Fringe,21,27,False,"MIL,EDU",True
+,LS_FRI,LS_FRI_28-34,Leadership Range L28-L34 - Fringe,28,34,False,"MIL,EDU",True
+,LS_FRI,LS_FRI_35-43,Leadership Range L35-L43 - Fringe,35,43,False,"MIL,EDU",True
+,LS_IL,LS_IL_01-43,Leadership range L01-L43 - Inner,1,43,False,"LOR,GRE,GOO,OUR",True
+,LS_IL,LS_IL_01-06,Leadership Range L01-L06 - Inner,1,6,False,"LOR,GRE,GOO,OUR",True
+,LS_IL,LS_IL_07-13,Leadership Range L07-L13 - Inner,7,13,False,"LOR,GRE,GOO,OUR",True
+,LS_IL,LS_IL_12-12,Leadership Fixed Point L12 - Inner,12,12,False,"LOR,GRE,GOO,OUR",True
+,LS_IL,LS_IL_14-20,Leadership Range L14-L20 - Inner,14,20,False,"LOR,GRE,GOO,OUR",True
+,LS_IL,LS_IL_21-27,Leadership Range L21-L27 - Inner,21,27,False,"LOR,GRE,GOO,OUR",True
+,LS_IL,LS_IL_28-34,Leadership Range L28-L34 - Inner,28,34,False,"LOR,GRE,GOO,OUR",True
+,LS_IL,LS_IL_35-43,Leadership Range L35-L43 - Inner,35,43,False,"LOR,GRE,GOO,OUR",True
+,LS_OL,LS_OL_01-06,Leadership Range L01-L06 - Outer,1,6,False,"LEA,MID",True
+,LS_OL,LS_OL_04-43,Leadership Range L01-L43 - Outer,1,43,False,"LEA,MID",True
+,LS_OL,LS_OL_07-13,Leadership Range L07-L13 - Outer,7,13,False,"LEA,MID",True
+,LS_OL,LS_OL_12-12,Leadership Fixed Point L12 - Outer,12,12,False,"LEA,MID",True
+,LS_OL,LS_OL_14-20,Leadership Range L14-L20 - Outer,14,20,False,"LEA,MID",True
+,LS_OL,LS_OL_21-27,Leadership Range L21-L27 - Outer,21,27,False,"LEA,MID",True
+,LS_OL,LS_OL_28-34,Leadership Range L28-L34 - Outer,28,34,False,"LEA,MID",True
+,LS_OL,LS_OL_35-43,Leadership Range L35-L43 - Outer,35,43,False,"LEA,MID",True
+,MAIN_EW,MAIN_UPS_EW,Teachers Main through UPS,1,11,False,"MAT,ALE,APP,MAR",True
+,MAIN_FRI,MAIN_UPS_FRI,Teachers Main through UPS Fringe,1,21,False,"MIL,EDU",True
+,MAIN_IL,MAIN_IL,Teachers Main Scale only Inner,1,6,False,"LOR,GRE,GOO,OUR",True
+,MAIN_IL,UPS_IL,Teachers Upper Scale only Inner,7,11,False,"LOR,GRE,GOO,OUR",True
+,MAIN_OL,MAIN_OL,Teachers Main Scale only Outer,1,6,False,"LEA,MID",True
+,NJC_EW,LNS_01,Grade 1 (1-1) - Lancashire,1,1,False,ALE,True
+,NJC_EW,NTS_01,Grade 1 (1-2) - Nottinghamshire,1,2,False,"MAT,APP,MAR",True
+,NJC_EW,LNS_03,Grade 3 (2-4) - Lancashire,2,4,False,ALE,True
+,NJC_EW,LNS_02,Grade 2 (2-2) - Lancashire,2,2,False,ALE,True
+,NJC_EW,NTS_02,Grade 2 (3-4) - Nottinghamshire,3,4,False,"MAT,APP,MAR",True
+,NJC_EW,LNS_04,Grade 4 (4-6) - Lancashire,4,6,False,ALE,True
+,NJC_EW,NTS_03,Grade 3 (5-6) - Nottinghamshire,5,6,False,"MAT,APP,MAR",True
+,NJC_EW,LNS_05,Grade 5 (6-11) - Lancashire,6,11,False,ALE,True
+,NJC_EW,NTS_04,Grade 4 (7-10) - Nottinghamshire,7,10,False,"MAT,APP,MAR",True
+,NJC_EW,BRM_BR03,Grade 3 - Bromley,9,11,False,MID,True
+,NJC_EW,LNS_06,Grade 6 (11-19) - Lancashire,11,19,False,ALE,True
+,NJC_EW,NTS_05,Grade 5 (11-14) - Nottinghamshire,11,14,False,"MAT,APP,MAR",True
+,NJC_EW,BRM_BR04,Grade 4 - Bromley,11,13,False,MID,True
+,NJC_EW,BRM_BR05,Grade 5 - Bromley,13,17,False,MID,True
+,NJC_EW,NTS_06,Grade 6 (15-18) - Nottinghamshire,15,18,False,"MAT,APP,MAR",True
+,NJC_EW,BRM_BR06,Grade 6 - Bromley,17,21,False,MID,True
+,NJC_EW,NTS_07,Grade 7 (19-22) - Nottinghamshire,19,22,False,"MAT,APP,MAR",True
+,NJC_EW,LNS_07,Grade 7 (19-25) - Lancashire,19,25,False,ALE,True
+,NJC_EW,BRM_BR07,Grade 7 - Bromley,22,25,False,MID,True
+,NJC_EW,NTS_08,Grade 8 (23-26) - Nottinghamshire,23,26,False,"MAT,APP,MAR",True
+,NJC_EW,LNS_08,Grade 8 (25-30) - Lancashire,25,30,False,ALE,True
+,NJC_EW,BRM_BR08,Grade 8 - Bromley,26,28,False,MID,True
+,NJC_EW,NTS_09,Grade 9 (27-30) - Nottinghamshire,27,30,False,"MAT,APP,MAR",True
+,NJC_EW,BRM_BR09,Grade 9 - Bromley,29,31,False,MID,True
+,NJC_EW,LNS_09,Grade 9 (30-35) - Lancashire,30,35,False,ALE,True
+,NJC_EW,NTS_10,Grade 10 (31-34) - Nottinghamshire,31,34,False,"MAT,APP,MAR",True
+,NJC_EW,BRM_BR10,Grade 10 - Bromley,32,34,False,MID,True
+,NJC_EW,BRM_BR11,Grade 11 - Bromley,33,36,False,MID,True
+,NJC_EW,LNS_10,Grade 10 (35-40) - Lancashire,35,40,False,ALE,True
+,NJC_EW,BRM_BR12,Grade 12 - Bromley,35,38,False,MID,True
+,NJC_EW,NTS_11,Grade 11 (35-38) - Nottinghamshire,35,38,False,"MAT,APP,MAR",True
+,NJC_EW,BRM_BR13,Grade 13 - Bromley,38,41,False,MID,True
+,NJC_EW,NTS_12,Grade 12 (39-43) - Nottinghamshire,39,43,False,"MAT,APP,MAR",True
+,NJC_EW,LNS_11,Grade 11 (40-43) - Lancashire,40,43,False,ALE,True
+,NJC_EW,BRM_BR14,Grade 14 - Bromley,41,43,False,MID,True
+,NJC_FRI,SUR_PS01,Grade PS1/2 - Surrey,1,1,False,EDU,True
+,NJC_FRI,SUR_PS03,Grade PS03 - Surrey,2,4,False,EDU,True
+,NJC_FRI,SUR_PS04,Grade PS04 - Surrey,5,10,False,EDU,True
+,NJC_FRI,SUR_PS05,Grade PS05 - Surrey,11,16,False,EDU,True
+,NJC_FRI,SUR_PS06,Grade PS06 - Surrey,17,22,False,EDU,True
+,NJC_FRI,SUR_PS07,Grade PS07 - Surrey,23,28,False,EDU,True
+,NJC_FRI,SUR_PS08,Grade PS08 - Surrey,29,34,False,EDU,True
+,NJC_FRI,SUR_PS09,Grade PS09 - Surrey,35,40,False,EDU,True
+,NJC_FRI,SUR_PS10,Grade PS10 - Surrey,41,46,False,EDU,True
+,NJC_FRI,SUR_PS11,Grade PS11 - Surrey,47,52,False,EDU,True
+,NJC_FRI,SUR_PS12,Grade PS12 - Surrey,53,58,False,EDU,True
+,NJC_FRI,SUR_PS13,Grade PS13 - Surrey,59,64,False,EDU,True
+,NJC_FRI,SUR_PS14,Grade PS14 - Surrey,65,70,False,EDU,True
+,NJC_IL,HCK_01,Scale 1 (1-1) - Hackney,1,1,False,"LOR,GRE,GOO,OUR",True
+,NJC_IL,HCK_01C,Scale 1c (2-3) - Hackney,2,3,False,"LOR,GRE,GOO,OUR",True
+,NJC_IL,HCK_02,Scale 2 (3-4) - Hackney,3,4,False,"LOR,GRE,GOO,OUR",True
+,NJC_IL,HCK_03,Scale 3 (5-6) - Hackney,5,6,False,"LOR,GRE,GOO,OUR",True
+,NJC_IL,HCK_04,Scale 4 (7-10) - Hackney,7,10,False,"LOR,GRE,GOO,OUR",True
+,NJC_IL,HCK_05,Scale 5 (12-15) - Hackney,12,15,False,"LOR,GRE,GOO,OUR",True
+,NJC_IL,HCK_06,Scale 6 (18-20) - Hackney,18,20,False,"LOR,GRE,GOO,OUR",True
+,NJC_IL,HCK_SO1,SO1 (23-25) - Hackney,23,25,False,"LOR,GRE,GOO,OUR",True
+,NJC_IL,HCK_SO2,SO2 (26-28) - Hackney,26,28,False,"LOR,GRE,GOO,OUR",True
+,NJC_IL,HCK_PO1,PO1 (27-30) - Hackney,27,30,False,"LOR,GRE,GOO,OUR",True
+,NJC_IL,HCK_PO2,PO2 (29-32) - Hackney,29,32,False,"LOR,GRE,GOO,OUR",True
+,NJC_IL,HCK_PO3,PO3 (32-35) - Hackney,32,35,False,"LOR,GRE,GOO,OUR",True
+,NJC_IL,HCK_PO4,PO4 (35-38) - Hackney,35,38,False,"LOR,GRE,GOO,OUR",True
+,NJC_IL,HCK_PO5,PO5 (38-41) - Hackney,38,41,False,"LOR,GRE,GOO,OUR",True
+,NJC_IL,HCK_PO6,PO6 (40-43) - Hackney,40,43,False,"LOR,GRE,GOO,OUR",True
+,NJC_IL,HCK_PO7,PO7 (44-47) - Hackney,44,47,False,"LOR,GRE,GOO,OUR",True
+,NJC_IL,HCK_PO8,PO8 (49-52) - Hackney,49,52,False,"LOR,GRE,GOO,OUR",True
+,NJC_IL,HCK_PO9,PO9 (55-58) - Hackney,55,58,False,"LOR,GRE,GOO,OUR",True
+,NJC_OL,BNT_01C,Scale 1c (1-2) - Barnet,1,2,False,LEA,True
+,NJC_OL,BNT_1,Scale 1 (3-3) - Barnet,3,3,False,LEA,True
+,NJC_OL,BNT_2,Scale 2 (4-4) - Barnet,4,4,False,LEA,True
+,NJC_OL,BNT_3,Scale 3 (5-6) - Barnet,5,6,False,LEA,True
+,NJC_OL,BNT_4,Scale 4 (7-10) - Barnet,7,10,False,LEA,True
+,NJC_OL,BNT_5,Scale 5 (11-15) - Barnet,11,15,False,LEA,True
+,NJC_OL,BNT_6,Scale 6 (16-20) - Barnet,16,20,False,LEA,True
+,NJC_OL,BNT_SO1,Grade SO1 (21-25) - Barnet,21,25,False,LEA,True
+,NJC_OL,BNT_SO2,Grade SO2 (26-28) - Barnet,26,28,False,LEA,True
+,NJC_OL,BNT_PO1,Grade PO1 (29-32) - Barnet,29,32,False,LEA,True
+,NJC_OL,BNT_PO2,Grade PO2 (33-36) - Barnet,33,36,False,LEA,True
+,NJC_OL,BNT_SM1,Grade SM1 (37-40) - Barnet,37,40,False,LEA,True
+,NJC_OL,BNT_SM2,Grade SM2 (41-44) - Barnet,41,44,False,LEA,True
+,NJC_OL,BNT_SM3,Grade SM3 (45-48) - Barnet,45,48,False,LEA,True
+,NJC_OL,BNT_SM4,Grade SM4 (49-52) - Barnet,49,52,False,LEA,True
+,NJC_OL,BNT_SM5,Grade SM5 (53-56) - Barnet,53,56,False,LEA,True
+,SPOT_CEO,CEO1,CEO Spot Salary 1,1,1,False,MAT,True
+,SPOT_CEO,CEO2,CEO Spot Salary 2,2,2,False,MAT,True
+,SPOT_CEO,CEO3,CEO Spot Salary 3,3,3,False,MAT,True
+,SPOT_CEO,CEO4,CEO Spot Salary 4,4,4,False,MAT,True
+,SPOT_H,H_01,Hourly Rate 1,1,1,True,,True
+,SPOT_H,H_02,Hourly Rate 2,2,2,True,,True
+,SPOT_H,H_03,Hourly Rate 3,3,3,True,,True
+,SPOT_H,H_04,Hourly Rate 4,4,4,True,,True
+,SPOT_H,H_05,Hourly Rate 5,5,5,True,,True
+,SPOT_H,H_06,Hourly Rate 6,6,6,True,,True
+,SPOT_H,H_07,Hourly Rate 7,7,7,True,,True
+,SPOT_H,H_08,Hourly Rate 8,8,8,True,,True
+,SPOT_H,H_09,Hourly Rate 9,9,9,True,,True
+,SPOT_H,H_10,Hourly Rate 10,10,10,True,,True
+,SPOT_HTG_EW,HT1,School Group 1 Max,1,1,False,"MAT,ALE,APP,MAR",True
+,SPOT_HTG_EW,HT2,School Group 2 Max,2,2,False,"MAT,ALE,APP,MAR",True
+,SPOT_HTG_EW,HT3,School Group 3 Max,3,3,False,"MAT,ALE,APP,MAR",True
+,SPOT_HTG_EW,HT4,School Group 4 Max,4,4,False,"MAT,ALE,APP,MAR",True
+,SPOT_HTG_EW,HT5,School Group 5 Max,5,5,False,"MAT,ALE,APP,MAR",True
+,SPOT_HTG_EW,HT6,School Group 6 Max,6,6,False,"MAT,ALE,APP,MAR",True
+,SPOT_HTG_EW,HT7,School Group 7 Max,7,7,False,"MAT,ALE,APP,MAR",True
+,SPOT_HTG_EW,HT8,School Group 8 Max,8,8,False,"MAT,ALE,APP,MAR",True
+,UPS_OL,UPS_OL,Teachers Upper Scale only Outer,1,5,False,"LEA,MID",True
+,UQ_EW,UQ_EW,Teacher Unqualified,1,6,False,"MAT,ALE,APP,MAR",True
+,UQ_FRI,UQ_FRI,Teacher Unqualified Fringe,1,6,False,"MIL,EDU",True
+,UQ_IL,UQ_IL,Teacher Unqualified Inner,1,6,False,"LOR,GRE,GOO,OUR",True
+,UQ_OL,UQ_OL,Teacher Unqualified Outer,1,6,False,"LEA,MID",True

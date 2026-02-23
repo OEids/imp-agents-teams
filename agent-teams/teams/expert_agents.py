@@ -4,6 +4,12 @@ Expert Agents
 Agents enhanced with IMP Planner domain knowledge.
 Each agent uses specialized knowledge to make informed decisions
 and provide expert-level validation and transformation.
+
+Enhanced with InferenceEngine for:
+- Intelligent column mapping with confidence scoring
+- Role/pension classification with reasoning trails
+- Configurable validation thresholds
+- Learning from user corrections
 """
 
 import pandas as pd
@@ -37,6 +43,32 @@ from .knowledge import (
     get_default_pension,
     get_default_fund_code,
 )
+from .payscale_extractor import PayScaleExtractor, extract_payscales_from_folder, get_default_payscales_folder
+
+# Import Intelligence Module for smart decisions
+try:
+    from intelligence import (
+        InferenceEngine, InferenceResult, DecisionContext,
+        ConfidenceLevel, ReasoningTrailManager
+    )
+    INFERENCE_AVAILABLE = True
+except ImportError:
+    INFERENCE_AVAILABLE = False
+
+
+# Shared InferenceEngine instance for all expert agents
+_inference_engine: Optional['InferenceEngine'] = None
+
+
+def get_inference_engine() -> Optional['InferenceEngine']:
+    """Get or create the shared InferenceEngine instance."""
+    global _inference_engine
+    if _inference_engine is None and INFERENCE_AVAILABLE:
+        try:
+            _inference_engine = InferenceEngine(hot_reload=False)
+        except Exception:
+            pass
+    return _inference_engine
 
 
 class ExpertAnalyzeAgent(AnalyzeAgent):
@@ -45,6 +77,10 @@ class ExpertAnalyzeAgent(AnalyzeAgent):
     def __init__(self, team_id: str, team_config: Dict):
         super().__init__(team_id, team_config)
         self.knowledge = get_team_knowledge(team_id)
+        # Storage for extracted pay scales (S2 specific)
+        self.extracted_payscales = None
+        self.extracted_allowances = None
+        self.payscale_extraction_log = []
 
     def execute(self, input_data: Path) -> CheckInReport:
         """Analyze with expert knowledge."""
@@ -53,6 +89,15 @@ class ExpertAnalyzeAgent(AnalyzeAgent):
 
         # Run base analysis first
         report = super().execute(input_data)
+
+        # =====================================================================
+        # S2 SPECIFIC: Auto-extract pay scales from payscales folder
+        # =====================================================================
+        if self.team_id == "S2":
+            payscale_results = self._extract_payscales_if_available()
+            if payscale_results:
+                report.details["payscale_extraction"] = payscale_results
+                self.log(f"Pay scale extraction: {payscale_results.get('summary', 'completed')}")
 
         # Add expert analysis
         if self.data is not None and not self.data.empty:
@@ -66,6 +111,119 @@ class ExpertAnalyzeAgent(AnalyzeAgent):
             report.recommendations.extend(self._get_expert_recommendations())
 
         return report
+
+    def _extract_payscales_if_available(self) -> Optional[Dict]:
+        """
+        Automatically extract pay scales from the payscales folder if it exists.
+        This ensures pay scale data is always captured during S2 processing.
+        """
+        # Try multiple possible locations for payscales
+        data_dir = self.team_config.get("data_dir", ".")
+        if isinstance(data_dir, str):
+            data_dir = Path(data_dir)
+
+        possible_paths = [
+            get_default_payscales_folder(),  # knowledge/S2/payscales example
+            Path(__file__).parent.parent / "knowledge" / "S2" / "payscales",
+            Path(__file__).parent.parent / "knowledge" / "S2" / "pay_scales",
+            data_dir / "payscales",
+        ]
+
+        payscales_folder = None
+        for path in possible_paths:
+            if path.exists() and list(path.glob("*.xlsx")):
+                payscales_folder = path
+                break
+
+        if not payscales_folder:
+            self.log("No payscales folder found - skipping pay scale extraction")
+            return {
+                "status": "skipped",
+                "reason": "No payscales folder with xlsx files found",
+                "searched_paths": [str(p) for p in possible_paths]
+            }
+
+        try:
+            self.log(f"Extracting pay scales from: {payscales_folder}")
+
+            # Run the extractor
+            result = extract_payscales_from_folder(payscales_folder)
+
+            # Store extracted data for use by other agents
+            self.extracted_payscales = result.get('pay_scales', [])
+            self.extracted_allowances = result.get('allowances', [])
+            self.payscale_extraction_log = result.get('logs', [])
+
+            # Build summary
+            ps_count = len(self.extracted_payscales)
+            ps_points = sum(len(ps.points) for ps in self.extracted_payscales)
+            allow_count = len(self.extracted_allowances)
+            allow_points = sum(len(a.points) for a in self.extracted_allowances)
+
+            if ps_count == 0 and allow_count == 0:
+                self.log("WARNING: No pay scales were imported from the files!")
+                return {
+                    "status": "warning",
+                    "reason": "No pay scales were imported - check file formats",
+                    "folder": str(payscales_folder),
+                    "files_processed": len(list(payscales_folder.glob("*.xlsx"))),
+                    "logs": self.payscale_extraction_log[-10:]  # Last 10 log entries
+                }
+
+            summary = f"{ps_count} pay scales ({ps_points} points), {allow_count} allowances ({allow_points} points)"
+            self.log(f"Extracted: {summary}")
+
+            # Add assumption about extracted pay scales
+            self.assumptions.add(
+                category="data_source",
+                description=f"Extracted {ps_count} pay scales from {payscales_folder.name}",
+                reason="Pay scale files found in designated folder",
+                impact="Pay scale validation will use extracted rates",
+                confidence="high",
+                affected_records=ps_points
+            )
+
+            return {
+                "status": "success",
+                "folder": str(payscales_folder),
+                "summary": summary,
+                "pay_scales": [
+                    {
+                        "code": ps.code,
+                        "title": ps.title,
+                        "type": ps.scale_type,
+                        "points_count": len(ps.points),
+                        "sample_points": [
+                            {"code": p.code, "rate": p.rate}
+                            for p in ps.points[:3]
+                        ]
+                    }
+                    for ps in self.extracted_payscales
+                ],
+                "allowances": [
+                    {
+                        "code": a.code,
+                        "title": a.title,
+                        "points_count": len(a.points),
+                        "sample_points": [
+                            {"code": p.code, "amount": p.amount}
+                            for p in a.points[:3]
+                        ]
+                    }
+                    for a in self.extracted_allowances
+                ],
+                "grades": result.get('grades', [])
+            }
+
+        except FileNotFoundError as e:
+            self.log(f"Pay scale folder not found: {e}")
+            return {"status": "error", "reason": str(e)}
+        except ValueError as e:
+            self.log(f"No xlsx files in payscales folder: {e}")
+            return {"status": "error", "reason": str(e)}
+        except Exception as e:
+            self.log(f"Error extracting pay scales: {e}")
+            return {"status": "error", "reason": str(e)}
 
     def _apply_expert_analysis(self, df: pd.DataFrame) -> Dict:
         """Apply domain-specific analysis."""
@@ -318,29 +476,69 @@ class ExpertCleanAgent(CleanAgent):
         )
 
     def _normalize_column_names(self, df: pd.DataFrame) -> tuple:
-        """Normalize column names using knowledge base."""
+        """
+        Normalize column names using knowledge base and InferenceEngine.
+
+        Uses InferenceEngine when available for:
+        - Confidence-scored column mapping
+        - Full reasoning trails
+        - Learning from corrections
+        """
         changes = []
         new_columns = {}
+        inference_engine = get_inference_engine()
 
         for col in df.columns:
             col_lower = str(col).strip().lower()
+            mapped = False
 
-            # Find matching standard name
-            for mapping in self.knowledge.column_mappings:
-                if col_lower in [v.lower() for v in mapping.variations] or col_lower == mapping.standard_name:
-                    if str(col) != mapping.standard_name:
-                        new_columns[col] = mapping.standard_name
-                        changes.append({
-                            "original": str(col),
-                            "normalized": mapping.standard_name,
-                            "reason": "Matched to IMP Planner standard"
-                        })
-                        self.assumptions.add_mapping_assumption(
-                            source_col=str(col),
-                            target_col=mapping.standard_name,
-                            mapping_type="knowledge_based"
-                        )
-                    break
+            # Try InferenceEngine first for intelligent mapping
+            if inference_engine and not mapped:
+                result = inference_engine.infer_column_mapping(
+                    source_column=str(col),
+                    strand=self.team_id
+                )
+
+                if result.decision != str(col) and result.confidence >= 0.5:
+                    new_columns[col] = result.decision
+                    changes.append({
+                        "original": str(col),
+                        "normalized": result.decision,
+                        "confidence": result.confidence,
+                        "reasoning": result.reasoning[0] if result.reasoning else "Rule-based mapping",
+                        "requires_review": result.requires_review
+                    })
+                    self.assumptions.add_mapping_assumption(
+                        source_col=str(col),
+                        target_col=result.decision,
+                        mapping_type="inference_engine"
+                    )
+
+                    # Log if low confidence
+                    if result.requires_review:
+                        self.log(f"⚠ Low confidence mapping: {col} → {result.decision} ({result.confidence:.0%})")
+
+                    mapped = True
+
+            # Fallback to knowledge base matching
+            if not mapped:
+                for mapping in self.knowledge.column_mappings:
+                    if col_lower in [v.lower() for v in mapping.variations] or col_lower == mapping.standard_name.lower():
+                        if str(col) != mapping.standard_name:
+                            new_columns[col] = mapping.standard_name
+                            changes.append({
+                                "original": str(col),
+                                "normalized": mapping.standard_name,
+                                "confidence": 0.9,
+                                "reasoning": "Matched to IMP Planner standard",
+                                "requires_review": False
+                            })
+                            self.assumptions.add_mapping_assumption(
+                                source_col=str(col),
+                                target_col=mapping.standard_name,
+                                mapping_type="knowledge_based"
+                            )
+                        break
 
         if new_columns:
             df = df.rename(columns=new_columns)
@@ -468,24 +666,22 @@ class ExpertCleanAgent(CleanAgent):
                     )
 
         # =====================================================================
-        # Set Default Fund Codes and Pension Schemes
+        # Mark Missing Fund Codes and Pension Schemes (NEVER use defaults)
         # =====================================================================
         if S2_DOMAIN_KNOWLEDGE_AVAILABLE:
-            # Default fund code (GAG)
+            # Mark missing fund codes as MISSING (do NOT use defaults)
             if 'fund_code' in df.columns:
                 empty_fund = df['fund_code'].isna() | (df['fund_code'] == '')
                 if empty_fund.any():
-                    df.loc[empty_fund, 'fund_code'] = get_default_fund_code()
-                    changes.append(f"Set default fund code (GAG) for {empty_fund.sum()} records")
+                    df.loc[empty_fund, 'fund_code'] = 'MISSING'
+                    changes.append(f"Marked {empty_fund.sum()} records with MISSING fund code")
 
-            # Default pension based on role type
-            if 'pension_code' in df.columns and 'role_type' in df.columns:
+            # Mark missing pension as MISSING (do NOT use defaults)
+            if 'pension_code' in df.columns:
                 empty_pension = df['pension_code'].isna() | (df['pension_code'] == '')
                 if empty_pension.any():
-                    df.loc[empty_pension, 'pension_code'] = df.loc[empty_pension, 'role_type'].apply(
-                        lambda x: get_default_pension(x == 'teaching')
-                    )
-                    changes.append(f"Set default pension scheme for {empty_pension.sum()} records")
+                    df.loc[empty_pension, 'pension_code'] = 'MISSING'
+                    changes.append(f"Marked {empty_pension.sum()} records with MISSING pension code")
 
         # =====================================================================
         # Normalize pay scale points
@@ -542,21 +738,56 @@ class ExpertCleanAgent(CleanAgent):
                 )
 
         # =====================================================================
-        # Determine role type (teaching/support)
+        # Determine role type (teaching/support) using InferenceEngine
         # =====================================================================
         if 'job_title' in df.columns and 'role_type' not in df.columns:
-            df['role_type'] = df['job_title'].apply(
-                lambda x: 'teaching' if is_teaching_role(x) else 'support' if is_support_role(x) else 'unknown'
-            )
-            changes.append("Classified staff as teaching/support based on job title")
-            self.assumptions.add(
-                category="classification",
-                description="Classified roles as teaching/support based on job title keywords",
-                reason="Role type determines pay scale and pension scheme",
-                impact="May affect pension validation",
-                confidence="medium",
-                affected_records=len(df)
-            )
+            inference_engine = get_inference_engine()
+
+            if inference_engine:
+                # Use intelligent classification
+                def classify_role_intelligent(job_title):
+                    if pd.isna(job_title):
+                        return 'unknown'
+                    result = inference_engine.infer_classification(
+                        value=str(job_title),
+                        classification_type="role_type"
+                    )
+                    return result.decision if result.confidence >= 0.5 else 'unknown'
+
+                df['role_type'] = df['job_title'].apply(classify_role_intelligent)
+
+                # Count classifications
+                teaching_count = (df['role_type'] == 'teaching').sum()
+                support_count = (df['role_type'] == 'support').sum()
+                unknown_count = (df['role_type'] == 'unknown').sum()
+
+                changes.append(f"Classified staff using InferenceEngine: {teaching_count} teaching, {support_count} support, {unknown_count} unknown")
+
+                if unknown_count > 0:
+                    self.log(f"⚠ {unknown_count} staff could not be classified - flagged for review")
+
+                self.assumptions.add(
+                    category="classification",
+                    description=f"Classified {teaching_count + support_count} roles using InferenceEngine rules",
+                    reason="Role type determines pay scale and pension scheme",
+                    impact="May affect pension validation",
+                    confidence="high" if unknown_count == 0 else "medium",
+                    affected_records=len(df)
+                )
+            else:
+                # Fallback to legacy classification
+                df['role_type'] = df['job_title'].apply(
+                    lambda x: 'teaching' if is_teaching_role(x) else 'support' if is_support_role(x) else 'unknown'
+                )
+                changes.append("Classified staff as teaching/support based on job title (legacy)")
+                self.assumptions.add(
+                    category="classification",
+                    description="Classified roles as teaching/support based on job title keywords",
+                    reason="Role type determines pay scale and pension scheme",
+                    impact="May affect pension validation",
+                    confidence="medium",
+                    affected_records=len(df)
+                )
 
         # =====================================================================
         # Normalize finance codes
@@ -655,10 +886,27 @@ class ExpertQualityCheckAgent(QualityCheckAgent):
     def __init__(self, team_id: str, team_config: Dict):
         super().__init__(team_id, team_config)
         self.knowledge = get_team_knowledge(team_id)
+        # Storage for extracted pay scales from analysis phase
+        self.extracted_payscales = None
+        self.extracted_allowances = None
 
     def execute(self, input_data: Dict) -> CheckInReport:
         """Perform expert quality check with domain knowledge."""
         self.log(f"Expert quality assurance using {self.knowledge.team_name} standards")
+
+        # =====================================================================
+        # S2 SPECIFIC: Check for extracted pay scales from analysis phase
+        # =====================================================================
+        if self.team_id == "S2":
+            self.extracted_payscales = input_data.get("extracted_payscales")
+            self.extracted_allowances = input_data.get("extracted_allowances")
+            if self.extracted_payscales:
+                self.log(f"Using {len(self.extracted_payscales)} extracted pay scales for validation")
+            else:
+                # Try to extract if not provided
+                payscale_result = self._try_extract_payscales()
+                if payscale_result:
+                    self.log(f"Extracted pay scales during quality check: {len(self.extracted_payscales or [])} scales")
 
         # Run base quality check first
         report = super().execute(input_data)
@@ -676,6 +924,19 @@ class ExpertQualityCheckAgent(QualityCheckAgent):
             report.recommendations.extend(expert_recommendations)
 
         return report
+
+    def _try_extract_payscales(self) -> bool:
+        """Try to extract pay scales if not already provided."""
+        try:
+            payscales_folder = get_default_payscales_folder()
+            if payscales_folder.exists() and list(payscales_folder.glob("*.xlsx")):
+                result = extract_payscales_from_folder(payscales_folder)
+                self.extracted_payscales = result.get('pay_scales', [])
+                self.extracted_allowances = result.get('allowances', [])
+                return True
+        except Exception as e:
+            self.log(f"Could not extract pay scales: {e}")
+        return False
 
     def _apply_expert_quality_checks(self, df: pd.DataFrame) -> Dict:
         """Apply domain-specific quality checks."""
@@ -950,6 +1211,58 @@ class ExpertQualityCheckAgent(QualityCheckAgent):
                         "severity": "info",
                         "message": f"Salary range £{min_sal:,.0f} - £{max_sal:,.0f} (median: £{median_sal:,.0f})"
                     })
+
+        # =====================================================================
+        # Validate salaries against EXTRACTED pay scales (if available)
+        # =====================================================================
+        if self.extracted_payscales and 'annual_salary' in df.columns and 'current_scale_point' in df.columns:
+            # Build lookup of valid rates from extracted pay scales
+            valid_rates = {}
+            for ps in self.extracted_payscales:
+                for point in ps.points:
+                    valid_rates[point.code.upper()] = point.rate
+                    # Also add variations
+                    valid_rates[point.code] = point.rate
+                    if point.original_code:
+                        valid_rates[point.original_code.upper()] = point.rate
+
+            # Check each staff member's salary against their scale point
+            mismatches = []
+            checked = 0
+            for idx, row in df.iterrows():
+                salary = pd.to_numeric(row.get('annual_salary'), errors='coerce')
+                scale_point = str(row.get('current_scale_point', '')).upper().strip()
+
+                if pd.notna(salary) and scale_point and scale_point in valid_rates:
+                    checked += 1
+                    expected_rate = valid_rates[scale_point]
+                    # Allow 5% tolerance for FTE adjustments
+                    if abs(salary - expected_rate) > expected_rate * 0.05:
+                        mismatches.append({
+                            "row": idx,
+                            "scale_point": scale_point,
+                            "actual_salary": salary,
+                            "expected_rate": expected_rate,
+                            "difference": salary - expected_rate
+                        })
+
+            if checked > 0:
+                match_rate = ((checked - len(mismatches)) / checked) * 100
+                validations.append({
+                    "check": "Salary vs Extracted Pay Scale",
+                    "passed": len(mismatches) == 0,
+                    "severity": "warning" if mismatches else "info",
+                    "message": f"{len(mismatches)} of {checked} checked salaries don't match extracted pay scale rates",
+                    "match_rate": f"{match_rate:.1f}%",
+                    "sample_mismatches": mismatches[:5] if mismatches else []
+                })
+            else:
+                validations.append({
+                    "check": "Salary vs Extracted Pay Scale",
+                    "passed": True,
+                    "severity": "info",
+                    "message": "No salaries could be validated against extracted pay scales (scale points not matched)"
+                })
 
         # =====================================================================
         # Teaching/Support Role-Pension Alignment
@@ -1401,3 +1714,101 @@ class ExpertAgentTeam(AgentTeam):
             "business_rules": len(self.knowledge.business_rules),
             "common_issues": self.knowledge.common_issues[:5]
         }
+
+    def get_inference_stats(self) -> Optional[Dict]:
+        """
+        Get statistics from the InferenceEngine.
+
+        Returns stats about rules, schemas, learning, and decisions made.
+        """
+        engine = get_inference_engine()
+        if engine:
+            return engine.get_stats()
+        return None
+
+    def get_reasoning_trails(self) -> Optional[Dict]:
+        """
+        Get all reasoning trails from the InferenceEngine.
+
+        Returns full audit trail of all decisions for review.
+        """
+        engine = get_inference_engine()
+        if engine:
+            return engine.get_all_reasoning_trails()
+        return None
+
+    def get_warnings_and_assumptions(self) -> Dict:
+        """
+        Get all warnings and assumptions from inference decisions.
+
+        Useful for post-processing review of low-confidence decisions.
+        """
+        engine = get_inference_engine()
+        if engine:
+            return {
+                "warnings": engine.get_warnings(),
+                "assumptions": engine.get_assumptions()
+            }
+        return {"warnings": [], "assumptions": []}
+
+    def run_all(self, check_in_callback=None) -> List[CheckInReport]:
+        """
+        Run all phases with expert knowledge sharing between phases.
+
+        For S2 team: Extracted pay scales from analyze phase are passed to
+        quality_check and audit phases for validation.
+        """
+        phases = ["analyze", "clean", "transform", "build", "quality_check", "audit"]
+
+        # Storage for S2 pay scale extraction
+        extracted_payscales = None
+        extracted_allowances = None
+
+        for phase in phases:
+            # Determine input for this phase
+            if phase == "analyze":
+                input_data = self.team_config['data_dir']
+            elif phase == "quality_check":
+                # QA agent gets all accumulated data from previous phases
+                input_data = self.phase_data.get("build", {})
+                # S2 SPECIFIC: Pass extracted pay scales for validation
+                if self.team_id == "S2" and extracted_payscales:
+                    input_data["extracted_payscales"] = extracted_payscales
+                    input_data["extracted_allowances"] = extracted_allowances
+            elif phase == "audit":
+                # Auditor gets both original and transformed data for comparison
+                input_data = {
+                    "original_data": self.phase_data.get("analyze", {}).get("data"),
+                    "transformed_data": self.phase_data.get("transform", {}).get("data"),
+                    "output_path": self.phase_data.get("build", {}).get("output_path", ""),
+                    "source_files": self.phase_data.get("analyze", {}).get("source_files", [])
+                }
+                # S2 SPECIFIC: Pass extracted pay scales for audit
+                if self.team_id == "S2" and extracted_payscales:
+                    input_data["extracted_payscales"] = extracted_payscales
+                    input_data["extracted_allowances"] = extracted_allowances
+            else:
+                prev_phase = phases[phases.index(phase) - 1]
+                input_data = self.phase_data.get(prev_phase, {})
+
+            report = self.run_phase(phase, input_data)
+
+            # S2 SPECIFIC: Capture extracted pay scales after analyze phase
+            if phase == "analyze" and self.team_id == "S2":
+                analyze_agent = self.agents["analyze"]
+                if hasattr(analyze_agent, 'extracted_payscales') and analyze_agent.extracted_payscales:
+                    extracted_payscales = analyze_agent.extracted_payscales
+                    extracted_allowances = analyze_agent.extracted_allowances
+                    self.log(f"Captured {len(extracted_payscales)} pay scales for downstream validation")
+
+                    # Log pay scale extraction status
+                    if report.details.get("payscale_extraction", {}).get("status") == "warning":
+                        self.log("WARNING: Pay scale extraction completed with warnings")
+                    elif report.details.get("payscale_extraction", {}).get("status") == "success":
+                        self.log("Pay scale extraction successful")
+
+            # Call check-in callback if provided
+            if check_in_callback:
+                check_in_callback(report)
+
+        return self.reports

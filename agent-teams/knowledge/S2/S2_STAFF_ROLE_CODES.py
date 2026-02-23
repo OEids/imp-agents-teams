@@ -1,0 +1,1007 @@
+"""
+S2 Staff Role Codes - Official coding structure from S2 Coding - SRGs and Staff Roles.xlsx
+
+This file provides:
+1. Staff Role Group codes (SRG) - used for finance code groupings
+2. Staff Role codes - the actual role codes
+3. Subject abbreviations - for creating subject-specific teacher codes like TEA_HIS
+"""
+
+# =============================================================================
+# STAFF ROLE GROUPS (from StaffRoleGroups sheet)
+# =============================================================================
+STAFF_ROLE_GROUPS = {
+    "ADM": {"title": "Staff Costs - Finance and Admin-Wages and salaries", "teaching": False},
+    "APP": {"title": "Staff Costs - Apprentice Staff-Wages and salaries", "teaching": False},
+    "ASC": {"title": "Staff Costs - After School Club Staff-Wages and salaries", "teaching": False},
+    "BFC": {"title": "Staff Costs - Breakfast Club Staff-Wages and salaries", "teaching": False},
+    "BRD_DIR": {"title": "Staff Costs - Boarding Staff - Direct-Wages and salaries", "teaching": False},
+    "BRD_IND": {"title": "Staff Costs - Boarding Staff - Indirect-Wages and salaries", "teaching": False},
+    "CAT": {"title": "Staff Costs - Catering Staff-Wages and salaries", "teaching": False},
+    "CEN": {"title": "Staff Costs - Central Staff-Wages and salaries", "teaching": False},
+    "CLE": {"title": "Staff Costs - Cleaning Staff-Wages and salaries", "teaching": False},
+    "COM": {"title": "Staff Costs - Community Facilities Staff-Wages and salaries", "teaching": False},
+    "COV": {"title": "Staff Costs - Cover Supervisors-Wages and salaries", "teaching": False},
+    "CT": {"title": "Staff Costs - Caretaker-Wages and salaries", "teaching": False},
+    "CUR": {"title": "Staff Costs - Curriculum Support-Wages and salaries", "teaching": False},
+    "DEV": {"title": "Staff Costs - Development Staff-Wages and salaries", "teaching": False},
+    "DRI": {"title": "Staff Costs - Drivers-Wages and salaries", "teaching": False},
+    "EDS": {"title": "Staff Costs - Education Support-Wages and salaries", "teaching": False},
+    "EST": {"title": "Staff Costs - Estates & Buildings Staff-Wages and salaries", "teaching": False},
+    "EXA": {"title": "Staff Costs - Exam Staff-Wages and salaries", "teaching": False},
+    "EXT": {"title": "Staff Costs - Extended Schools Staff-Wages and salaries", "teaching": False},
+    "FIN": {"title": "Staff Costs - Finance Staff-Wages and salaries", "teaching": False},
+    "FLA": {"title": "Staff Costs - Foreign Language Assistants-Wages and salaries", "teaching": False},
+    "FSW": {"title": "Staff Costs - Family Support Workers-Wages and salaries", "teaching": False},
+    "GOV": {"title": "Staff Costs - Governance Staff-Wages and salaries", "teaching": False},
+    "HLTA": {"title": "Staff Costs - Higher Level Teaching Assistants-Wages and salaries", "teaching": False},
+    "HR": {"title": "Staff Costs - HR Staff-Wages and salaries", "teaching": False},
+    "INC": {"title": "Staff Costs - Inclusion Staff-Wages and salaries", "teaching": False},
+    "INV": {"title": "Staff Costs - Exam Invigilators-Wages and salaries", "teaching": False},
+    "IT": {"title": "Staff Costs - IT Staff-Wages and salaries", "teaching": False},
+    "LIB": {"title": "Staff Costs - Librarians-Wages and salaries", "teaching": False},
+    "LM": {"title": "Staff Costs - Learning Mentors-Wages and salaries", "teaching": False},
+    "LTS": {"title": "Staff Costs - Lunchtime Supervisors-Wages and salaries", "teaching": False},
+    "NUR": {"title": "Staff Costs - Nursery Staff-Wages and salaries", "teaching": False},
+    "OTH": {"title": "Staff Costs - Other Staff-Wages and salaries", "teaching": False},
+    "PAS": {"title": "Staff Costs - Pastoral Staff-Wages and salaries", "teaching": False},
+    "PRI": {"title": "Staff Costs - Premises Staff-Wages and salaries", "teaching": False},
+    "SEN": {"title": "Staff Costs - SEN Staff-Wages and salaries", "teaching": False},
+    "SLT": {"title": "Staff Costs - Senior Leadership-Wages and salaries", "teaching": True},
+    "TA": {"title": "Staff Costs - Teaching Assistants-Wages and salaries", "teaching": False},
+    "TEA": {"title": "Staff Costs - Teachers-Wages and salaries", "teaching": True},
+    "TEC": {"title": "Staff Costs - Technicians-Wages and salaries", "teaching": False},
+    "WEL": {"title": "Staff Costs - Welfare Staff-Wages and salaries", "teaching": False},
+}
+
+# =============================================================================
+# STAFF ROLE CODES (from StaffRoles sheet)
+# These map role codes to their titles
+# =============================================================================
+STAFF_ROLE_CODES = {
+    # Leadership
+    "HT": "Headteacher",
+    "DHT": "Deputy Headteacher",
+    "AHT": "Assistant Headteacher",
+    "EHT": "Executive Headteacher",
+    "CEO": "Chief Executive Officer",
+    "COO": "Chief Operations Officer",
+    "CFO": "Chief Financial Officer",
+    "PRI": "Principal",
+    "VP": "Vice Principal",
+    "SVP": "Senior Vice Principal",
+    "AP": "Assistant Principal",
+    "EP": "Executive Principal",
+    "AVP": "Assistant Vice Principal",
+    "SAP": "Senior Assistant Principal",
+    "AAP": "Associate Assistant Principal",
+    "AAHT": "Associate Assistant Headteacher",
+    "HOS": "Head of School",
+    "HOC": "Head of Centre",
+    "DHOC": "Deputy Head of Centre",
+
+    # Teaching
+    "TEA": "Teacher",
+    "UQT": "Unqualified Teacher",
+    "COV_TEA": "Cover Teacher",
+    "ASSO_TEA": "Associate Teacher",
+    "TEA_NUR": "Nursery Teacher",
+    "LP": "Lead Practitioner",
+    "LST": "Leadership Teacher",
+
+    # Middle Leadership
+    "HOD": "Head of Department",
+    "HOF": "Head of Faculty",
+    "AHOF": "Assistant Head of Faculty",
+    "SUB_LDR": "Subject Leader",
+    "FAC_LDR": "Faculty Leader",
+    "FAC_LD": "Faculty Lead",
+    "CUR_LDR": "Curriculum Leader",
+    "CUR_LDR_AST": "Assistant Curriculum Leader",
+    "YR_LDR": "Year Leader",
+    "HOY": "Head of Year",
+    "AHOY": "Assistant Head of Year",
+    "KS_LD": "Key Stage Lead",
+    "PRO_LDR": "Progress Leader",
+    "SIC": "Second in Charge",
+
+    # Teaching Assistants
+    "TA": "Teaching Assistant",
+    "HLTA": "Higher Level Teaching Assistant",
+    "TA_APP": "Apprentice Teaching Assistant",
+    "LSA": "Learning Support Assistant",
+    "LSO": "Learning Support Officer",
+    "LSM": "Learning Support Mentor",
+    "SSA": "Student Support Assistant",
+    "SSM": "Student Support Manager",
+    "SSL": "Student Support Lead",
+
+    # SEND/Inclusion
+    "SENCO": "SENCO",
+    "SENDCO": "SEND Coordinator",
+    "SENCO_AST": "Assistant SENCO",
+    "SEN_ADM": "SEN Administrator",
+    "SEN_AST": "SEN Assistant",
+    "SEN_SUP": "SEN Support",
+    "INC_MGR": "Inclusion Manager",
+    "INC_MGR_AST": "Assistant Inclusion Manager",
+    "INC_OFF": "Inclusion Officer",
+    "INC_SUP": "Inclusion Support",
+    "INC_AST": "Inclusion Assistant",
+    "INC_MEN": "Inclusion Mentor",
+    "INC_ADM": "Inclusion Administrator",
+    "INC_CO": "Inclusion Coordinator",
+    "INC_LD": "Inclusion Lead",
+    "INC_TL": "Inclusion Team Leader",
+
+    # Pastoral
+    "PAS_MGR": "Pastoral Manager",
+    "PAS_MGR_SNR": "Senior Pastoral Manager",
+    "PAS_SUP_MGR": "Pastoral Support Manager",
+    "PAS_OFF": "Pastoral Officer",
+    "PAS_MEN": "Pastoral Mentor",
+    "PAS_AST": "Pastoral Assistant",
+    "PAS_LDR": "Pastoral Leader",
+    "PAS_LD": "Pastoral Lead",
+    "PAS_CO": "Pastoral Coordinator",
+    "PAS_SUP": "Pastoral Support",
+    "PSO": "Pastoral Support Officer",
+    "LM": "Learning Mentor",
+    "ACAD_MEN": "Academic Mentor",
+
+    # Behaviour
+    "BEH_INC_MGR": "Behaviour & Inclusion Manager",
+    "BEH_OFF": "Behaviour Officer",
+    "BEH_SUP": "Behaviour Support",
+    "BSO": "Behaviour Support Officer",
+    "BSW": "Behaviour Support Worker",
+
+    # Business/Admin
+    "SBM": "School Business Manager",
+    "BM": "Business Manager",
+    "SBO": "School Business Officer",
+    "BUR": "Bursar",
+    "ADM_MGR": "Admin Manager",
+    "ADM_AST": "Admin Assistant",
+    "ADM_AST_SNR": "Senior Admin Assistant",
+    "ADM_SNR": "Senior Administrator",
+    "ADM_LDR": "Admin Leader",
+    "ADM_CO": "Admin Coordinator",
+    "ADM_OFF": "Admin Officer",
+    "ADM": "Administrator",
+    "REC": "Receptionist",
+    "OFF_MGR": "Office Manager",
+    "OFF_ADM": "Office Administrator",
+    "OFF_AST": "Office Assistant",
+    "OFF_CO": "Office Coordinator",
+    "OFF_APP": "Office Apprentice",
+    "PA": "Personal Assistant",
+    "EXEC_AST": "Executive Assistant",
+
+    # Finance
+    "FIN_MGR": "Finance Manager",
+    "FIN_AST": "Finance Assistant",
+    "FIN_ADM": "Finance Administrator",
+    "FIN_OFF": "Finance Officer",
+    "FIN_OFF_SNR": "Senior Finance Officer",
+    "FIN_LD": "Finance Lead",
+    "ACC_MGR": "Accounts Manager",
+    "ACC_OFF": "Accounts Officer",
+    "MAN_ACC": "Management Accountant",
+    "PAY_MGR": "Payroll Manager",
+    "PAY_OFF": "Payroll Officer",
+    "PAY_AST": "Payroll Assistant",
+
+    # HR
+    "HR_MGR": "HR Manager",
+    "HR_AST": "HR Assistant",
+    "HR_OFF": "HR Officer",
+    "HR_OFF_SNR": "Senior HR Officer",
+    "HR_ADV": "HR Advisor",
+    "HR_CO": "HR Coordinator",
+    "HR_DIR": "HR Director",
+
+    # IT
+    "IT_NET_MGR": "IT Network Manager",
+    "IT_TEC": "IT Technician",
+    "IT_SUP_LD": "IT Support Lead",
+    "IT_SYS_AST": "IT Systems Assistant",
+    "IT_SYS_DEV": "IT Systems Developer",
+    "IT_SYS_OFF": "IT Systems Officer",
+    "ICT_MGR": "ICT Manager",
+    "NET_MGR": "Network Manager",
+    "SYS_ADM": "Systems Administrator",
+    "SYS_MGR_AST": "Assistant Systems Manager",
+
+    # Site/Premises
+    "CT": "Caretaker",
+    "CT_SNR": "Senior Caretaker",
+    "CT_AST": "Assistant Caretaker",
+    "CT_DEP": "Deputy Caretaker",
+    "SITE_MGR": "Site Manager",
+    "SITE_MGR_AST": "Assistant Site Manager",
+    "SITE_MGR_DEP": "Deputy Site Manager",
+    "SITE_AST": "Site Assistant",
+    "SITE_OP": "Site Operative",
+    "SITE_STF": "Site Staff",
+    "SITE_SUP": "Site Supervisor",
+    "SITE_OFF": "Site Officer",
+    "SITE_APP": "Site Apprentice",
+    "EST_MGR": "Estates Manager",
+    "EST_OFF": "Estates Officer",
+    "PRE_MGR": "Premises Manager",
+    "PRE_AST": "Premises Assistant",
+    "PRE_OFF": "Premises Officer",
+    "PRE_SUP": "Premises Supervisor",
+    "FAC_MGR": "Facilities Manager",
+    "FAC_AST": "Facilities Assistant",
+    "FAC_AST_SNR": "Senior Facilities Assistant",
+    "FAC_CO": "Facilities Coordinator",
+    "FAC_SUP": "Facilities Supervisor",
+    "MAIN_OFF": "Maintenance Officer",
+    "CLE": "Cleaner",
+    "CLE_SNR": "Senior Cleaner",
+    "CLE_MGR": "Cleaning Manager",
+    "CLE_SUP": "Cleaning Supervisor",
+
+    # Catering
+    "CAT_MGR": "Catering Manager",
+    "CAT_AST": "Catering Assistant",
+    "CAT_SUP": "Catering Supervisor",
+    "COOK": "Cook",
+    "COOK_SNR": "Senior Cook",
+    "COOK_AST": "Assistant Cook",
+    "CHEF": "Chef",
+    "CHEF_AST": "Assistant Chef",
+    "KIT_MGR": "Kitchen Manager",
+    "KIT_AST": "Kitchen Assistant",
+
+    # Midday
+    "MDS": "Midday Supervisor",
+    "SMDS": "Senior Midday Supervisor",
+    "MDSA": "Midday Supervisory Assistant",
+    "MDA": "Midday Assistant",
+    "MDC": "Midday Coordinator",
+    "LTA": "Lunchtime Assistant",
+    "LTS": "Lunchtime Supervisor",
+    "LTS_SNR": "Senior Lunchtime Supervisor",
+    "LTO": "Lunchtime Organiser",
+
+    # Cover
+    "COV_SUP": "Cover Supervisor",
+    "COV_MGR": "Cover Manager",
+    "COV_AST": "Cover Assistant",
+    "COV_COA": "Cover Coach",
+
+    # Exams
+    "EXA_OFF": "Exams Officer",
+    "EXA_MGR": "Exams Manager",
+    "EXA_AST": "Exams Assistant",
+    "EXA_CO": "Exams Coordinator",
+    "EXA_LD": "Exams Lead",
+    "INV": "Exam Invigilators",
+
+    # Library
+    "LIB": "Librarian",
+    "LIB_AST": "Library Assistant",
+    "LIB_MGR": "Library Manager",
+    "LIB_CO": "Library Coordinator",
+    "LRC_CO": "Learning Resource Centre Coordinator",
+
+    # Technicians
+    "TEC": "Technician",
+    "TEC_SNR": "Senior Technician",
+    "REP_TEC": "Reprographics Technician",
+    "REP_AST": "Reprographics Assistant",
+    "REP_OFF": "Reprographics Officer",
+    "REP_CO": "Reprographics Coordinator",
+
+    # Data
+    "DATA_MGR": "Data Manager",
+    "DATA_OFF": "Data Officer",
+    "DATA_ADM": "Data Administrator",
+    "DATA_AST": "Data Assistant",
+    "DATA_ENG": "Data Engineer",
+    "DATA_CO": "Data Coordinator",
+    "DATA_LDR": "Data Leader",
+    "SIMS_MGR": "SIMS Manager",
+
+    # Attendance
+    "ATT_OFF": "Attendance Officer",
+    "ATT_AST": "Attendance Assistant",
+    "ATT_MGR": "Attendance Manager",
+    "EWO": "Education Welfare Officer",
+
+    # Safeguarding/Welfare
+    "SFG_MGR": "Safeguarding Manager",
+    "SFG_OFF": "Safeguarding Officer",
+    "DSL": "Designated Safeguarding Lead",
+    "DDSL": "Deputy Designated Safeguarding Lead",
+    "WEL_LD": "Wellbeing Lead",
+    "WEL_OFF": "Wellbeing Officer",
+    "WEL_ADM": "Welfare Administrator",
+    "MH_LD": "Mental Health Lead",
+    "COU": "Counsellor",
+    "ELSA": "Emotional Literacy Support Assistant",
+    "MED_OFF": "Medical Officer",
+    "FA": "First Aider",
+    "FA_LD": "First Aid Lead",
+
+    # Family/Community
+    "FSW": "Family Support Worker",
+    "FSA": "Family Support Assistant",
+    "FSO": "Family Support Officer",
+    "FLO": "Family Liaison Officer",
+    "FLW": "Family Link Worker",
+    "PLO": "Parent Liaison Officer",
+    "FEL": "Family Engagement Lead",
+    "OUT_WRK": "Outreach Worker",
+
+    # Nursery/Early Years
+    "NUR_MGR": "Nursery Manager",
+    "NUR_NUR": "Nursery Nurse",
+    "NUR_AST": "Nursery Assistant",
+    "NUR_APP": "Nursery Apprentice",
+    "NUR_PRA": "Nursery Practitioner",
+    "NUR_SUP": "Nursery Supervisor",
+    "NUR_OFF": "Nursery Officer",
+    "NUR_LD": "Nurture Lead",
+    "EYP": "Early Years Practitioner",
+    "EY_EDU": "Early Years Educator",
+    "EY_EDU_SNR": "Senior Early Years Educator",
+    "EY_LD": "Early Years Lead",
+    "EYFS_LD": "EYFS Lead",
+    "RM_LDR": "Room Leader",
+    "RM_MGR": "Room Manager",
+    "RM_CO": "Room Coordinator",
+
+    # Extended Schools/Clubs
+    "EXT": "Extended Schools",
+    "EXT_AST": "Extended Schools Assistant",
+    "EXT_SUP": "Extended Schools Supervisor",
+    "EXT_LDR": "Extended Schools Leader",
+    "ASC_AST": "After School Club Assistant",
+    "ASC_SUP": "After School Club Supervisor",
+    "ASC_LDR": "After School Club Leader",
+    "ASC_MGR": "After School Club Manager",
+    "ASC_PW": "After School Club Playworker",
+    "BFC_AST": "Breakfast Club Assistant",
+    "BFC_SUP": "Breakfast Club Supervisor",
+    "BFC_LDR": "Breakfast Club Leader",
+    "BFC_MGR": "Breakfast Club Manager",
+    "BASC_AST": "Before & After School Club Assistant",
+    "BASC_MGR": "Before & After School Club Manager",
+    "BASC_CO": "Before & After School Club Coordinator",
+    "BASC_LDR": "Before & After School Club Leader",
+    "OOS_AST": "Out of School Assistant",
+    "OOS_SUP": "Out of School Supervisor",
+    "OOS_LDR": "Out of School Leader",
+    "OOS_MGR": "Out of School Manager",
+    "OOS_CO": "Out of School Coordinator",
+    "WAC_AST": "Wrap Around Care Assistant",
+    "WAC_SUP": "Wrap Around Care Supervisor",
+    "WAC_LD": "Wrap Around Care Lead",
+    "WAC_MGR": "Wrap Around Care Manager",
+    "WAC_CO": "Wrap Around Care Coordinator",
+    "PLAY_WRK": "Play Worker",
+    "PLAY_LDR": "Play Leader",
+    "ENR_CO": "Enrichment Coordinator",
+
+    # Directors
+    "DIR_EDU": "Director of Education",
+    "DIR_FIN": "Director of Finance",
+    "DIR_HR": "Director of HR",
+    "DIR_OP": "Director of Operations",
+    "DIR_IT": "Director of IT",
+    "DIR_CUR": "Director of Curriculum",
+    "DIR_INC": "Director of Inclusion",
+    "DIR_SFG": "Director of Safeguarding",
+    "DIR_FAC": "Director of Facilities",
+    "DIR_GOV": "Director of Governance",
+    "DIR_ACH": "Director of Achievement",
+    "DIR_LRN": "Director of Learning",
+    "DIR_SUB": "Subject Director",
+    "DIR_PRI_EDU": "Director of Primary Education",
+    "DIR_SEC_EDU": "Director of Secondary Education",
+    "DIR_PD": "Director of Personal Development",
+    "STR_DIR": "Strategic Director",
+    "STR_LD": "Strategic Lead",
+
+    # Other roles
+    "MUS_TUT": "Music Tutor",
+    "MUS_ADM": "Music Admin",
+    "MUS_LD": "Music Lead",
+    "FLA": "Foreign Language Assistant",
+    "CLER_GOV": "Clerk to the Governors",
+    "GOV_MGR": "Governance Manager",
+    "GOV_OFF": "Governance Officer",
+    "GOV_LDR": "Governance Leader",
+    "GOV_PRO": "Governance Professional",
+    "HO_GOV": "Head of Governance",
+    "CAR_OFF": "Careers Officer",
+    "CAR_ADV": "Careers Advisor",
+    "CAR_LD": "Careers Lead",
+    "COM_MAR_OFF": "Communications & Marketing Officer",
+    "COM_ADM": "Communications Administrator",
+    "COM_OFF": "Communications Officer",
+    "COM_MGR": "Compliance Manager",
+    "COM_SUP": "Communication Support Worker",
+    "MAR_MGR": "Marketing Manager",
+    "PRO_LD": "Project Lead",
+    "RES_AST": "Resources Assistant",
+    "RES_MGR": "Resources Manager",
+    "TUT": "Tutor",
+    "CHAP": "Chaplain",
+    "SALT": "Speech & Language Therapist",
+    "OTH": "Other Staff",
+    "OTH_DIR": "Other Staff - Support Costs",
+    "THEA_MGR": "Theatre Manager",
+    "EVE_MGR": "Events Manager",
+    "WEB_MGR": "Web Manager",
+    "DUTY_MGR": "Duty Manager",
+    "UNIT_MGR": "Unit Manager",
+    "CARE_AST": "Care Assistant",
+    "DOE_MGR": "DofE Manager",
+    "DOE_AST": "DofE Assistant",
+    "SPO_CO": "Sports Coordinator",
+    "LIT_CO": "Literacy Coordinator",
+    "EAL_CO": "EAL Coordinator",
+    "EAL_LD": "EAL Lead",
+    "INT_LD": "Intervention Lead",
+    "LEA_PRO_MGR": "Learning Progress Manager",
+    "LEA_PRO_OFF": "Learning Progress Officer",
+    "SWO": "Student Welfare Officer",
+    "DPO": "Data Protection Officer",
+    "HS_LD": "Health & Safety Lead",
+    "HS_MGR": "Health & Safety Manager",
+    "OP_MGR": "Operations Manager",
+    "OP_OFF": "Operations Officer",
+    "HK": "Housekeeper",
+    "CASH_COL": "Cash Collector",
+    "SIP": "School Improvement Partner",
+    "SIL": "School Improvement Lead",
+    "SIL_SNR": "Senior School Improvement Lead",
+    "IMP_LD": "Improvement Lead",
+    "EDU_PAR": "Education Partner",
+    "DSO": "Designated Support Officer",
+    "REC_OFF": "Recruitment Officer",
+    "CUR_MGR": "Curriculum Manager",
+    "HO_EST": "Head of Estates",
+    "HO_FIN_EST": "Head of Finance & Estates",
+    "CPO": "Chief People Officer",
+    "CSO": "Chief Safeguarding Officer",
+    "CFOO": "Chief Finance & Operations Officer",
+    "DCFO": "Deputy Chief Financial Officer",
+    "DCOO": "Deputy Chief Operating Officer",
+}
+
+# =============================================================================
+# SUBJECT ABBREVIATIONS FOR TEACHER CODES
+# Used to create codes like TEA_HIS (History Teacher), TEA_MAT (Maths Teacher)
+# =============================================================================
+SUBJECT_ABBREVIATIONS = {
+    # Core subjects
+    "ENGLISH": "ENG",
+    "MATHS": "MAT",
+    "MATHEMATICS": "MAT",
+    "MATH": "MAT",
+    "SCIENCE": "SCI",
+
+    # Sciences
+    "BIOLOGY": "BIO",
+    "CHEMISTRY": "CHE",
+    "PHYSICS": "PHY",
+    "COMBINED SCIENCE": "SCI",
+
+    # Humanities
+    "HISTORY": "HIS",
+    "GEOGRAPHY": "GEO",
+    "RELIGIOUS EDUCATION": "RE",
+    "RELIGIOUS STUDIES": "RS",
+    "RE": "RE",
+    "RS": "RS",
+    "CITIZENSHIP": "CIT",
+    "PSHE": "PSH",
+    "PHILOSOPHY": "PHI",
+    "POLITICS": "POL",
+    "SOCIOLOGY": "SOC",
+    "PSYCHOLOGY": "PSY",
+    "ECONOMICS": "ECO",
+    "BUSINESS": "BUS",
+    "BUSINESS STUDIES": "BUS",
+
+    # Languages
+    "FRENCH": "FRE",
+    "SPANISH": "SPA",
+    "GERMAN": "GER",
+    "MANDARIN": "MAN",
+    "CHINESE": "CHI",
+    "ITALIAN": "ITA",
+    "LATIN": "LAT",
+    "MFL": "MFL",
+    "MODERN LANGUAGES": "MFL",
+    "MODERN FOREIGN LANGUAGES": "MFL",
+    "LANGUAGES": "MFL",
+    "EAL": "EAL",
+
+    # Arts
+    "ART": "ART",
+    "MUSIC": "MUS",
+    "DRAMA": "DRA",
+    "DANCE": "DAN",
+    "PERFORMING ARTS": "PER",
+    "MEDIA": "MED",
+    "MEDIA STUDIES": "MED",
+    "FILM": "FIL",
+    "FILM STUDIES": "FIL",
+    "PHOTOGRAPHY": "PHO",
+
+    # Technology
+    "DT": "DT",
+    "DESIGN TECHNOLOGY": "DT",
+    "DESIGN AND TECHNOLOGY": "DT",
+    "D&T": "DT",
+    "FOOD": "FOO",
+    "FOOD TECHNOLOGY": "FOO",
+    "TEXTILES": "TEX",
+    "RESISTANT MATERIALS": "RM",
+    "GRAPHICS": "GRA",
+    "PRODUCT DESIGN": "PRD",
+    "ENGINEERING": "ENG",
+
+    # Computing
+    "COMPUTING": "COM",
+    "COMPUTER SCIENCE": "CS",
+    "ICT": "ICT",
+    "IT": "IT",
+
+    # PE & Sport
+    "PE": "PE",
+    "PHYSICAL EDUCATION": "PE",
+    "SPORT": "SPO",
+    "SPORTS": "SPO",
+    "GAMES": "GAM",
+
+    # Primary specific
+    "PHONICS": "PHN",
+    "LITERACY": "LIT",
+    "NUMERACY": "NUM",
+    "EYFS": "EYF",
+    "EARLY YEARS": "EYF",
+    "FOUNDATION": "FND",
+    "KS1": "KS1",
+    "KS2": "KS2",
+    "KEY STAGE 1": "KS1",
+    "KEY STAGE 2": "KS2",
+    "PRIMARY": "PRI",
+    "RECEPTION": "REC",
+    "YEAR 1": "Y1",
+    "YEAR 2": "Y2",
+    "YEAR 3": "Y3",
+    "YEAR 4": "Y4",
+    "YEAR 5": "Y5",
+    "YEAR 6": "Y6",
+
+    # SEN/Specialist
+    "SEN": "SEN",
+    "SEND": "SEN",
+    "INCLUSION": "INC",
+    "NURTURE": "NUR",
+    "INTERVENTION": "INT",
+
+    # Vocational
+    "VOCATIONAL": "VOC",
+    "BTEC": "BTE",
+    "HEALTH AND SOCIAL CARE": "HSC",
+    "HEALTH & SOCIAL CARE": "HSC",
+    "CHILDCARE": "CHC",
+    "CONSTRUCTION": "CON",
+    "HOSPITALITY": "HOS",
+    "CATERING": "CAT",
+    "HAIR AND BEAUTY": "HAB",
+    "HAIR & BEAUTY": "HAB",
+
+    # Other
+    "OUTDOOR": "OUT",
+    "FOREST SCHOOL": "FOR",
+    "LIBRARY": "LIB",
+}
+
+# =============================================================================
+# TITLE TO ROLE CODE MAPPINGS
+# Direct mappings from job titles to role codes
+# =============================================================================
+TITLE_TO_ROLE_CODE = {
+    # Leadership - exact matches
+    "HEADTEACHER": "HT",
+    "HEAD TEACHER": "HT",
+    "HEAD": "HT",
+    "DEPUTY HEADTEACHER": "DHT",
+    "DEPUTY HEAD TEACHER": "DHT",
+    "DEPUTY HEAD": "DHT",
+    "ASSISTANT HEADTEACHER": "AHT",
+    "ASSISTANT HEAD TEACHER": "AHT",
+    "ASSISTANT HEAD": "AHT",
+    "EXECUTIVE HEADTEACHER": "EHT",
+    "EXECUTIVE HEAD": "EHT",
+    "PRINCIPAL": "PRI",
+    "VICE PRINCIPAL": "VP",
+    "ASSISTANT PRINCIPAL": "AP",
+    "ASSOCIATE ASSISTANT PRINCIPAL": "AAP",
+    "EXECUTIVE PRINCIPAL": "EP",
+    "CEO": "CEO",
+    "CHIEF EXECUTIVE OFFICER": "CEO",
+    "CHIEF EXECUTIVE": "CEO",
+    "COO": "COO",
+    "CHIEF OPERATING OFFICER": "COO",
+    "CFO": "CFO",
+    "CHIEF FINANCIAL OFFICER": "CFO",
+    "HEAD OF SCHOOL": "HOS",
+
+    # Middle Leadership
+    "HEAD OF DEPARTMENT": "HOD",
+    "HEAD OF FACULTY": "HOF",
+    "HEAD OF YEAR": "HOY",
+    "SUBJECT LEADER": "SUB_LDR",
+    "CURRICULUM LEADER": "CUR_LDR",
+    "FACULTY LEADER": "FAC_LDR",
+    "YEAR LEADER": "YR_LDR",
+    "KEY STAGE LEADER": "KS_LD",
+    "KEY STAGE LEAD": "KS_LD",
+    "PROGRESS LEADER": "PRO_LDR",
+    "SECOND IN CHARGE": "SIC",
+    "2IC": "SIC",
+    "SENCO": "SENCO",
+    "SENDCO": "SENDCO",
+
+    # Teaching
+    "TEACHER": "TEA",
+    "CLASS TEACHER": "TEA",
+    "CLASSROOM TEACHER": "TEA",
+    "MAIN SCALE TEACHER": "TEA",
+    "UNQUALIFIED TEACHER": "UQT",
+    "COVER TEACHER": "COV_TEA",
+    "SUPPLY TEACHER": "COV_TEA",
+    "ASSOCIATE TEACHER": "ASSO_TEA",
+    "LEAD PRACTITIONER": "LP",
+    "NURSERY TEACHER": "TEA_NUR",
+
+    # Teaching Assistants
+    "TEACHING ASSISTANT": "TA",
+    "CLASSROOM ASSISTANT": "TA",
+    "HIGHER LEVEL TEACHING ASSISTANT": "HLTA",
+    "HLTA": "HLTA",
+    "LEARNING SUPPORT ASSISTANT": "LSA",
+    "LSA": "LSA",
+
+    # Cover
+    "COVER SUPERVISOR": "COV_SUP",
+    "COVER MANAGER": "COV_MGR",
+
+    # Admin
+    "SCHOOL BUSINESS MANAGER": "SBM",
+    "BUSINESS MANAGER": "BM",
+    "ADMINISTRATOR": "ADM",
+    "ADMIN ASSISTANT": "ADM_AST",
+    "ADMINISTRATION ASSISTANT": "ADM_AST",
+    "ADMIN OFFICER": "ADM_OFF",
+    "OFFICE MANAGER": "OFF_MGR",
+    "RECEPTIONIST": "REC",
+    "PA": "PA",
+    "PERSONAL ASSISTANT": "PA",
+    "EXECUTIVE ASSISTANT": "EXEC_AST",
+
+    # Finance
+    "FINANCE MANAGER": "FIN_MGR",
+    "FINANCE ASSISTANT": "FIN_AST",
+    "FINANCE OFFICER": "FIN_OFF",
+    "BURSAR": "BUR",
+    "PAYROLL MANAGER": "PAY_MGR",
+    "PAYROLL OFFICER": "PAY_OFF",
+
+    # HR
+    "HR MANAGER": "HR_MGR",
+    "HR ASSISTANT": "HR_AST",
+    "HR OFFICER": "HR_OFF",
+
+    # IT
+    "IT MANAGER": "ICT_MGR",
+    "ICT MANAGER": "ICT_MGR",
+    "IT TECHNICIAN": "IT_TEC",
+    "NETWORK MANAGER": "NET_MGR",
+
+    # Site/Premises
+    "CARETAKER": "CT",
+    "SITE MANAGER": "SITE_MGR",
+    "SITE ASSISTANT": "SITE_AST",
+    "SITE SUPERVISOR": "SITE_SUP",
+    "CLEANER": "CLE",
+    "PREMISES MANAGER": "PRE_MGR",
+    "ESTATES MANAGER": "EST_MGR",
+    "FACILITIES MANAGER": "FAC_MGR",
+
+    # Catering
+    "CATERING MANAGER": "CAT_MGR",
+    "CATERING ASSISTANT": "CAT_AST",
+    "COOK": "COOK",
+    "CHEF": "CHEF",
+    "KITCHEN ASSISTANT": "KIT_AST",
+
+    # Midday
+    "MIDDAY SUPERVISOR": "MDS",
+    "MIDDAY ASSISTANT": "MDA",
+    "LUNCHTIME SUPERVISOR": "LTS",
+    "LUNCHTIME ASSISTANT": "LTA",
+
+    # Exams
+    "EXAMS OFFICER": "EXA_OFF",
+    "EXAMS MANAGER": "EXA_MGR",
+    "INVIGILATOR": "INV",
+
+    # Library
+    "LIBRARIAN": "LIB",
+    "LIBRARY ASSISTANT": "LIB_AST",
+
+    # Technician
+    "TECHNICIAN": "TEC",
+    "SCIENCE TECHNICIAN": "TEC",
+    "ICT TECHNICIAN": "TEC",
+    "DT TECHNICIAN": "TEC",
+
+    # Data
+    "DATA MANAGER": "DATA_MGR",
+    "DATA OFFICER": "DATA_OFF",
+    "SIMS MANAGER": "SIMS_MGR",
+
+    # Pastoral
+    "PASTORAL MANAGER": "PAS_MGR",
+    "PASTORAL SUPPORT": "PAS_SUP",
+    "LEARNING MENTOR": "LM",
+    "COUNSELLOR": "COU",
+
+    # Safeguarding
+    "DESIGNATED SAFEGUARDING LEAD": "DSL",
+    "DSL": "DSL",
+    "SAFEGUARDING OFFICER": "SFG_OFF",
+
+    # Family/Community
+    "FAMILY SUPPORT WORKER": "FSW",
+    "FAMILY LIAISON OFFICER": "FLO",
+
+    # Nursery
+    "NURSERY MANAGER": "NUR_MGR",
+    "NURSERY NURSE": "NUR_NUR",
+    "NURSERY ASSISTANT": "NUR_AST",
+    "NURSERY PRACTITIONER": "NUR_PRA",
+    "EARLY YEARS PRACTITIONER": "EYP",
+
+    # Attendance
+    "ATTENDANCE OFFICER": "ATT_OFF",
+
+    # Other
+    "MUSIC TUTOR": "MUS_TUT",
+    "FOREIGN LANGUAGE ASSISTANT": "FLA",
+}
+
+
+def get_role_code_for_title(title: str) -> str:
+    """
+    Get the appropriate role code for a job title.
+
+    For teachers, extracts subject and creates subject-specific code (e.g., TEA_HIS).
+    For other roles, returns the standard code.
+
+    Args:
+        title: The job title
+
+    Returns:
+        The appropriate role code
+    """
+    if not title:
+        return "OTH"
+
+    title_upper = title.upper().strip()
+
+    # First check exact matches
+    if title_upper in TITLE_TO_ROLE_CODE:
+        return TITLE_TO_ROLE_CODE[title_upper]
+
+    # Check if it's a teacher role with a subject
+    is_teacher = any(word in title_upper for word in ["TEACHER", "TEACHING"])
+    is_head_of = "HEAD OF" in title_upper or "HOD" in title_upper
+    is_subject_leader = "SUBJECT LEADER" in title_upper or "SUBJECT LEAD" in title_upper
+
+    # Extract subject for teachers, HODs, and subject leaders
+    if is_teacher or is_head_of or is_subject_leader:
+        subject_code = extract_subject_code(title_upper)
+
+        if subject_code:
+            if is_head_of:
+                return f"HOD_{subject_code}"
+            elif is_subject_leader:
+                return f"SUB_LDR_{subject_code}"
+            else:
+                return f"TEA_{subject_code}"
+
+    # Check for partial matches
+    for pattern, code in TITLE_TO_ROLE_CODE.items():
+        if pattern in title_upper:
+            return code
+
+    # Default to OTH
+    return "OTH"
+
+
+def extract_subject_code(title: str) -> str:
+    """
+    Extract subject code from a title.
+
+    Uses word boundary matching to avoid false positives like:
+    - "HEADTEACHER" matching "DT"
+    - "CARETAKER" matching "RE"
+    - "FRENCH" matching "RE"
+
+    Args:
+        title: The job title (already uppercased)
+
+    Returns:
+        The subject abbreviation code or empty string
+    """
+    import re
+
+    # Split title into words for proper matching
+    words = re.findall(r'[A-Z]+', title.upper())
+    words_set = set(words)
+    title_clean = ' '.join(words)
+
+    # Sort subjects by length (longest first) to match "PHYSICAL EDUCATION" before "PE"
+    sorted_subjects = sorted(SUBJECT_ABBREVIATIONS.items(), key=lambda x: -len(x[0]))
+
+    for subject, abbrev in sorted_subjects:
+        # Multi-word subjects (like "PHYSICAL EDUCATION")
+        if ' ' in subject:
+            if subject in title_clean:
+                return abbrev
+        else:
+            # Single-word subjects - must match a whole word
+            if subject in words_set:
+                return abbrev
+
+    return ""
+
+
+def get_srg_for_role_code(role_code: str) -> str:
+    """
+    Get the Staff Role Group for a given role code.
+
+    Args:
+        role_code: The role code (e.g., "TEA_HIS", "TA", "ADM_AST")
+
+    Returns:
+        The SRG code (e.g., "TEA", "TA", "ADM")
+    """
+    # Extract base code (before any subject suffix)
+    base_code = role_code.split("_")[0] if "_" in role_code else role_code
+
+    # Map base codes to SRGs
+    code_to_srg = {
+        # Leadership -> SLT
+        "HT": "SLT", "DHT": "SLT", "AHT": "SLT", "EHT": "SLT",
+        "CEO": "SLT", "COO": "SLT", "CFO": "SLT",
+        "PRI": "SLT", "VP": "SLT", "AP": "SLT", "EP": "SLT",
+        "AVP": "SLT", "SVP": "SLT", "SAP": "SLT", "AAP": "SLT",
+        "HOS": "SLT", "HOC": "SLT", "DHOC": "SLT",
+
+        # Teachers -> TEA
+        "TEA": "TEA", "UQT": "TEA", "LP": "TEA", "LST": "TEA",
+
+        # Middle Leaders -> TEA (they're usually teachers)
+        "HOD": "TEA", "HOF": "TEA", "AHOF": "TEA",
+        "SUB": "TEA", "FAC": "TEA", "CUR": "TEA",
+        "YR": "TEA", "HOY": "TEA", "AHOY": "TEA",
+        "KS": "TEA", "PRO": "TEA", "SIC": "TEA",
+
+        # Teaching Assistants -> TA
+        "TA": "TA", "LSA": "TA", "LSO": "TA", "LSM": "TA",
+        "SSA": "TA", "SSM": "TA", "SSL": "TA",
+
+        # HLTA -> HLTA
+        "HLTA": "HLTA",
+
+        # SENCO -> SEN
+        "SENCO": "SEN", "SENDCO": "SEN", "SEN": "SEN",
+
+        # Inclusion -> INC
+        "INC": "INC",
+
+        # Pastoral -> PAS
+        "PAS": "PAS", "PSO": "PAS", "LM": "PAS",
+        "ACAD": "PAS", "BEH": "PAS", "BSO": "PAS", "BSW": "PAS",
+
+        # Admin -> ADM
+        "ADM": "ADM", "SBM": "ADM", "BM": "ADM", "SBO": "ADM",
+        "BUR": "ADM", "REC": "ADM", "OFF": "ADM", "PA": "ADM",
+        "EXEC": "ADM",
+
+        # Finance -> FIN
+        "FIN": "FIN", "ACC": "FIN", "MAN": "FIN", "PAY": "FIN",
+
+        # HR -> HR
+        "HR": "HR",
+
+        # IT -> IT
+        "IT": "IT", "ICT": "IT", "NET": "IT", "SYS": "IT",
+
+        # Site/Premises -> EST
+        "CT": "EST", "SITE": "EST", "EST": "EST", "PRE": "EST",
+        "FAC": "EST", "MAIN": "EST",
+
+        # Cleaning -> CLE
+        "CLE": "CLE",
+
+        # Catering -> CAT
+        "CAT": "CAT", "COOK": "CAT", "CHEF": "CAT", "KIT": "CAT",
+
+        # Midday -> LTS
+        "MDS": "LTS", "SMDS": "LTS", "MDSA": "LTS", "MDA": "LTS",
+        "MDC": "LTS", "LTA": "LTS", "LTS": "LTS", "LTO": "LTS",
+
+        # Cover -> COV
+        "COV": "COV",
+
+        # Exams -> EXA
+        "EXA": "EXA", "INV": "INV",
+
+        # Library -> LIB
+        "LIB": "LIB", "LRC": "LIB",
+
+        # Technicians -> TEC
+        "TEC": "TEC", "REP": "TEC",
+
+        # Data -> ADM
+        "DATA": "ADM", "SIMS": "ADM",
+
+        # Safeguarding -> WEL
+        "SFG": "WEL", "DSL": "WEL", "DDSL": "WEL",
+        "WEL": "WEL", "MH": "WEL", "COU": "WEL", "ELSA": "WEL",
+        "MED": "WEL", "FA": "WEL",
+
+        # Family/Community -> FSW
+        "FSW": "FSW", "FSA": "FSW", "FSO": "FSW",
+        "FLO": "FSW", "FLW": "FSW", "PLO": "FSW", "FEL": "FSW",
+        "OUT": "FSW",
+
+        # Nursery -> NUR
+        "NUR": "NUR", "EYP": "NUR", "EY": "NUR", "EYFS": "NUR",
+        "RM": "NUR",
+
+        # Extended Schools -> EXT
+        "EXT": "EXT", "ASC": "ASC", "BFC": "BFC", "BASC": "EXT",
+        "OOS": "EXT", "WAC": "EXT", "PLAY": "EXT", "ENR": "EXT",
+
+        # Attendance -> ADM
+        "ATT": "ADM", "EWO": "ADM",
+
+        # Directors -> SLT or appropriate group
+        "DIR": "SLT", "STR": "SLT",
+
+        # Governance -> GOV
+        "GOV": "GOV", "CLER": "GOV", "HO": "GOV",
+
+        # Music -> OTH
+        "MUS": "OTH",
+
+        # Languages -> FLA
+        "FLA": "FLA",
+
+        # Careers -> ADM
+        "CAR": "ADM",
+
+        # Communications -> ADM
+        "COM": "ADM", "MAR": "ADM",
+
+        # Other
+        "OTH": "OTH",
+    }
+
+    return code_to_srg.get(base_code, "OTH")

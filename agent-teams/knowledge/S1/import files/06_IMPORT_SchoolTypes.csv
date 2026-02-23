@@ -1,0 +1,10 @@
+SchoolTypeCode,Title,SchoolTypeEnabled
+6THFORM,6th Form College,True
+ALTER,Alternative Provision School,True
+ALTHR,Althrough School,True
+CENTRAL,Central,True
+INFANT,Infant School,True
+JUNIOR,Junior School,True
+PRIMARY,Primary School,True
+SECONDARY,Secondary School,True
+SPECIAL,Special School,True

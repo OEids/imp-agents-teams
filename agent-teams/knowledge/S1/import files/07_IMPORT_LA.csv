@@ -1,0 +1,9 @@
+SchoolLocalAuthorityCode,Title,SchoolLocalAuthorityEnabled
+BNT,Barnet,True
+BRM,Bromley,True
+DEFAULT,Default (no) Activity,True
+HCK,Hackney,True
+KEN,Kent,True
+LNS,Lancashire,True
+NTS,Nottinghamshire,True
+SUR,Surrey,True

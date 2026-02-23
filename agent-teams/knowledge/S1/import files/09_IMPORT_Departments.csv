@@ -1,0 +1,244 @@
+DepartmentCode,Title,AvailableToAllSchools,SchoolCodes,ActivityCode,FundCode,LedgerCode,DefaultFinanceCode,DepartmentEnabled
+AADM,Academy - Admin,True,,DEFAULT,GAG,COSTCTR,,True
+AAFM,Academy - Curric/Admin contracts,True,,DEFAULT,DEFAULT,COSTCTR,,True
+ABNK,Academy - Bank Charges,True,,DEFAULT,DEFAULT,COSTCTR,,True
+ACON,Academy - Contingency,True,,DEFAULT,DEFAULT,COSTCTR,,True
+ADEP,Academy - Depreciation,True,,DEFAULT,DEFAULT,COSTCTR,,True
+AEDT,Academy - Ed Trust,True,,DEFAULT,DEFAULT,COSTCTR,,True
+AFUR,Academy - Furniture/Equipment,True,,DEFAULT,DEFAULT,COSTCTR,,True
+AGOV,Academy - Governance,True,,DEFAULT,DEFAULT,COSTCTR,,True
+AHOS,Academy - Hospitality,True,,DEFAULT,DEFAULT,COSTCTR,,True
+AHTR,Academy -Headteachers Reserve,True,,DEFAULT,DEFAULT,COSTCTR,,True
+AINS,Academy - Insurance Claims,True,,DEFAULT,DEFAULT,COSTCTR,,True
+AITD,Academy - IT Development,True,,DEFAULT,DEFAULT,COSTCTR,,True
+AITI,Academy- IT,True,,DEFAULT,DEFAULT,COSTCTR,,True
+AITM,Academy - IT Maintenance,True,,DEFAULT,DEFAULT,COSTCTR,,True
+AITR,Academy - IT Replacement,True,,DEFAULT,DEFAULT,COSTCTR,,True
+AMAK,Academy - Marketing,True,,DEFAULT,DEFAULT,COSTCTR,,True
+AMAT,Academy - MAT,False,MAT,DEFAULT,DEFAULT,COSTCTR,,True
+AMAT,Academy - MAT,False,"LEA,MIL,ALE,APP,LOR,GRE,MAR,MID,EDU,GOO,OUR",SCHOOL,DEFAULT,COSTCTR,,True
+AMIN,Academy - Minibus,True,,DEFAULT,DEFAULT,COSTCTR,,True
+APBB,Academy - Professional Fees & Services,True,,DEFAULT,DEFAULT,COSTCTR,,True
+APOS,Academy - Postage,True,,DEFAULT,DEFAULT,COSTCTR,,True
+APTA,Academy - PTA,True,,DEFAULT,DEFAULT,COSTCTR,,True
+APUM,Academy - Pupil Meals,True,,DEFAULT,DEFAULT,COSTCTR,,True
+AREP,Academy - Reprographics/Photocopying,True,,DEFAULT,DEFAULT,COSTCTR,,True
+ASCF,Academy - General School Fund Exp,True,,DEFAULT,DEFAULT,COSTCTR,,True
+ASCU,Academy - School Fund Uniforms,True,,DEFAULT,DEFAULT,COSTCTR,,True
+ASTA,Academy - Stationery,True,,DEFAULT,DEFAULT,COSTCTR,,True
+ATEV,Academy - Traded Events,True,,DEFAULT,DEFAULT,COSTCTR,,True
+AYEJ,Academy - Year End Journals,True,,DEFAULT,DEFAULT,COSTCTR,,True
+CAP_DFC,Devolved Formula Capital,False,"LEA,MIL,ALE,APP,LOR,GRE,MAR,MID,EDU,GOO,OUR",SCHOOL,DEFAULT,CAPITAL,,True
+CAP_EXP,Capital Expenditure,False,MAT,DEFAULT,DEFAULT,CAPITAL,,True
+CAP_EXP,Capital Expenditure,False,"LEA,MIL,ALE,APP,LOR,GRE,MAR,MID,EDU,GOO,OUR",SCHOOL,DEFAULT,CAPITAL,,True
+CAP_INC,Capital - Income,False,MAT,DEFAULT,DEFAULT,CAPITAL,,True
+CAP_INC,Capital - Income,False,"LEA,MIL,ALE,APP,LOR,GRE,MAR,MID,EDU,GOO,OUR",SCHOOL,DEFAULT,CAPITAL,,True
+CAP_NEW,Capital - Income New Build CIF,True,,DEFAULT,DEFAULT,CAPITAL,,True
+CAP_PRTC,Premises - Revenue Cont to Capital,True,,DEFAULT,DEFAULT,CAPITAL,,True
+CAP_ROOF,Capital Roof,False,APP,SCHOOL,DEFAULT,CAPITAL,,True
+CUR_ART,Curriculum - Art,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_ASS,Curriculum - Assessment,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_BAC,Curriculum - Wrap around care,True,,CATERING,DEFAULT,COSTCTR,,True
+CUR_BEC,Curriculum - B & E Community,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_BEN,Curriculum - Business & Enterprise,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_BEX,Curriculum - B & E - X Curriculum,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_BFL,Curriculum - Behaviour for IMP Init,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_BST,Curriculum - Business Studies,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_BUR,Curriculum - 16-19 Bursary,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_CCP,Curriculum - Covid Catchup Premium,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_CHI,Curriculum - House 1,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_DBS,Curriculum - DoE Award,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_DEV,Curriculum - Development Funding,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_DGO,Curriculum - DoE Gold,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_DRA,Curriculum - Drama,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_DTE,Curriculum - Design Technology,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_EAR,Curriculum - Early Years,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_ENG,Curriculum - English,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_EXM,Curriculum - Exams,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_EXP,Curriculum - Extended Schools Activity,True,,EXTENDED,DEFAULT,COSTCTR,,True
+CUR_FUR,Curriculum- Furniture/Equipment,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_GEN,Curriculum - General Resources,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_GEO,Curriculum - Geography,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_GTE,Curriculum - G&T/Widening Horizons,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_GVP,Curriculum - Government and Politics,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_HEC,Curriculum - Home Economics,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_HIS,Curriculum - History,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_HSC,Curriculum - Health & Social Care/CD,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_HUM,Curriculum - Humanities General,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_INT,Curriculum - International Activities,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_ITC,Curriculum - IT,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_JOH,Curriculum - House 2,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_LAW,Curriculum - Law,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_LDV,Curriculum - IMP Development,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_LIT,Curriculum - Literacy,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_LRC,Curriculum - LRC,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_LSN,Curriculum - 14-19 IMP Network,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_MAL,Curriculum - House 3,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_MAT,Curriculum - Maths,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_MED,Curriculum - Media/Film Studies,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_MFL,Curriculum - MFL,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_MPL,Curriculum - House 4,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_MUS,Curriculum - Music,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_NUM,Curriculum - Numeracy,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_NUR,Curriculum - Nursery,True,,NURSERY,DEFAULT,COSTCTR,,True
+CUR_OUT,Curriculum- Outdoor Resources,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_PEC,Curriculum - PE Coaching,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_PED,Curriculum - PE,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_PER,Curriculum - Personal Development,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_PET,Curriculum - PE Transport,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_PHO,Curriculum - Photocopying,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_PHY,Curriculum - Photography,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_PPR,Curriculum - Pupil Premium,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_PRI,Curriculum - Primary School Liaison,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_PSY,Curriculum - Psychology,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_REP,Curriculum - Reprographics,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_RES,Curriculum - Capitation Reserve,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_RET,Curriculum - Retention for 6th Form Nos,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_SAC,Curriculum - Student Achievement/Prizes,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_SCI,Curriculum - Science,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_SEN,Curriculum - SEN,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_SHA,Curriculum - House 5,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_SHE,Curriculum - PSHE,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_SIX,Curriculum - 6th Form,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_SLN,Curriculum - SLCN Unit,True,,SENUNIT,DEFAULT,COSTCTR,,True
+CUR_SOC,Curriculum - Sociology,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_SPR,Curriculum - Sports Premium,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_SRW,Curriculum - SRW,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_STA,Curriculum - Stationery,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_STI,Curriculum - Student Incentives,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_STR,Curriculum - Year 11/12 Strategies,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_STS,Curriculum - Student Support,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_VOC,Curriculum - KS4 Vocational,True,,SCHOOL,DEFAULT,COSTCTR,,True
+CUR_WEX,Curriculum - Work Experience/Careers,True,,SCHOOL,DEFAULT,COSTCTR,,True
+DEFAULT,Default (no) Department,True,,DEFAULT,DEFAULT,DEFAULT,,True
+EXP_ADM,Expenditure- Admin,True,,DEFAULT,DEFAULT,COSTCTR,,True
+EXP_CLE,Expenditure - Cleaning,True,,DEFAULT,DEFAULT,COSTCTR,,True
+EXP_CON,Expenditure - Consumables,True,,DEFAULT,DEFAULT,COSTCTR,,True
+EXP_EQU,Expenditure - Equipment,True,,DEFAULT,DEFAULT,COSTCTR,,True
+EXP_GRO,Expenditure -Grounds Maintenance,True,,DEFAULT,DEFAULT,COSTCTR,,True
+EXP_MAIN,Expenditure - Maintenance,True,,DEFAULT,DEFAULT,COSTCTR,,True
+EXP_OH,Expenditure- Overheads,True,,DEFAULT,DEFAULT,COSTCTR,,True
+EXP_PTA,PTA spend,True,,EXTENDED,DEFAULT,COSTCTR,,True
+EXP_UTI,Expenditure- Utilities,True,,DEFAULT,DEFAULT,COSTCTR,,True
+EXT_ASC,After School Club,True,,EXTENDED,DEFAULT,COSTCTR,,True
+EXT_BC,Breakfast Club,True,,EXTENDED,DEFAULT,COSTCTR,,True
+EXT_HC,Extended School Holiday Club,True,,EXTENDED,DEFAULT,COSTCTR,,True
+GAG,General Annual Grant,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_ASC,Income - ASC,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_ATO,Income - ATP Other Users,True,,LETTINGS,DEFAULT,COSTCTR,,True
+INC_ATP,Income - ATP Partners,True,,LETTINGS,DEFAULT,COSTCTR,,True
+INC_BAN,Income - Bank Interest,False,MAT,DEFAULT,DEFAULT,COSTCTR,,True
+INC_BAN,Income - Bank Interest,False,"LEA,MIL,ALE,APP,LOR,GRE,MAR,MID,EDU,GOO,OUR",SCHOOL,DEFAULT,COSTCTR,,True
+INC_BFC,Income - Breakfast Club,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_BURS,Bursary Fund,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_CAR,Income - Cater taker's Occ Charge,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_CAT,Income - Catering,True,,CATERING,DEFAULT,COSTCTR,,True
+INC_CHIL,Childrens Centre,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_COV,Covid Fund,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_DON,Income - Donations,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_GAG,Income - GAG,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_GRA,Income - Grants Other,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_LAC,Income - LAC OLA,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_LET,Income - Lettings General,True,,LETTINGS,DEFAULT,COSTCTR,,True
+INC_MAT,Income - MAT,False,MAT,DEFAULT,DEFAULT,COSTCTR,,True
+INC_NUR,Income - Nursery,True,,NURSERY,DEFAULT,COSTCTR,,True
+INC_OTH,Income - Other,False,MAT,DEFAULT,DEFAULT,COSTCTR,,True
+INC_OTH,Income - Other,False,"LEA,MIL,ALE,APP,LOR,GRE,MAR,MID,EDU,GOO,OUR",SCHOOL,DEFAULT,COSTCTR,,True
+INC_PIN,Income - Other Ins Claims,False,MAT,DEFAULT,DEFAULT,COSTCTR,,True
+INC_PIN,Income - Other Ins Claims,False,"LEA,MIL,ALE,APP,LOR,GRE,MAR,MID,EDU,GOO,OUR",SCHOOL,DEFAULT,COSTCTR,,True
+INC_PPP,Income - Pupil Premium,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_PRI,Income - Primary School Income,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_PTA,Income - PTA,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_SCF,Income - General School Fund Inc,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_SCO,Income - School Council,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_SIN,Income - Staff Insurance,False,MAT,DEFAULT,DEFAULT,COSTCTR,,True
+INC_SIN,Income - Staff Insurance,False,"LEA,MIL,ALE,APP,LOR,GRE,MAR,MID,EDU,GOO,OUR",SCHOOL,DEFAULT,COSTCTR,,True
+INC_SLC,Income - SLCN Centre,True,,SENUNIT,DEFAULT,COSTCTR,,True
+INC_SLP,Income - SALP Funding,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_SPL,Income - Swimming Pool,True,,LETTINGS,DEFAULT,COSTCTR,,True
+INC_SPPR,Sports Premium,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_STT,Income - Student Teachers,True,,DEFAULT,DEFAULT,COSTCTR,,True
+INC_SUN,Income - Sundry,True,,DEFAULT,DEFAULT,COSTCTR,,True
+PREM_ATM,Premises - ATP Maintenance,True,,LETTINGS,DEFAULT,COSTCTR,,True
+PREM_BLC,Premises - Building Contracts,False,MAT,DEFAULT,DEFAULT,COSTCTR,,True
+PREM_BLC,Premises - Building Contracts,False,"LEA,MIL,ALE,APP,LOR,GRE,MAR,MID,EDU,GOO,OUR",SCHOOL,DEFAULT,COSTCTR,,True
+PREM_CAT,Premises - Catering Supplies,True,,CATERING,DEFAULT,COSTCTR,,True
+PREM_CCL,Premises - Contract Cleaning,True,,DEFAULT,DEFAULT,COSTCTR,,True
+PREM_CLN,Premises - Cleaning Materials,True,,DEFAULT,DEFAULT,COSTCTR,,True
+PREM_CRT,Premises - Caretakers Supplies,False,MAT,DEFAULT,DEFAULT,COSTCTR,,True
+PREM_CRT,Premises - Caretakers' Supplies,False,"LEA,MIL,ALE,APP,LOR,GRE,MAR,MID,EDU,GOO,OUR",SCHOOL,DEFAULT,COSTCTR,,True
+PREM_ENV,Premises - Environment,True,,DEFAULT,DEFAULT,COSTCTR,,True
+PREM_GMA,Premises - Grounds Maintenance,False,MAT,DEFAULT,DEFAULT,COSTCTR,,True
+PREM_GMR,Premises - General Maintenance,False,"LEA,MIL,ALE,APP,LOR,GRE,MAR,MID,EDU,GOO,OUR",SCHOOL,DEFAULT,COSTCTR,,True
+PREM_HAS,Premises - Health & Safety,True,,DEFAULT,DEFAULT,COSTCTR,,True
+PREM_MTO,Premises - Maintenance Other,True,,DEFAULT,DEFAULT,COSTCTR,,True
+PREM_PAT,Premises - PAT Testing,True,,DEFAULT,DEFAULT,COSTCTR,,True
+PREM_PRO,Premises - Other Premises,True,,DEFAULT,DEFAULT,COSTCTR,,True
+PREM_RAT,Premises - Rates,True,,DEFAULT,DEFAULT,COSTCTR,,True
+PREM_RFB,Premises - Refurbishment,False,MAT,DEFAULT,DEFAULT,COSTCTR,,True
+PREM_RFB,Premises - Refurbishment,False,"LEA,MIL,ALE,APP,LOR,GRE,MAR,MID,EDU,GOO,OUR",SCHOOL,DEFAULT,COSTCTR,,True
+PREM_SPC,Premises - Sports Centre,True,,LETTINGS,DEFAULT,COSTCTR,,True
+PREM_SPL,Premises - Swimming Pool Maint,True,,LETTINGS,DEFAULT,COSTCTR,,True
+PREM_UTL,Premises - Utilities,True,,DEFAULT,DEFAULT,COSTCTR,,True
+PREM_WAT,Premises - Water,True,,DEFAULT,DEFAULT,COSTCTR,,True
+SAL_ADM,Staff Costs - Finance and Admin,True,,SCHOOL,DEFAULT,SALARY,,True
+SAL_CAT,Staff Costs - Catering Staff,True,,CATERING,DEFAULT,SALARY,,True
+SAL_CLE,Staff Costs - Cleaning Staff,True,,SCHOOL,DEFAULT,SALARY,,True
+SAL_COV,Staff Costs - Cover Supervisors,True,,SCHOOL,DEFAULT,SALARY,,True
+SAL_EXT,Staff Costs - Extended Schools Staff,True,,EXTENDED,DEFAULT,SALARY,,True
+SAL_FSW,Staff Costs - Family Support Workers,True,,SCHOOL,DEFAULT,SALARY,,True
+SAL_INV,Staff Costs - Exam Invigilators,True,,SCHOOL,DEFAULT,SALARY,,True
+SAL_LIB,Staff Costs - Librarians,True,,SCHOOL,DEFAULT,SALARY,,True
+SAL_LSN,Staff Costs - Leadership Non-Teaching,True,,SCHOOL,DEFAULT,SALARY,,True
+SAL_LST,Staff Costs - Leadership Teaching,True,,SCHOOL,DEFAULT,SALARY,,True
+SAL_MDS,Staff Costs - Midday Supervisors,True,,SCHOOL,DEFAULT,SALARY,,True
+SAL_NUR,Staff Costs - Nursery Staff,True,,NURSERY,DEFAULT,SALARY,,True
+SAL_OTH,Staff Costs - Other Staff,True,,SCHOOL,DEFAULT,SALARY,,True
+SAL_PRE,Staff Costs - Site Staff,True,,SCHOOL,DEFAULT,SALARY,,True
+SAL_SUPP,Supply Costs,True,,SCHOOL,DEFAULT,SALARY,,True
+SAL_TA,Staff Costs - Teaching Assistants,True,,SCHOOL,DEFAULT,SALARY,,True
+SAL_TEA,Staff Costs - Teachers,True,,SCHOOL,DEFAULT,SALARY,,True
+SAL_TEC,Staff Costs - Technicians,True,,SCHOOL,DEFAULT,SALARY,,True
+SSCO,School Council,True,,EXTENDED,DEFAULT,COSTCTR,,True
+STF_ATP,Staff - ATP Staff,True,,DEFAULT,DEFAULT,COSTCTR,,True
+STF_BUP,Staff - Bupa,True,,DEFAULT,DEFAULT,COSTCTR,,True
+STF_DEV,Staff Development,False,MAT,DEFAULT,DEFAULT,COSTCTR,,True
+STF_DEV,Staff Development,False,"LEA,MIL,ALE,APP,LOR,GRE,MAR,MID,EDU,GOO,OUR",SCHOOL,DEFAULT,COSTCTR,,True
+STF_FLA,Staff- FLA,True,,DEFAULT,DEFAULT,COSTCTR,,True
+STF_HSL,Staff - HSLW,True,,DEFAULT,DEFAULT,COSTCTR,,True
+STF_INS,Staff - Cover Insurance,True,,DEFAULT,DEFAULT,COSTCTR,,True
+STF_OTH,Staff - Other Costs,False,MAT,DEFAULT,DEFAULT,COSTCTR,,True
+STF_OTH,Staff - Other Costs,False,"LEA,MIL,ALE,APP,LOR,GRE,MAR,MID,EDU,GOO,OUR",SCHOOL,DEFAULT,COSTCTR,,True
+STF_REC,Staff - Recruitment,False,MAT,DEFAULT,DEFAULT,COSTCTR,,True
+STF_REC,Staff - Recruitment,False,"LEA,MIL,ALE,APP,LOR,GRE,MAR,MID,EDU,GOO,OUR",SCHOOL,DEFAULT,COSTCTR,,True
+STF_SUP,Staff - Supply,True,,DEFAULT,DEFAULT,COSTCTR,,True
+TRIP_13BALL,Year 13 Ball,False,MAR,SCHOOL,DEFAULT,TRIPS,,True
+TRIP_ART,Art Club Year 7,False,MIL,SCHOOL,DEFAULT,TRIPS,,True
+TRIP_BAS,Basketball,False,"ALE,APP,LOR",DEFAULT,DEFAULT,TRIPS,,True
+TRIP_BSL,British Sign Language Course,False,MIL,SCHOOL,DEFAULT,TRIPS,,True
+TRIP_CLSA,A Level CSLA Course 2021/22,False,MAR,SCHOOL,DEFAULT,TRIPS,,True
+TRIP_DOFE,Duke of Edinburgh Bronze 2022,False,MIL,SCHOOL,DEFAULT,TRIPS,,True
+TRIP_EXTHC,Extended School Holiday Club Trips,True,,EXTENDED,REST,TRIPS,,True
+TRIP_GEN,General Trips,True,,DEFAULT,DEFAULT,TRIPS,,True
+TRIP_GEO,A level Geography & Physics Iceland,False,MAR,SCHOOL,DEFAULT,TRIPS,,True
+TRIP_GFA,Greenway Football Academy Training,False,"ALE,APP,LOR",DEFAULT,DEFAULT,TRIPS,,True
+TRIP_HE,Higher Education & Apprenticeship Event,False,"GRE,GOO,OUR",SCHOOL,DEFAULT,TRIPS,,True
+TRIP_LB,Leavers Ball,False,"GRE,GOO,OUR",SCHOOL,DEFAULT,TRIPS,,True
+TRIP_MFL,MFL French Exchange,False,"GRE,GOO,OUR",SCHOOL,DEFAULT,TRIPS,,True
+TRIP_NET,Netball,False,"ALE,APP,LOR",DEFAULT,DEFAULT,TRIPS,,True
+TRIP_SHE22,Sheffield Trip 2022,False,APP,DEFAULT,DEFAULT,TRIPS,,True
+TRIP_YR10ENG,English Year 10 Poetry Live,False,"GRE,GOO,OUR",SCHOOL,DEFAULT,TRIPS,,True
+TRIP_YR10GEO,Year 10 Geography Norfolk March 22,False,"GRE,GOO,OUR",SCHOOL,DEFAULT,TRIPS,,True
+TRIP_YR10HS,Year 10 HSC First Aid Course,False,"GRE,GOO,OUR",SCHOOL,DEFAULT,TRIPS,,True
+TRIP_YR11HSC,Year 11 HSC First Aid Course,False,MID,SCHOOL,DEFAULT,TRIPS,,True
+TRIP_YR11PROM,Year 11 Prom,False,MID,SCHOOL,DEFAULT,TRIPS,,True
+TRIP_YR12SEA,Year 12 Seaford/Newhaven and Stratford,False,MAR,SCHOOL,DEFAULT,TRIPS,,True
+TRIP_YR7AW,Year 7 Activities Week,False,MID,SCHOOL,DEFAULT,TRIPS,,True
+TRIP_YR7PP,English Yr 7 Private Peaceful,False,MIL,SCHOOL,DEFAULT,TRIPS,,True
+TRIP_YR8AW,Year 8 Activities Week,False,MID,SCHOOL,DEFAULT,TRIPS,,True
+TRIP_YR8CIT,Yr 8 Curiouc Incident Theatre Trip,False,MIL,SCHOOL,DEFAULT,TRIPS,,True
+TRIP_YR8PAR,Activity Week Year 8 Paris 2022,False,MIL,SCHOOL,DEFAULT,TRIPS,,True
+TRIP_YR9AW,Year 9 Activities Week,False,MID,SCHOOL,DEFAULT,TRIPS,,True
+TRIP_YR9PGL,Activity Week Year 9 PGL 2022,False,MIL,SCHOOL,DEFAULT,TRIPS,,True
+TRIP_YR9WIB,English Yr 9 The Woman in Black - Apr 22,False,"GRE,GOO,OUR",SCHOOL,DEFAULT,TRIPS,,True
+UIFSM,Universal Free School Meals,False,"ALE,APP",DEFAULT,DEFAULT,COSTCTR,,True

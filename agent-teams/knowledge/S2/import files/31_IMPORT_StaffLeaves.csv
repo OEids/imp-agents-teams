@@ -1,0 +1,3 @@
+ScenarioCode,StaffMemberCode,LeaveTypeCode,DateFrom,DateTo,BaseWeeklyEarnings,PensionOptOut
+,10131723,MAT_SUP_>1YR,2018-08-01,2019-08-31,400.0,False
+,11806569,MAT_SUP_>1YR,2025-04-01,2026-03-31,478.51,False

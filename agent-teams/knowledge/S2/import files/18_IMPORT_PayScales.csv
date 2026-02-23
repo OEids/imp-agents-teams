@@ -1,0 +1,28 @@
+ScenarioCode,PayScaleCode,PayScaleTitle,ServiceIncrementDateEnabled,IncrementDate,IncreaseDate,IncreasePercentage,AvailableToAllSchools,SchoolCodes,ExcludeNationalInsurance,ExcludePension,PayScaleEnabled
+,APP/NMW,Apprentice / NMW Scale,False,01/04,01/04,3,True,,False,False,True
+,ESTF,External Staff,False,01/09,01/09,0,True,,True,True,True
+,KENT,Kent Scale,False,01/04,01/04,3,False,MIL,False,False,True
+,LP_EW,Lead Practitioner,False,01/09,01/09,3,False,"MAT,ALE,APP,MAR",False,False,True
+,LP_FRI,Lead Practitioner - Fringe,False,01/09,01/09,3,False,"MIL,EDU",False,False,True
+,LP_IL,Lead Practitioner - Inner,False,01/09,01/09,3,False,"LOR,GRE,GOO,OUR",False,False,True
+,LP_OL,Lead Practitioner - Outer,False,01/09,01/09,3,False,"LEA,MID",False,False,True
+,LS_EW,Leadership Group,False,01/09,01/09,3,False,"MAT,ALE,APP,MAR",False,False,True
+,LS_FRI,Leadership Group - Fringe,False,01/09,01/09,3,False,"MIL,EDU",False,False,True
+,LS_IL,Leadership Group - Inner,False,01/09,01/09,3,False,"LOR,GRE,GOO,OUR",False,False,True
+,LS_OL,Leadership Group - Outer,False,01/09,01/09,3,False,"LEA,MID",False,False,True
+,MAIN_EW,Teachers Main,False,01/09,01/09,3,False,"MAT,ALE,APP,MAR",False,False,True
+,MAIN_FRI,Teachers Main - Fringe,False,01/09,01/09,3,False,"MIL,EDU",False,False,True
+,MAIN_IL,Teachers Main - Inner,False,01/09,01/09,3,False,"LOR,GRE,GOO,OUR",False,False,True
+,MAIN_OL,Teachers Main - Outer,False,01/09,01/09,3,False,"LEA,MID",False,False,True
+,NJC_EW,NJC,False,01/04,01/04,3,False,"MAT,ALE,APP,MAR,MID",False,False,True
+,NJC_FRI,NJC - Fringe,False,01/04,01/04,3,False,EDU,False,False,True
+,NJC_IL,NJC - Inner,False,01/04,01/04,3,False,"LOR,GRE,GOO,OUR",False,False,True
+,NJC_OL,NJC - Outer,False,01/04,01/04,3,False,LEA,False,False,True
+,SPOT_CEO,Spot Salary Scale - CEO,False,01/09,01/09,3,False,MAT,False,False,True
+,SPOT_H,Spot Hourly Rate Scale,False,01/04,01/04,3,True,,False,False,True
+,SPOT_HTG_EW,Headteacher Spot - School Group Max Point,False,01/09,01/09,3,False,"MAT,ALE,APP,MAR",False,False,True
+,UPS_OL,Teachers Upper -Outer,False,01/09,01/09,3,False,"LEA,MID",False,False,True
+,UQ_EW,Teachers Unqualified,False,01/09,01/09,3,False,"MAT,ALE,APP,MAR",False,False,True
+,UQ_FRI,Teachers Unqualified - Fringe,False,01/09,01/09,3,False,"MIL,EDU",False,False,True
+,UQ_IL,Teachers Unqualified - Inner,False,01/09,01/09,3,False,"LOR,GRE,GOO,OUR",False,False,True
+,UQ_OL,Teachers Unqualified -Outer,False,01/09,01/09,3,False,"LEA,MID",False,False,True

@@ -1,0 +1,13 @@
+SchoolCode,SchoolHub,SchoolType,Title,LondonWeighting,UniqueReferenceNumber,TeachingHours,SchoolEnabled
+ALE,NORTH,PRIMARY,Alexander Primary,False,775074,32.5,True
+APP,MID,INFANT,Appleborough Infant,False,775026,32.5,True
+EDU,SOUTH,SPECIAL,Educating Surrey Academy,True,775062,32.43,True
+GOO,LON,SECONDARY,Good Start Academy,True,755043,25.0,True
+GRE,LON,SECONDARY,Green Court Secondary,True,775042,25.0,True
+LEA,LON,ALTER,Leading Edge Academy,True,775041,27.5,True
+LOR,LON,JUNIOR,Lord's Junior Academy,True,775023,25.0,True
+MAR,MID,6THFORM,Markell College,False,775050,32.5,True
+MAT,MID,CENTRAL,IMP Multi Academy Trust,False,0,32.5,True
+MID,LON,SECONDARY,Middle Ground School,True,775025,27.5,True
+MIL,SOUTH,ALTHR,Milton Kent Academy,True,775047,32.43,True
+OUR,LON,SECONDARY,Our Lady Academy,True,755044,25.0,True

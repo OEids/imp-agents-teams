@@ -1,0 +1,6 @@
+SchoolHubCode,Title,SchoolHubEnabled
+DEFAULT,Default (no) Hub,True
+LON,London Hub,True
+MID,Midland Hub,True
+NORTH,North Hub,True
+SOUTH,South Hub,True

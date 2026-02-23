@@ -889,44 +889,105 @@ class PayScaleExtractor:
 def extract_payscales_from_folder(folder_path: Path) -> Dict[str, Any]:
     """
     Extract all pay scales and allowances from a folder of Excel files.
+
+    Args:
+        folder_path: Path to folder containing xlsx files
+
+    Returns:
+        Dict with 'pay_scales', 'allowances', 'grades', 'logs'
+
+    Raises:
+        FileNotFoundError: If folder does not exist
+        ValueError: If no xlsx files found in folder
     """
+    folder_path = Path(folder_path)
+
+    if not folder_path.exists():
+        raise FileNotFoundError(f"Folder not found: {folder_path}")
+
+    xlsx_files = [f for f in folder_path.glob('*.xlsx') if not f.name.startswith('~$')]
+
+    if not xlsx_files:
+        raise ValueError(f"No xlsx files found in folder: {folder_path}")
+
     extractor = PayScaleExtractor()
 
-    for f in folder_path.glob('*.xlsx'):
-        if f.name.startswith('~$'):
-            continue
+    for f in xlsx_files:
         extractor.extract_from_file(f)
 
-    return {
+    result = {
         'pay_scales': extractor.pay_scales,
         'allowances': extractor.allowances,
         'grades': extractor.grades,
         'logs': extractor.log_messages,
     }
 
+    if not result['pay_scales']:
+        extractor.log("WARNING: No pay scales were imported from the files")
+
+    return result
+
+
+def get_default_payscales_folder() -> Path:
+    """Get the default payscales folder path relative to this module."""
+    module_dir = Path(__file__).parent.parent
+    return module_dir / "knowledge" / "S2" / "payscales example"
+
 
 # Test function
 if __name__ == '__main__':
-    folder = Path(r'C:\claude\agent-teams\knowledge\S2\payscales example')
-    result = extract_payscales_from_folder(folder)
+    import sys
+
+    # Allow folder path as command line argument
+    if len(sys.argv) > 1:
+        folder = Path(sys.argv[1])
+    else:
+        folder = get_default_payscales_folder()
+
+    print(f"Looking for payscales in: {folder}")
+
+    if not folder.exists():
+        print(f"ERROR: Folder not found: {folder}")
+        print("Usage: python payscale_extractor.py [folder_path]")
+        sys.exit(1)
+
+    xlsx_files = list(folder.glob('*.xlsx'))
+    if not xlsx_files:
+        print(f"ERROR: No xlsx files found in folder: {folder}")
+        sys.exit(1)
+
+    print(f"Found {len(xlsx_files)} xlsx files")
+
+    try:
+        result = extract_payscales_from_folder(folder)
+    except Exception as e:
+        print(f"ERROR: {e}")
+        sys.exit(1)
 
     print("\n" + "="*60)
     print("EXTRACTION RESULTS")
     print("="*60)
 
-    print(f"\nPay Scales Found: {len(result['pay_scales'])}")
-    for ps in result['pay_scales']:
-        print(f"  {ps.code}: {ps.title} ({len(ps.points)} points)")
-        for p in ps.points[:5]:
-            print(f"    - {p.code}: £{p.rate:,.2f}")
-        if len(ps.points) > 5:
-            print(f"    ... and {len(ps.points) - 5} more")
+    if not result['pay_scales']:
+        print("\nWARNING: No payscales were imported!")
+        print("Check that the xlsx files contain recognizable pay scale data.")
+    else:
+        print(f"\nPay Scales Found: {len(result['pay_scales'])}")
+        for ps in result['pay_scales']:
+            print(f"  {ps.code}: {ps.title} ({len(ps.points)} points)")
+            for p in ps.points[:5]:
+                print(f"    - {p.code}: GBP {p.rate:,.2f}")
+            if len(ps.points) > 5:
+                print(f"    ... and {len(ps.points) - 5} more")
 
-    print(f"\nAllowances Found: {len(result['allowances'])}")
-    for al in result['allowances']:
-        print(f"  {al.code}: {al.title} ({len(al.points)} points)")
-        for p in al.points:
-            print(f"    - {p.code}: £{p.amount:,.2f}")
+    if not result['allowances']:
+        print("\nNo allowances found.")
+    else:
+        print(f"\nAllowances Found: {len(result['allowances'])}")
+        for al in result['allowances']:
+            print(f"  {al.code}: {al.title} ({len(al.points)} points)")
+            for p in al.points:
+                print(f"    - {p.code}: GBP {p.amount:,.2f}")
 
     print(f"\nGrades Found: {len(result['grades'])}")
     for g in result['grades'][:10]:
