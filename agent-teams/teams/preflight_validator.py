@@ -271,7 +271,10 @@ class PreFlightValidator:
             if col is None or (isinstance(col, float) and pd.isna(col)):
                 continue
             col_str = str(col).strip()
-            if not col_str or col_str.lower().startswith("unnamed:") or col_str.lower() == "nan":
+            if not col_str or col_str.lower().startswith("unnamed") or col_str.lower() == "nan":
+                continue
+            # Skip columns with no data
+            if df[col].dropna().empty:
                 continue
             mapping = self._analyze_column(col, df[col], detected_strand)
             column_mappings.append(mapping)
