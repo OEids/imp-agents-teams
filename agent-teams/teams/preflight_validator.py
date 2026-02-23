@@ -263,9 +263,13 @@ class PreFlightValidator:
                 detected_strand = None
                 strand_confidence = 0.0
 
-        # Analyze each column
+        # Analyze each column (skip blank column names)
         column_mappings = []
         for col in df.columns:
+            # Skip blank/empty column names and pandas auto-generated "Unnamed:" columns
+            col_str = str(col) if col is not None else ""
+            if not col_str.strip() or col_str.lower().startswith("unnamed:"):
+                continue
             mapping = self._analyze_column(col, df[col], detected_strand)
             column_mappings.append(mapping)
 
@@ -277,7 +281,7 @@ class PreFlightValidator:
             file_name=file_path.name,
             sheet_name=sheet_name,
             row_count=len(df),
-            column_count=len(df.columns),
+            column_count=len(column_mappings),  # Use filtered count
             column_mappings=column_mappings,
             detected_strand=detected_strand,
             strand_confidence=strand_confidence,

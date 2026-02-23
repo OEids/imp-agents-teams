@@ -1339,139 +1339,148 @@ def render_validate_and_map(team_id: str):
 
                 # Column mappings by status
                 if result.matched_columns:
-                    st.markdown("**Matched Columns (auto-accepted)**")
-                    matched_df = pd.DataFrame([
-                        {"Source": c.source_column, "Mapped To": c.mapped_to, "Confidence": f"{c.confidence:.0%}"}
-                        for c in result.matched_columns
-                    ])
-                    st.dataframe(matched_df, use_container_width=True, hide_index=True)
+                    # Filter out blank columns
+                    matched_cols = [c for c in result.matched_columns if c.source_column and c.source_column.strip()]
+                    if matched_cols:
+                        st.markdown("**Matched Columns (auto-accepted)**")
+                        matched_df = pd.DataFrame([
+                            {"Source": c.source_column, "Mapped To": c.mapped_to, "Confidence": f"{c.confidence:.0%}"}
+                            for c in matched_cols
+                        ])
+                        st.dataframe(matched_df, use_container_width=True, hide_index=True)
 
                 if result.review_columns:
-                    st.markdown("**Review Suggested (fuzzy matches)**")
-                    for mapping in result.review_columns:
-                        col1, col2, col3, col4 = st.columns([3, 3, 2, 2])
-                        mapping_key = f"{file_key}_{mapping.source_column}"
-                        with col1:
-                            st.text(mapping.source_column)
-                        with col2:
-                            # Dropdown with fuzzy matches + all standard fields + custom option
-                            fuzzy_options = [mapping.mapped_to or ""] + [alt[0] for alt in mapping.alternatives]
-                            fuzzy_options = [opt for opt in fuzzy_options if opt]  # Remove empty
+                    # Filter out blank columns
+                    review_cols = [m for m in result.review_columns if m.source_column and m.source_column.strip()]
+                    if review_cols:
+                        st.markdown("**Review Suggested (fuzzy matches)**")
+                        for mapping in review_cols:
+                            col1, col2, col3, col4 = st.columns([3, 3, 2, 2])
+                            mapping_key = f"{file_key}_{mapping.source_column}"
+                            with col1:
+                                st.text(mapping.source_column)
+                            with col2:
+                                # Dropdown with fuzzy matches + all standard fields + custom option
+                                fuzzy_options = [mapping.mapped_to or ""] + [alt[0] for alt in mapping.alternatives]
+                                fuzzy_options = [opt for opt in fuzzy_options if opt]  # Remove empty
 
-                            # Add all standard field options (exclude duplicates)
-                            all_fields = get_field_options_for_strand(team_id)
-                            standard_options = [f for f in all_fields if f not in fuzzy_options]
+                                # Add all standard field options (exclude duplicates)
+                                all_fields = get_field_options_for_strand(team_id)
+                                standard_options = [f for f in all_fields if f not in fuzzy_options]
 
-                            # Build final options: fuzzy matches first, then separator, then all fields
-                            options = fuzzy_options.copy()
-                            if standard_options:
-                                options.append("── All Fields ──")
-                                options.extend(standard_options)
-                            options.append("-- Type custom --")
-                            options.append("-- Ignore this column --")
-                            options.append("-- Keep original --")
+                                # Build final options: fuzzy matches first, then separator, then all fields
+                                options = fuzzy_options.copy()
+                                if standard_options:
+                                    options.append("── All Fields ──")
+                                    options.extend(standard_options)
+                                options.append("-- Type custom --")
+                                options.append("-- Ignore this column --")
+                                options.append("-- Keep original --")
 
-                            selected = st.selectbox(
-                                "Map to",
-                                options,
-                                key=f"map_{mapping_key}",
-                                label_visibility="collapsed"
-                            )
-
-                            if selected == "-- Type custom --":
-                                custom_value = st.text_input(
-                                    "Custom mapping",
-                                    key=f"custom_{mapping_key}",
-                                    placeholder="Type column name...",
+                                selected = st.selectbox(
+                                    "Map to",
+                                    options,
+                                    key=f"map_{mapping_key}",
                                     label_visibility="collapsed"
                                 )
-                                # Store in session state for persistence
-                                if custom_value.strip():
-                                    if "custom_mappings" not in st.session_state:
-                                        st.session_state.custom_mappings = {}
-                                    st.session_state.custom_mappings[mapping_key] = custom_value.strip()
-                                    mapping.user_override = custom_value.strip()
-                                elif mapping_key in st.session_state.get("custom_mappings", {}):
-                                    # Retrieve from session state if already set
-                                    mapping.user_override = st.session_state.custom_mappings[mapping_key]
-                            elif selected == "-- Ignore this column --":
-                                mapping.ignored = True
-                                mapping.user_override = None
-                            elif selected == "-- Keep original --":
-                                mapping.user_override = mapping.source_column
-                            elif selected == "── All Fields ──":
-                                pass  # Separator, do nothing
-                            elif selected != mapping.mapped_to:
-                                mapping.user_override = selected
-                        with col3:
-                            st.caption(f"Score: {mapping.confidence:.0%}")
-                        with col4:
-                            # Sample values
-                            if mapping.sample_values:
-                                st.caption(f"e.g., {str(mapping.sample_values[0])[:20]}")
+
+                                if selected == "-- Type custom --":
+                                    custom_value = st.text_input(
+                                        "Custom mapping",
+                                        key=f"custom_{mapping_key}",
+                                        placeholder="Type column name...",
+                                        label_visibility="collapsed"
+                                    )
+                                    # Store in session state for persistence
+                                    if custom_value.strip():
+                                        if "custom_mappings" not in st.session_state:
+                                            st.session_state.custom_mappings = {}
+                                        st.session_state.custom_mappings[mapping_key] = custom_value.strip()
+                                        mapping.user_override = custom_value.strip()
+                                    elif mapping_key in st.session_state.get("custom_mappings", {}):
+                                        # Retrieve from session state if already set
+                                        mapping.user_override = st.session_state.custom_mappings[mapping_key]
+                                elif selected == "-- Ignore this column --":
+                                    mapping.ignored = True
+                                    mapping.user_override = None
+                                elif selected == "-- Keep original --":
+                                    mapping.user_override = mapping.source_column
+                                elif selected == "── All Fields ──":
+                                    pass  # Separator, do nothing
+                                elif selected != mapping.mapped_to:
+                                    mapping.user_override = selected
+                            with col3:
+                                st.caption(f"Score: {mapping.confidence:.0%}")
+                            with col4:
+                                # Sample values
+                                if mapping.sample_values:
+                                    st.caption(f"e.g., {str(mapping.sample_values[0])[:20]}")
 
                 if result.unmapped_columns:
-                    st.markdown("**Unmapped Columns (needs manual mapping)**")
-                    for mapping in result.unmapped_columns:
-                        col1, col2, col3 = st.columns([3, 4, 3])
-                        mapping_key = f"unmap_{file_key}_{mapping.source_column}"
-                        with col1:
-                            st.text(mapping.source_column)
-                        with col2:
-                            # Get suggestions + all standard fields + custom option
-                            suggestions = [alt[0] for alt in mapping.alternatives] if mapping.alternatives else []
+                    # Filter out blank columns
+                    unmapped_cols = [m for m in result.unmapped_columns if m.source_column and m.source_column.strip()]
+                    if unmapped_cols:
+                        st.markdown("**Unmapped Columns (needs manual mapping)**")
+                        for mapping in unmapped_cols:
+                            col1, col2, col3 = st.columns([3, 4, 3])
+                            mapping_key = f"unmap_{file_key}_{mapping.source_column}"
+                            with col1:
+                                st.text(mapping.source_column)
+                            with col2:
+                                # Get suggestions + all standard fields + custom option
+                                suggestions = [alt[0] for alt in mapping.alternatives] if mapping.alternatives else []
 
-                            # Add all standard field options (exclude duplicates)
-                            all_fields = get_field_options_for_strand(team_id)
-                            standard_options = [f for f in all_fields if f not in suggestions]
+                                # Add all standard field options (exclude duplicates)
+                                all_fields = get_field_options_for_strand(team_id)
+                                standard_options = [f for f in all_fields if f not in suggestions]
 
-                            # Build options: suggestions first, then all fields, then actions
-                            options = suggestions.copy()
-                            if standard_options:
-                                options.append("── All Fields ──")
-                                options.extend(standard_options)
-                            options.append("-- Type custom --")
-                            options.append("-- Ignore this column --")
-                            options.append("-- Keep original --")
+                                # Build options: suggestions first, then all fields, then actions
+                                options = suggestions.copy()
+                                if standard_options:
+                                    options.append("── All Fields ──")
+                                    options.extend(standard_options)
+                                options.append("-- Type custom --")
+                                options.append("-- Ignore this column --")
+                                options.append("-- Keep original --")
 
-                            # Default to first option
-                            default_idx = 0
+                                # Default to first option
+                                default_idx = 0
 
-                            selected = st.selectbox(
-                                "Map to",
-                                options,
-                                key=f"select_{mapping_key}",
-                                label_visibility="collapsed",
-                                index=default_idx
-                            )
-
-                            if selected == "-- Type custom --":
-                                custom_value = st.text_input(
-                                    "Custom mapping",
-                                    key=f"custom_{mapping_key}",
-                                    placeholder="Type column name...",
-                                    label_visibility="collapsed"
+                                selected = st.selectbox(
+                                    "Map to",
+                                    options,
+                                    key=f"select_{mapping_key}",
+                                    label_visibility="collapsed",
+                                    index=default_idx
                                 )
-                                # Store in session state for persistence
-                                if custom_value.strip():
-                                    if "custom_mappings" not in st.session_state:
-                                        st.session_state.custom_mappings = {}
-                                    st.session_state.custom_mappings[mapping_key] = custom_value.strip()
-                                    mapping.user_override = custom_value.strip()
-                                elif mapping_key in st.session_state.get("custom_mappings", {}):
-                                    # Retrieve from session state if already set
-                                    mapping.user_override = st.session_state.custom_mappings[mapping_key]
-                            elif selected == "-- Ignore this column --":
-                                mapping.ignored = True
-                            elif selected == "-- Keep original --":
-                                mapping.user_override = mapping.source_column
-                            elif selected == "── All Fields ──":
-                                pass  # Separator, do nothing
-                            else:
-                                mapping.user_override = selected
-                        with col3:
-                            if mapping.sample_values:
-                                st.caption(f"e.g., {str(mapping.sample_values[0])[:20]}")
+
+                                if selected == "-- Type custom --":
+                                    custom_value = st.text_input(
+                                        "Custom mapping",
+                                        key=f"custom_{mapping_key}",
+                                        placeholder="Type column name...",
+                                        label_visibility="collapsed"
+                                    )
+                                    # Store in session state for persistence
+                                    if custom_value.strip():
+                                        if "custom_mappings" not in st.session_state:
+                                            st.session_state.custom_mappings = {}
+                                        st.session_state.custom_mappings[mapping_key] = custom_value.strip()
+                                        mapping.user_override = custom_value.strip()
+                                    elif mapping_key in st.session_state.get("custom_mappings", {}):
+                                        # Retrieve from session state if already set
+                                        mapping.user_override = st.session_state.custom_mappings[mapping_key]
+                                elif selected == "-- Ignore this column --":
+                                    mapping.ignored = True
+                                elif selected == "-- Keep original --":
+                                    mapping.user_override = mapping.source_column
+                                elif selected == "── All Fields ──":
+                                    pass  # Separator, do nothing
+                                else:
+                                    mapping.user_override = selected
+                            with col3:
+                                if mapping.sample_values:
+                                    st.caption(f"e.g., {str(mapping.sample_values[0])[:20]}")
 
         # Step 3: Confirm & Proceed
         st.markdown("### Step 3: Confirm & Proceed")
