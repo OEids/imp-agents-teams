@@ -322,6 +322,9 @@ class S2SpecialistAgent:
         # Track skipped staff for diagnostics
         self.skipped_staff = []  # List of dicts: {id, reason, row_data}
 
+        # Track DataFrames skipped because no unique identifier column was found
+        self.unmapped_dataframes = []  # List of dicts: {columns, row_count, reason}
+
         # Audit tracking
         self.audit_results = {}
         self.audit_passed = True
@@ -744,7 +747,21 @@ class S2SpecialistAgent:
                     break
 
             if unique_col is None:
-                self.log(f"  Warning: DataFrame has no unique identifier column, skipping")
+                available_cols = list(df.columns)
+                msg = (
+                    f"No unique identifier column found in a staff data sheet "
+                    f"({len(df)} rows). Available columns: {available_cols}. "
+                    f"Please use the Pre-Flight Validator tab to map one of these "
+                    f"to 'payroll_number', 'emp_no', 'code', 'staff_id', etc. "
+                    f"All {len(df)} rows from this sheet were skipped."
+                )
+                self.log(f"  ERROR: {msg}")
+                self.issues.append(msg)
+                self.unmapped_dataframes.append({
+                    "columns": available_cols,
+                    "row_count": len(df),
+                    "reason": "No unique identifier column found — needs manual mapping",
+                })
                 continue
 
             self.log(f"  Processing DataFrame using '{unique_key_name}' as unique key")
@@ -2768,6 +2785,15 @@ class S2SpecialistAgent:
         elif data_type == 'allowances':
             self._extract_allowances_from_df(df)
             self.log(f"    -> Allowance data extracted")
+        else:
+            # Sheet was not recognised as any known type — warn so user can map it
+            available_cols = list(df.columns)
+            self.log(
+                f"    -> WARNING: Sheet '{sheet_name}' in '{file_name}' "
+                f"could not be classified (scored below threshold for staff_contracts, "
+                f"pay_scales, and allowances). Columns found: {available_cols}. "
+                f"Use the Pre-Flight Validator tab to manually map this sheet."
+            )
 
     def _detect_content_type(self, series: pd.Series) -> str:
         """Detect the type of content in a series."""
