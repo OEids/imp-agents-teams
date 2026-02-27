@@ -12,6 +12,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import pandas as pd
 
+try:
+    import docx
+    DOCX_SUPPORT = True
+except ImportError:
+    DOCX_SUPPORT = False
+
 
 @dataclass
 class ColumnMappingResult:
@@ -243,6 +249,18 @@ class PreFlightValidator:
 
             elif file_path.suffix.lower() == '.csv':
                 df = pd.read_csv(file_path)
+            elif file_path.suffix.lower() in ['.docx', '.doc']:
+                if not DOCX_SUPPORT:
+                    return self._create_error_result(file_path, "Word document support not available (install python-docx)")
+                document = docx.Document(file_path)
+                if not document.tables:
+                    return self._create_error_result(file_path, "No tables found in Word document")
+                # Use the first table with data
+                table = document.tables[0]
+                rows = [[cell.text.strip() for cell in row.cells] for row in table.rows]
+                if len(rows) < 2:
+                    return self._create_error_result(file_path, "Word document table has no data rows")
+                df = pd.DataFrame(rows[1:], columns=rows[0])
             else:
                 return self._create_error_result(file_path, f"Unsupported file type: {file_path.suffix}")
         except Exception as e:

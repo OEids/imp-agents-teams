@@ -25,6 +25,12 @@ import re
 import warnings
 warnings.filterwarnings('ignore')
 
+try:
+    import docx
+    DOCX_SUPPORT = True
+except ImportError:
+    DOCX_SUPPORT = False
+
 # Import Intelligence Module for smart decisions
 try:
     from intelligence import InferenceEngine, InferenceResult, ConfidenceLevel
@@ -414,7 +420,7 @@ class S3SpecialistAgent:
         self.log("PHASE 1: DEEP ANALYSIS OF S3 CUSTOMER DATA")
         self.log("="*60)
 
-        all_files = list(data_dir.rglob("*.xls*")) + list(data_dir.rglob("*.csv"))
+        all_files = list(data_dir.rglob("*.xls*")) + list(data_dir.rglob("*.csv")) + list(data_dir.rglob("*.docx")) + list(data_dir.rglob("*.doc"))
         all_files = [f for f in all_files if not f.name.startswith("~$")]
 
         self.log(f"Found {len(all_files)} files to analyze")
@@ -428,7 +434,15 @@ class S3SpecialistAgent:
     def _analyze_file(self, file_path: Path):
         """Analyze a single file."""
         try:
-            if file_path.suffix == ".csv":
+            if file_path.suffix.lower() in ['.docx', '.doc'] and DOCX_SUPPORT:
+                document = docx.Document(file_path)
+                for table_idx, table in enumerate(document.tables):
+                    rows = [[cell.text.strip() for cell in row.cells] for row in table.rows]
+                    if len(rows) > 1:
+                        df = pd.DataFrame(rows[1:], columns=rows[0])
+                        df = self._apply_column_mappings(df, file_path.name)
+                        self._classify_and_extract(df, file_path.name, f"DOCX_Table{table_idx+1}")
+            elif file_path.suffix == ".csv":
                 df = pd.read_csv(file_path)
                 # Apply validated column mappings
                 df = self._apply_column_mappings(df, file_path.name)

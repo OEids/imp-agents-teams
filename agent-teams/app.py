@@ -1,3 +1,4 @@
+
 """
 IMP Planner Agent Teams - Web Application
 
@@ -226,7 +227,7 @@ def get_customer_files(team_id: str) -> list:
     team_dir = CUSTOMER_DATA_DIR / team_id
     files = []
     if team_dir.exists():
-        for ext in ["*.xlsx", "*.xlsm", "*.xls", "*.csv"]:
+        for ext in ["*.xlsx", "*.xlsm", "*.xls", "*.csv", "*.docx", "*.doc"]:
             files.extend(team_dir.rglob(ext))
     return [f for f in files if not f.name.startswith("~$")]
 
@@ -794,7 +795,7 @@ def render_data_upload(team_id: str):
 
     uploaded_files = st.file_uploader(
         f"Upload files for {team_id}",
-        type=["xlsx", "xlsm", "xls", "csv", "pdf", "png", "jpg", "jpeg"],
+        type=["xlsx", "xlsm", "xls", "csv", "pdf", "png", "jpg", "jpeg", "docx", "doc"],
         accept_multiple_files=True,
         key=f"upload_{team_id}"
     )

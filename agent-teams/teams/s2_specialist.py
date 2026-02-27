@@ -46,6 +46,12 @@ try:
 except ImportError:
     TABULA_SUPPORT = False
 
+try:
+    import docx
+    DOCX_SUPPORT = True
+except ImportError:
+    DOCX_SUPPORT = False
+
 from .finished_workbook_patterns import (
     S2_STAFF_ROLE_GROUP_PATTERNS,
     S2_PAY_SCALE_PATTERNS,
@@ -1647,13 +1653,17 @@ class S2SpecialistAgent:
         all_files = list(data_dir.rglob("*.xls*")) + list(data_dir.rglob("*.csv"))
         pdf_files = list(data_dir.rglob("*.pdf")) if PDF_SUPPORT else []
         image_files = list(data_dir.rglob("*.png")) + list(data_dir.rglob("*.jpg")) + list(data_dir.rglob("*.jpeg"))
+        docx_files = list(data_dir.rglob("*.docx")) + list(data_dir.rglob("*.doc")) if DOCX_SUPPORT else []
 
         all_files = [f for f in all_files if not f.name.startswith("~$")]
         pdf_files = [f for f in pdf_files if not f.name.startswith("~$")]
+        docx_files = [f for f in docx_files if not f.name.startswith("~$")]
 
         self.log(f"Found {len(all_files)} spreadsheet files to analyze")
         if pdf_files:
             self.log(f"Found {len(pdf_files)} PDF files to analyze")
+        if docx_files:
+            self.log(f"Found {len(docx_files)} Word document files to analyze")
         if image_files:
             self.log(f"Found {len(image_files)} image files to analyze")
 
@@ -1665,6 +1675,11 @@ class S2SpecialistAgent:
         for file_path in pdf_files:
             self.log(f"\nAnalyzing PDF: {file_path.name}")
             self._analyze_pdf_file(file_path)
+
+        # Analyze Word document files
+        for file_path in docx_files:
+            self.log(f"\nAnalyzing Word Document: {file_path.name}")
+            self._analyze_docx_file(file_path)
 
         # Analyze image files (OCR)
         for file_path in image_files:
@@ -1799,6 +1814,70 @@ class S2SpecialistAgent:
 
         except Exception as e:
             self.issues.append(f"Error analyzing PDF {file_path.name}: {str(e)[:100]}")
+
+    def _analyze_docx_file(self, file_path: Path):
+        """Analyze a Word document file - extract tables and text."""
+        if not DOCX_SUPPORT:
+            self.log(f"  Warning: Word document support not available (install python-docx)")
+            return
+
+        try:
+            document = docx.Document(file_path)
+            tables_found = 0
+
+            # Extract tables from the document
+            for table_idx, table in enumerate(document.tables):
+                rows = []
+                for row in table.rows:
+                    rows.append([cell.text.strip() for cell in row.cells])
+
+                if len(rows) > 1:
+                    tables_found += 1
+                    # Use first row as headers
+                    headers = rows[0]
+                    data = rows[1:]
+
+                    df = pd.DataFrame(data, columns=headers)
+                    df.columns = [self._clean_column_name(c) for c in df.columns]
+
+                    sheet_name = f"DOCX_Table{table_idx+1}"
+                    self._analyze_dataframe(df, file_path.name, sheet_name)
+
+                    # Also try pay scale parsing (reuse PDF table parser)
+                    raw_table = [rows[0]] + data
+                    self._parse_pdf_pay_scale_table(raw_table, file_path.name, table_idx)
+
+            if tables_found > 0:
+                self.log(f"  Extracted {tables_found} tables from Word document")
+            else:
+                self.log(f"  No tables found in Word document - extracting text")
+
+            # If no tables, extract paragraph text for analysis
+            if tables_found == 0:
+                all_text = '\n'.join(p.text for p in document.paragraphs if p.text.strip())
+                if all_text and len(all_text.strip()) > 50:
+                    self._process_docx_text(all_text, file_path.name)
+
+        except Exception as e:
+            self.issues.append(f"Error analyzing Word document {file_path.name}: {str(e)[:100]}")
+
+    def _process_docx_text(self, text: str, file_name: str):
+        """Process unstructured text from a Word document, looking for pay scale data."""
+        lines = [line.strip() for line in text.split('\n') if line.strip()]
+        # Try to find structured data in the text (e.g., tabular data separated by tabs)
+        tab_lines = [line for line in lines if '\t' in line]
+        if len(tab_lines) > 2:
+            # Parse tab-separated data
+            rows = [line.split('\t') for line in tab_lines]
+            max_cols = max(len(r) for r in rows)
+            # Pad rows to same length
+            rows = [r + [''] * (max_cols - len(r)) for r in rows]
+            df = pd.DataFrame(rows[1:], columns=rows[0])
+            df.columns = [self._clean_column_name(c) for c in df.columns]
+            self._analyze_dataframe(df, file_name, "DOCX_Text_Table")
+        else:
+            # Store raw text for reference
+            self.log(f"  Extracted {len(lines)} lines of text from {file_name}")
 
     def _parse_pdf_pay_scale_table(self, table: list, file_name: str, table_idx: int):
         """Parse pay scale data from PDF tables with multiline cells."""

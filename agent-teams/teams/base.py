@@ -22,6 +22,12 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
 
+try:
+    import docx
+    DOCX_SUPPORT = True
+except ImportError:
+    DOCX_SUPPORT = False
+
 from .validation import (
     DataValidator, DataComparator, AssumptionTracker,
     ValidationResult, ValidationSeverity
@@ -213,7 +219,7 @@ class AnalyzeAgent(BaseAgent):
         # Find all data files
         files = []
         if input_data.exists():
-            for ext in ['*.xlsx', '*.xlsm', '*.csv', '*.json']:
+            for ext in ['*.xlsx', '*.xlsm', '*.csv', '*.json', '*.docx', '*.doc']:
                 files.extend(input_data.glob(ext))
             files = [f for f in files if not f.name.startswith('~$')]
 
@@ -232,7 +238,7 @@ class AnalyzeAgent(BaseAgent):
                 status="error",
                 summary=f"No data files found in source directory",
                 details=details,
-                recommendations=[f"Add source data files (.xlsx, .xlsm, .csv) to {input_data}"]
+                recommendations=[f"Add source data files (.xlsx, .xlsm, .csv, .docx) to {input_data}"]
             )
 
         # Analyze each file and collect all data
@@ -288,6 +294,20 @@ class AnalyzeAgent(BaseAgent):
                         "rows": len(df),
                         "columns": len(df.columns)
                     })
+                elif file.suffix.lower() in ['.docx', '.doc'] and DOCX_SUPPORT:
+                    document = docx.Document(file)
+                    for table_idx, table in enumerate(document.tables):
+                        rows = [[cell.text.strip() for cell in row.cells] for row in table.rows]
+                        if len(rows) > 1:
+                            df = pd.DataFrame(rows[1:], columns=rows[0])
+                            if not df.empty and len(df.columns) > 1:
+                                all_dataframes.append(df)
+                                file_summaries.append({
+                                    "file": file.name,
+                                    "sheet": f"Table{table_idx+1}",
+                                    "rows": len(df),
+                                    "columns": len(df.columns)
+                                })
 
             except Exception as e:
                 self.issues.append(f"Error reading {file.name}: {str(e)}")

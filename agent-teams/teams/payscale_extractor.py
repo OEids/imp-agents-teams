@@ -301,10 +301,16 @@ class PayScaleExtractor:
             elif 'unqualified' in row_text or 'uqt' in row_text:
                 current_section = 'unqualified'
                 continue
-            elif 'tlr' in row_text and not pd.notna(rate_val):
+            elif 'tlr' in row_text and self._parse_rate(rate_val) is None:
                 current_section = 'tlr'
                 continue
-            elif 'sen' in row_text and 'pension' not in row_text and not pd.notna(rate_val):
+            elif (
+                str(point_val).strip().upper() == 'SEN'
+                and 'pension' not in row_text
+                and self._parse_rate(rate_val) is None
+            ):
+                # Only trigger SEN section when the point cell is exactly "SEN"
+                # (avoids false positives from words like "Senior" in role names)
                 current_section = 'sen'
                 continue
 
@@ -315,6 +321,16 @@ class PayScaleExtractor:
             rate = self._parse_rate(rate_val)
 
             if rate is None or rate <= 0:
+                continue
+
+            # Only process recognised pay scale / allowance point codes.
+            # Words like "Mileage" or "Lettings" start with 'm'/'l' but are
+            # NOT pay scale points — they must be skipped.
+            # Exception: when already inside an explicit section (e.g. TLR / SEN),
+            # the section context is sufficient — pattern validation would incorrectly
+            # drop codes like "TLR 3" that contain a space.
+            _valid_point = r'^(M[1-6]?|U[1-3]?|L\d+|LD?\d+|UQT\s*\d*|TLR\w*|SEN\d*|LP\d*|\d+[ABC]?|TMPS\s*\d|UPS\s*\d)$'
+            if current_section not in ('tlr', 'sen') and not re.match(_valid_point, point_str, re.IGNORECASE):
                 continue
 
             # Categorize the point
@@ -733,16 +749,18 @@ class PayScaleExtractor:
                         num = int(point_match.group(2))
                         suffix = (point_match.group(3) or '').upper()
 
-                        if prefix in ['M', 'TMPS', 'MPS'] or (not prefix and num <= 6):
+                        if prefix in ['M', 'TMPS', 'MPS']:
                             code = f"M{num}"
                             teaching_points.append(PayScalePoint(code=code, title=code, number=num, rate=rate, date_from='2025-09-01', original_code=val_str))
                         elif prefix in ['U', 'UPS']:
                             code = f"U{num}"
                             teaching_points.append(PayScalePoint(code=code, title=code, number=num, rate=rate, date_from='2025-09-01', original_code=val_str))
-                        elif prefix == 'L' or (not prefix and num > 6 and num <= 50):
+                        elif prefix in ['L', 'LD']:
                             code = f"L{num:02d}"
                             leadership_points.append(PayScalePoint(code=code, title=code, number=num, rate=rate, date_from='2025-09-01', original_code=val_str))
-                        elif not prefix:
+                        else:
+                            # Bare numbers (no prefix) are always support spine points,
+                            # never teaching/leadership — avoids NJC data being misread
                             support_points.append(PayScalePoint(code=str(num), title=f"Point {num}", number=num, rate=rate, date_from='2025-04-01', original_code=val_str))
 
         self._add_pay_scale('MAIN', 'Teachers Main Pay Scale', 'teaching', teaching_points)
@@ -781,8 +799,9 @@ class PayScaleExtractor:
         self.log(f"      Added {code} scale with {len(unique_points)} points")
 
     def _add_allowance(self, code: str, title: str, points: List[AllowancePoint]):
-        """Add an allowance type if it has points and isn't duplicate."""
-        if not points or code in self.allowances_found:
+        """Add an allowance type, replacing the existing entry if the new data
+        has more points (more complete data wins)."""
+        if not points:
             return
 
         # Deduplicate by amount
@@ -793,13 +812,27 @@ class PayScaleExtractor:
                 seen.add(p.amount)
                 unique_points.append(p)
 
-        # Renumber
-        for idx, p in enumerate(unique_points, 1):
-            p.code = f"{code}{idx}"
-            p.title = f"{title} {idx}"
-
         if not unique_points:
             return
+
+        # Preserve specific sub-codes (e.g. TLR1A, TLR2B, SEN1, SEN2).
+        # Only fall back to sequential numbering when the point has no sub-code.
+        for idx, p in enumerate(unique_points, 1):
+            if not p.code or p.code.upper() == code.upper():
+                p.code = f"{code}{idx}"
+                p.title = f"{title} {idx}"
+            elif not p.title:
+                p.title = p.code
+
+        # If already recorded, only replace when the new data is more complete
+        if code in self.allowances_found:
+            existing = next((a for a in self.allowances if a.code == code), None)
+            if existing and len(unique_points) <= len(existing.points):
+                return
+            # Remove the inferior entry so it can be replaced
+            self.allowances = [a for a in self.allowances if a.code != code]
+            self.allowances_found.discard(code)
+            self.log(f"      Replacing {code} allowance with more complete data ({len(unique_points)} points)")
 
         self.allowances.append(AllowanceType(
             code=code,
@@ -870,9 +903,9 @@ class PayScaleExtractor:
         return f"UQT{num}"
 
     def _normalize_tlr_code(self, code: str) -> str:
-        """Normalize TLR code (TLR1, TLR1A, TLR2B, etc.)."""
-        code_upper = code.upper().strip()
-        # Handle formats like "1A", "2B", "TLR1A", etc.
+        """Normalize TLR code (TLR1, TLR1A, TLR2B, TLR 3, etc.)."""
+        code_upper = code.upper().strip().replace(' ', '')  # Remove spaces (e.g. "TLR 3" -> "TLR3")
+        # Handle formats like "1A", "2B", "TLR1A", "TLR3", etc.
         match = re.match(r'(TLR)?(\d)([ABC])?', code_upper)
         if match:
             num = match.group(2)
