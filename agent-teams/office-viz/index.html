@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent Office - Pixel Art Visualization</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #4a9eff;
+            margin-bottom: 15px;
+            font-size: 24px;
+            text-shadow: 0 0 10px rgba(74, 158, 255, 0.5);
+        }
+
+        #gameCanvas {
+            border: 4px solid #1a1a2e;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(74, 158, 255, 0.2);
+        }
+
+        #statusBar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            max-width: 1100px;
+            justify-content: center;
+        }
+
+        .agent-badge {
+            background: #1a1a2e;
+            border: 2px solid #2a2a4e;
+            border-radius: 6px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #ccc;
+            transition: all 0.3s ease;
+        }
+
+        .agent-badge:hover {
+            border-color: #4a9eff;
+            transform: translateY(-2px);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.working {
+            background: #4ade80;
+            box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+        }
+
+        .status-dot.idle {
+            background: #f87171;
+            box-shadow: 0 0 8px rgba(248, 113, 113, 0.6);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .agent-name {
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .agent-status {
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI AGENT OFFICE</h1>
+    <canvas id="gameCanvas" width="1100" height="720"></canvas>
+    <div id="statusBar"></div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const statusBar = document.getElementById('statusBar');
+
+        // Agent definitions with unique colors and desk items
+        const agentDefs = [
+            { id: 'researcher', name: 'Researcher', color: '#8b5cf6', item: 'globe' },
+            { id: 'writer', name: 'Writer', color: '#ec4899', item: 'books' },
+            { id: 'developer', name: 'Developer', color: '#10b981', item: 'coffee' },
+            { id: 'designer', name: 'Designer', color: '#f59e0b', item: 'palette' },
+            { id: 'video', name: 'Video', color: '#ef4444', item: 'camera' },
+            { id: 'motion', name: 'Motion', color: '#06b6d4', item: 'waveform' },
+            { id: 'qa', name: 'QA', color: '#84cc16', item: 'shield' },
+            { id: 'scout', name: 'Scout', color: '#f97316', item: 'fire' }
+        ];
+
+        // Cubicle positions (4x2 grid)
+        const cubiclePositions = [
+            { x: 80, y: 280 }, { x: 230, y: 280 }, { x: 380, y: 280 }, { x: 530, y: 280 },
+            { x: 80, y: 450 }, { x: 230, y: 450 }, { x: 380, y: 450 }, { x: 530, y: 450 }
+        ];
+
+        // Wandering destinations
+        const wanderSpots = [
+            { x: 200, y: 120, name: 'conference' },
+            { x: 450, y: 120, name: 'boss' },
+            { x: 700, y: 120, name: 'kitchen' },
+            { x: 850, y: 350, name: 'lounge' },
+            { x: 900, y: 500, name: 'pingpong' },
+            { x: 750, y: 450, name: 'cooler' },
+            { x: 300, y: 380, name: 'corridor1' },
+            { x: 450, y: 550, name: 'corridor2' }
+        ];
+
+        // Agent state
+        const agents = agentDefs.map((def, i) => ({
+            ...def,
+            x: cubiclePositions[i].x + 40,
+            y: cubiclePositions[i].y + 60,
+            targetX: cubiclePositions[i].x + 40,
+            targetY: cubiclePositions[i].y + 60,
+            deskX: cubiclePositions[i].x + 40,
+            deskY: cubiclePositions[i].y + 60,
+            cubicle: cubiclePositions[i],
+            status: 'working',
+            animFrame: 0,
+            direction: 'down',
+            isMoving: false,
+            isSitting: true,
+            wanderTimer: Math.random() * 200
+        }));
+
+        let frameCount = 0;
+
+        // Draw checkered floor
+        function drawFloor() {
+            const tileSize = 20;
+            for (let y = 0; y < canvas.height; y += tileSize) {
+                for (let x = 0; x < canvas.width; x += tileSize) {
+                    const isEven = ((x / tileSize) + (y / tileSize)) % 2 === 0;
+                    ctx.fillStyle = isEven ? '#0f1729' : '#131d36';
+                    ctx.fillRect(x, y, tileSize, tileSize);
+                }
+            }
+        }
+
+        // Draw walls/room dividers
+        function drawWalls() {
+            ctx.fillStyle = '#2a2a4e';
+            // Top wall
+            ctx.fillRect(0, 0, canvas.width, 10);
+            // Left wall
+            ctx.fillRect(0, 0, 10, canvas.height);
+            // Room dividers for top section
+            ctx.fillRect(0, 200, 680, 8);
+            ctx.fillRect(300, 10, 8, 190);
+            ctx.fillRect(550, 10, 8, 190);
+            // Right section divider
+            ctx.fillRect(680, 0, 8, 720);
+        }
+
+        // Draw conference room
+        function drawConferenceRoom() {
+            // Room label
+            ctx.fillStyle = '#4a9eff';
+            ctx.font = '10px JetBrains Mono';
+            ctx.fillText('CONFERENCE', 120, 25);
+
+            // Round table (octagonal approximation)
+            ctx.fillStyle = '#5c4033';
+            ctx.beginPath();
+            ctx.arc(150, 110, 45, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#6b4c3a';
+            ctx.beginPath();
+            ctx.arc(150, 110, 35, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Chairs around table
+            const chairPositions = [
+                { x: 150, y: 50 }, { x: 200, y: 80 }, { x: 210, y: 130 },
+                { x: 180, y: 170 }, { x: 120, y: 170 }, { x: 90, y: 130 },
+                { x: 100, y: 80 }
+            ];
+            chairPositions.forEach(pos => {
+                ctx.fillStyle = '#1e3a5f';
+                ctx.fillRect(pos.x - 10, pos.y - 8, 20, 16);
+                ctx.fillStyle = '#2a4a6f';
+                ctx.fillRect(pos.x - 8, pos.y - 6, 16, 12);
+            });
+        }
+
+        // Draw boss office
+        function drawBossOffice() {
+            ctx.fillStyle = '#4a9eff';
+            ctx.font = '10px JetBrains Mono';
+            ctx.fillText('BOSS OFFICE', 380, 25);
+
+            // Executive desk
+            ctx.fillStyle = '#3d2817';
+            ctx.fillRect(370, 60, 100, 50);
+            ctx.fillStyle = '#4a3020';
+            ctx.fillRect(375, 65, 90, 40);
+
+            // Monitor on desk
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(405, 50, 40, 30);
+            ctx.fillStyle = '#0066cc';
+            ctx.fillRect(408, 53, 34, 24);
+
+            // Boss chair
+            ctx.fillStyle = '#8b0000';
+            ctx.fillRect(400, 120, 30, 25);
+            ctx.fillStyle = '#a00000';
+            ctx.fillRect(403, 100, 24, 25);
+
+            // Couch
+            ctx.fillStyle = '#2d1b4e';
+            ctx.fillRect(320, 140, 70, 35);
+            ctx.fillStyle = '#3d2b5e';
+            ctx.fillRect(323, 145, 64, 25);
+
+            // Bookshelf
+            ctx.fillStyle = '#4a3020';
+            ctx.fillRect(480, 40, 50, 80);
+            // Books
+            const bookColors = ['#c41e3a', '#1e90ff', '#228b22', '#ffd700', '#9932cc'];
+            for (let i = 0; i < 5; i++) {
+                ctx.fillStyle = bookColors[i];
+                ctx.fillRect(485 + i * 8, 48, 6, 30);
+                ctx.fillRect(485 + i * 8, 85, 6, 25);
+            }
+        }
+
+        // Draw kitchen
+        function drawKitchen() {
+            ctx.fillStyle = '#4a9eff';
+            ctx.font = '10px JetBrains Mono';
+            ctx.fillText('KITCHEN', 600, 25);
+
+            // Counter/cabinets
+            ctx.fillStyle = '#e8e8e8';
+            ctx.fillRect(570, 40, 95, 25);
+            ctx.fillStyle = '#f5f5f5';
+            ctx.fillRect(573, 43, 89, 19);
+
+            // Upper cabinets
+            ctx.fillStyle = '#d0d0d0';
+            ctx.fillRect(570, 15, 30, 20);
+            ctx.fillRect(605, 15, 30, 20);
+            ctx.fillRect(640, 15, 25, 20);
+
+            // Fridge
+            ctx.fillStyle = '#c0c0c0';
+            ctx.fillRect(570, 80, 40, 90);
+            ctx.fillStyle = '#d0d0d0';
+            ctx.fillRect(573, 83, 34, 40);
+            ctx.fillRect(573, 126, 34, 40);
+            // Handle
+            ctx.fillStyle = '#808080';
+            ctx.fillRect(600, 95, 4, 15);
+            ctx.fillRect(600, 138, 4, 15);
+
+            // Coffee machine
+            ctx.fillStyle = '#2a2a2a';
+            ctx.fillRect(620, 55, 25, 35);
+            ctx.fillStyle = '#8b4513';
+            ctx.fillRect(625, 75, 15, 12);
+            // Coffee indicator
+            ctx.fillStyle = '#ff6b35';
+            ctx.fillRect(627, 60, 8, 8);
+
+            // Microwave
+            ctx.fillStyle = '#3a3a3a';
+            ctx.fillRect(650, 55, 30, 25);
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(653, 58, 20, 18);
+        }
+
+        // Draw a single cubicle
+        function drawCubicle(x, y, agent) {
+            // Cubicle walls
+            ctx.fillStyle = '#3a3a5a';
+            ctx.fillRect(x, y, 130, 8); // Back wall
+            ctx.fillRect(x, y, 8, 120); // Left wall
+            ctx.fillRect(x + 122, y, 8, 120); // Right wall
+
+            // Floor inside cubicle (slightly different shade)
+            ctx.fillStyle = '#1a2540';
+            ctx.fillRect(x + 8, y + 8, 114, 112);
+
+            // Desk
+            ctx.fillStyle = '#4a3828';
+            ctx.fillRect(x + 20, y + 20, 90, 40);
+            ctx.fillStyle = '#5a4838';
+            ctx.fillRect(x + 25, y + 25, 80, 30);
+
+            // Monitor
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(x + 50, y + 12, 40, 28);
+            ctx.fillStyle = '#0055aa';
+            ctx.fillRect(x + 53, y + 15, 34, 22);
+            // Screen glow effect
+            if (agent.status === 'working' && agent.isSitting) {
+                ctx.fillStyle = frameCount % 60 < 30 ? '#0066cc' : '#0077dd';
+                ctx.fillRect(x + 55, y + 17, 30, 18);
+            }
+
+            // Monitor stand
+            ctx.fillStyle = '#2a2a2a';
+            ctx.fillRect(x + 65, y + 40, 10, 5);
+
+            // Keyboard
+            ctx.fillStyle = '#2a2a2a';
+            ctx.fillRect(x + 55, y + 48, 30, 8);
+
+            // Draw unique desk item
+            drawDeskItem(x + 95, y + 30, agent.item);
+
+            // Chair
+            ctx.fillStyle = '#1e3a5f';
+            ctx.fillRect(x + 55, y + 70, 30, 25);
+            ctx.fillStyle = '#2a4a6f';
+            ctx.fillRect(x + 58, y + 65, 24, 8);
+
+            // Name plate
+            ctx.fillStyle = '#2a2a4e';
+            ctx.fillRect(x + 40, y + 100, 50, 14);
+            ctx.fillStyle = agent.color;
+            ctx.font = '8px JetBrains Mono';
+            ctx.fillText(agent.name.substring(0, 8), x + 43, y + 110);
+
+            // Status dot
+            ctx.beginPath();
+            ctx.arc(x + 115, y + 107, 5, 0, Math.PI * 2);
+            ctx.fillStyle = agent.status === 'working' ? '#4ade80' : '#f87171';
+            ctx.fill();
+        }
+
+        // Draw desk items based on type
+        function drawDeskItem(x, y, type) {
+            switch(type) {
+                case 'globe':
+                    // Globe
+                    ctx.fillStyle = '#1e90ff';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#228b22';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 8, 0, Math.PI * 2);
+                    ctx.stroke();
+                    // Stand
+                    ctx.fillStyle = '#8b4513';
+                    ctx.fillRect(x - 3, y + 8, 6, 4);
+                    break;
+
+                case 'books':
+                    // Stack of books
+                    ctx.fillStyle = '#c41e3a';
+                    ctx.fillRect(x - 8, y - 5, 12, 4);
+                    ctx.fillStyle = '#1e90ff';
+                    ctx.fillRect(x - 6, y - 9, 10, 4);
+                    ctx.fillStyle = '#228b22';
+                    ctx.fillRect(x - 7, y - 13, 11, 4);
+                    break;
+
+                case 'coffee':
+                    // Coffee mug
+                    ctx.fillStyle = '#f5f5f5';
+                    ctx.fillRect(x - 5, y - 8, 10, 12);
+                    ctx.fillStyle = '#8b4513';
+                    ctx.fillRect(x - 3, y - 6, 6, 8);
+                    // Handle
+                    ctx.strokeStyle = '#f5f5f5';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(x + 7, y - 2, 4, -Math.PI/2, Math.PI/2);
+                    ctx.stroke();
+                    // Steam
+                    if (frameCount % 40 < 20) {
+                        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                        ctx.fillRect(x - 2, y - 12, 2, 3);
+                        ctx.fillRect(x + 1, y - 14, 2, 3);
+                    }
+                    break;
+
+                case 'palette':
+                    // Artist palette
+                    ctx.fillStyle = '#deb887';
+                    ctx.beginPath();
+                    ctx.ellipse(x, y, 10, 7, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Paint blobs
+                    ctx.fillStyle = '#ff0000';
+                    ctx.beginPath();
+                    ctx.arc(x - 5, y - 2, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#00ff00';
+                    ctx.beginPath();
+                    ctx.arc(x + 3, y - 3, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#0000ff';
+                    ctx.beginPath();
+                    ctx.arc(x, y + 2, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    break;
+
+                case 'camera':
+                    // Video camera
+                    ctx.fillStyle = '#2a2a2a';
+                    ctx.fillRect(x - 8, y - 5, 14, 10);
+                    ctx.fillStyle = '#1a1a1a';
+                    ctx.beginPath();
+                    ctx.arc(x - 3, y, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Lens
+                    ctx.fillStyle = '#4169e1';
+                    ctx.beginPath();
+                    ctx.arc(x - 3, y, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Red record light
+                    ctx.fillStyle = frameCount % 30 < 15 ? '#ff0000' : '#800000';
+                    ctx.beginPath();
+                    ctx.arc(x + 4, y - 3, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    break;
+
+                case 'waveform':
+                    // Audio waveform display
+                    ctx.fillStyle = '#1a1a2e';
+                    ctx.fillRect(x - 10, y - 6, 20, 12);
+                    ctx.fillStyle = '#00ff00';
+                    for (let i = 0; i < 8; i++) {
+                        const h = Math.sin((frameCount + i * 10) * 0.1) * 4 + 4;
+                        ctx.fillRect(x - 8 + i * 2.5, y - h/2, 2, h);
+                    }
+                    break;
+
+                case 'shield':
+                    // QA Shield
+                    ctx.fillStyle = '#ffd700';
+                    ctx.beginPath();
+                    ctx.moveTo(x, y - 10);
+                    ctx.lineTo(x + 8, y - 5);
+                    ctx.lineTo(x + 8, y + 3);
+                    ctx.lineTo(x, y + 10);
+                    ctx.lineTo(x - 8, y + 3);
+                    ctx.lineTo(x - 8, y - 5);
+                    ctx.closePath();
+                    ctx.fill();
+                    // Checkmark
+                    ctx.strokeStyle = '#228b22';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(x - 4, y);
+                    ctx.lineTo(x - 1, y + 3);
+                    ctx.lineTo(x + 4, y - 3);
+                    ctx.stroke();
+                    break;
+
+                case 'fire':
+                    // Fire/flame
+                    const flicker = frameCount % 20 < 10 ? 0 : 2;
+                    ctx.fillStyle = '#ff4500';
+                    ctx.beginPath();
+                    ctx.moveTo(x, y - 10 - flicker);
+                    ctx.quadraticCurveTo(x + 8, y - 5, x + 5, y + 5);
+                    ctx.quadraticCurveTo(x, y + 2, x - 5, y + 5);
+                    ctx.quadraticCurveTo(x - 8, y - 5, x, y - 10 - flicker);
+                    ctx.fill();
+                    ctx.fillStyle = '#ffd700';
+                    ctx.beginPath();
+                    ctx.moveTo(x, y - 6 - flicker);
+                    ctx.quadraticCurveTo(x + 4, y - 2, x + 2, y + 3);
+                    ctx.quadraticCurveTo(x, y + 1, x - 2, y + 3);
+                    ctx.quadraticCurveTo(x - 4, y - 2, x, y - 6 - flicker);
+                    ctx.fill();
+                    break;
+            }
+        }
+
+        // Draw all cubicles
+        function drawCubicles() {
+            agents.forEach((agent, i) => {
+                drawCubicle(cubiclePositions[i].x, cubiclePositions[i].y, agent);
+            });
+
+            // Corridor labels
+            ctx.fillStyle = '#4a9eff33';
+            ctx.fillRect(210, 390, 340, 40);
+            ctx.fillStyle = '#4a9eff';
+            ctx.font = '10px JetBrains Mono';
+            ctx.fillText('MAIN CORRIDOR', 320, 415);
+        }
+
+        // Draw lounge area
+        function drawLounge() {
+            ctx.fillStyle = '#4a9eff';
+            ctx.font = '10px JetBrains Mono';
+            ctx.fillText('LOUNGE', 850, 225);
+
+            // Couch
+            ctx.fillStyle = '#4a2c6a';
+            ctx.fillRect(750, 280, 80, 40);
+            ctx.fillStyle = '#5a3c7a';
+            ctx.fillRect(755, 260, 70, 25);
+            // Cushions
+            ctx.fillStyle = '#6a4c8a';
+            ctx.fillRect(758, 285, 35, 30);
+            ctx.fillRect(798, 285, 35, 30);
+
+            // Coffee table
+            ctx.fillStyle = '#4a3828';
+            ctx.fillRect(770, 340, 50, 30);
+            ctx.fillStyle = '#5a4838';
+            ctx.fillRect(775, 345, 40, 20);
+            // Magazine
+            ctx.fillStyle = '#e74c3c';
+            ctx.fillRect(780, 348, 15, 12);
+
+            // Water cooler
+            ctx.fillStyle = '#e8e8e8';
+            ctx.fillRect(850, 380, 30, 60);
+            ctx.fillStyle = '#87ceeb';
+            ctx.fillRect(855, 385, 20, 35);
+            // Water bottle on top
+            ctx.fillStyle = '#add8e6';
+            ctx.fillRect(858, 365, 14, 20);
+            // Cup dispenser
+            ctx.fillStyle = '#f5f5f5';
+            ctx.fillRect(882, 395, 12, 20);
+
+            // Bean bags
+            ctx.fillStyle = '#e74c3c';
+            ctx.beginPath();
+            ctx.ellipse(720, 380, 25, 18, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#3498db';
+            ctx.beginPath();
+            ctx.ellipse(920, 320, 22, 16, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ping pong table
+            ctx.fillStyle = '#0d4d0d';
+            ctx.fillRect(850, 480, 100, 60);
+            ctx.fillStyle = '#1a6b1a';
+            ctx.fillRect(855, 485, 90, 50);
+            // Net
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(898, 485, 4, 50);
+            // Ball
+            if (frameCount % 60 < 30) {
+                ctx.fillStyle = '#ff6b35';
+                ctx.beginPath();
+                ctx.arc(880 + Math.sin(frameCount * 0.1) * 20, 510, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Whiteboard
+            ctx.fillStyle = '#2a2a4e';
+            ctx.fillRect(980, 240, 80, 60);
+            ctx.fillStyle = '#f5f5f5';
+            ctx.fillRect(985, 245, 70, 50);
+            // Scribbles
+            ctx.strokeStyle = '#3498db';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(995, 260);
+            ctx.lineTo(1020, 265);
+            ctx.lineTo(1010, 275);
+            ctx.stroke();
+            ctx.strokeStyle = '#e74c3c';
+            ctx.beginPath();
+            ctx.moveTo(1030, 255);
+            ctx.lineTo(1040, 280);
+            ctx.stroke();
+            // Markers
+            ctx.fillStyle = '#e74c3c';
+            ctx.fillRect(1000, 298, 20, 6);
+            ctx.fillStyle = '#3498db';
+            ctx.fillRect(1025, 298, 20, 6);
+        }
+
+        // Draw plants
+        function drawPlants() {
+            const plantPositions = [
+                { x: 60, y: 250 }, { x: 660, y: 250 }, { x: 700, y: 400 },
+                { x: 60, y: 580 }, { x: 660, y: 580 }, { x: 1050, y: 600 }
+            ];
+
+            plantPositions.forEach(pos => {
+                // Pot
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(pos.x - 12, pos.y + 15, 24, 20);
+                ctx.fillRect(pos.x - 15, pos.y + 10, 30, 8);
+
+                // Plant
+                ctx.fillStyle = '#228b22';
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y - 20);
+                ctx.quadraticCurveTo(pos.x + 20, pos.y - 10, pos.x + 15, pos.y + 10);
+                ctx.quadraticCurveTo(pos.x + 5, pos.y + 5, pos.x, pos.y + 10);
+                ctx.quadraticCurveTo(pos.x - 5, pos.y + 5, pos.x - 15, pos.y + 10);
+                ctx.quadraticCurveTo(pos.x - 20, pos.y - 10, pos.x, pos.y - 20);
+                ctx.fill();
+
+                // Darker leaves
+                ctx.fillStyle = '#1a7a1a';
+                ctx.beginPath();
+                ctx.ellipse(pos.x - 8, pos.y - 5, 8, 5, -0.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(pos.x + 8, pos.y, 7, 4, 0.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        // Draw pixel art character
+        function drawAgent(agent) {
+            const x = Math.floor(agent.x);
+            const y = Math.floor(agent.y);
+            const scale = 2;
+            const frame = agent.animFrame;
+            const color = agent.color;
+
+            // Parse color for variations
+            const r = parseInt(color.slice(1, 3), 16);
+            const g = parseInt(color.slice(3, 5), 16);
+            const b = parseInt(color.slice(5, 7), 16);
+            const darker = `rgb(${Math.floor(r*0.7)},${Math.floor(g*0.7)},${Math.floor(b*0.7)})`;
+
+            if (agent.isSitting && agent.status === 'working') {
+                // Sitting/typing animation
+                const typingFrame = Math.floor(frameCount / 10) % 2;
+
+                // Head
+                ctx.fillStyle = '#ffd5b4';
+                ctx.fillRect(x - 4*scale, y - 18*scale, 8*scale, 8*scale);
+
+                // Hair
+                ctx.fillStyle = '#4a3728';
+                ctx.fillRect(x - 4*scale, y - 18*scale, 8*scale, 3*scale);
+                ctx.fillRect(x - 5*scale, y - 17*scale, 2*scale, 4*scale);
+                ctx.fillRect(x + 3*scale, y - 17*scale, 2*scale, 4*scale);
+
+                // Eyes
+                ctx.fillStyle = '#2a2a2a';
+                ctx.fillRect(x - 2*scale, y - 14*scale, 1*scale, 2*scale);
+                ctx.fillRect(x + 1*scale, y - 14*scale, 1*scale, 2*scale);
+
+                // Body (seated)
+                ctx.fillStyle = color;
+                ctx.fillRect(x - 5*scale, y - 10*scale, 10*scale, 8*scale);
+
+                // Arms (typing)
+                ctx.fillStyle = color;
+                if (typingFrame === 0) {
+                    ctx.fillRect(x - 7*scale, y - 8*scale, 3*scale, 6*scale);
+                    ctx.fillRect(x + 4*scale, y - 8*scale, 3*scale, 6*scale);
+                } else {
+                    ctx.fillRect(x - 7*scale, y - 7*scale, 3*scale, 6*scale);
+                    ctx.fillRect(x + 4*scale, y - 7*scale, 3*scale, 6*scale);
+                }
+
+                // Hands
+                ctx.fillStyle = '#ffd5b4';
+                ctx.fillRect(x - 7*scale, y - 2*scale, 3*scale, 2*scale);
+                ctx.fillRect(x + 4*scale, y - 2*scale, 3*scale, 2*scale);
+
+            } else {
+                // Standing/walking
+                const walkFrame = agent.isMoving ? frame : 0;
+
+                // Shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.beginPath();
+                ctx.ellipse(x, y + 2*scale, 6*scale, 2*scale, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Legs
+                ctx.fillStyle = '#2a2a3a';
+                if (walkFrame === 0) {
+                    ctx.fillRect(x - 3*scale, y - 4*scale, 2*scale, 6*scale);
+                    ctx.fillRect(x + 1*scale, y - 4*scale, 2*scale, 6*scale);
+                } else {
+                    ctx.fillRect(x - 4*scale, y - 4*scale, 2*scale, 5*scale);
+                    ctx.fillRect(x + 2*scale, y - 5*scale, 2*scale, 7*scale);
+                }
+
+                // Body
+                ctx.fillStyle = color;
+                ctx.fillRect(x - 5*scale, y - 14*scale, 10*scale, 10*scale);
+
+                // Collar detail
+                ctx.fillStyle = darker;
+                ctx.fillRect(x - 2*scale, y - 14*scale, 4*scale, 2*scale);
+
+                // Arms
+                ctx.fillStyle = color;
+                if (walkFrame === 0) {
+                    ctx.fillRect(x - 7*scale, y - 13*scale, 2*scale, 8*scale);
+                    ctx.fillRect(x + 5*scale, y - 13*scale, 2*scale, 8*scale);
+                } else {
+                    ctx.fillRect(x - 7*scale, y - 11*scale, 2*scale, 7*scale);
+                    ctx.fillRect(x + 5*scale, y - 14*scale, 2*scale, 7*scale);
+                }
+
+                // Hands
+                ctx.fillStyle = '#ffd5b4';
+                ctx.fillRect(x - 7*scale, y - 5*scale, 2*scale, 2*scale);
+                ctx.fillRect(x + 5*scale, y - 5*scale - (walkFrame ? 2*scale : 0), 2*scale, 2*scale);
+
+                // Head
+                ctx.fillStyle = '#ffd5b4';
+                ctx.fillRect(x - 4*scale, y - 22*scale, 8*scale, 8*scale);
+
+                // Hair
+                ctx.fillStyle = '#4a3728';
+                ctx.fillRect(x - 5*scale, y - 23*scale, 10*scale, 4*scale);
+                ctx.fillRect(x - 5*scale, y - 21*scale, 2*scale, 5*scale);
+                ctx.fillRect(x + 3*scale, y - 21*scale, 2*scale, 5*scale);
+
+                // Eyes
+                ctx.fillStyle = '#2a2a2a';
+                ctx.fillRect(x - 2*scale, y - 19*scale, 1*scale, 2*scale);
+                ctx.fillRect(x + 1*scale, y - 19*scale, 1*scale, 2*scale);
+
+                // Mouth
+                ctx.fillStyle = '#c9a08a';
+                ctx.fillRect(x - 1*scale, y - 15*scale, 2*scale, 1*scale);
+            }
+
+            // Name tag above head when walking
+            if (!agent.isSitting) {
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(x - 25, y - 35*scale, 50, 14);
+                ctx.fillStyle = agent.color;
+                ctx.font = '10px JetBrains Mono';
+                ctx.textAlign = 'center';
+                ctx.fillText(agent.name, x, y - 28*scale);
+                ctx.textAlign = 'left';
+            }
+        }
+
+        // Update agent positions and animations
+        function updateAgents() {
+            agents.forEach(agent => {
+                // Animation frame update
+                if (frameCount % 15 === 0) {
+                    agent.animFrame = (agent.animFrame + 1) % 2;
+                }
+
+                // Movement logic
+                const dx = agent.targetX - agent.x;
+                const dy = agent.targetY - agent.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist > 3) {
+                    agent.isMoving = true;
+                    agent.isSitting = false;
+                    const speed = 1.5;
+                    agent.x += (dx / dist) * speed;
+                    agent.y += (dy / dist) * speed;
+
+                    // Direction
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        agent.direction = dx > 0 ? 'right' : 'left';
+                    } else {
+                        agent.direction = dy > 0 ? 'down' : 'up';
+                    }
+                } else {
+                    agent.isMoving = false;
+                    if (agent.status === 'working' &&
+                        Math.abs(agent.x - agent.deskX) < 5 &&
+                        Math.abs(agent.y - agent.deskY) < 5) {
+                        agent.isSitting = true;
+                    }
+                }
+
+                // Idle wandering behavior
+                if (agent.status === 'idle') {
+                    agent.wanderTimer--;
+                    if (agent.wanderTimer <= 0) {
+                        const spot = wanderSpots[Math.floor(Math.random() * wanderSpots.length)];
+                        agent.targetX = spot.x + (Math.random() - 0.5) * 40;
+                        agent.targetY = spot.y + (Math.random() - 0.5) * 40;
+                        agent.wanderTimer = 150 + Math.random() * 150;
+                    }
+                } else if (agent.status === 'working' && !agent.isSitting) {
+                    // Go to desk
+                    agent.targetX = agent.deskX;
+                    agent.targetY = agent.deskY;
+                }
+            });
+        }
+
+        // Update status bar UI
+        function updateStatusBar() {
+            statusBar.innerHTML = agents.map(agent => `
+                <div class="agent-badge">
+                    <div class="status-dot ${agent.status}"></div>
+                    <span class="agent-name" style="color: ${agent.color}">${agent.name}</span>
+                    <span class="agent-status">${agent.status}</span>
+                </div>
+            `).join('');
+        }
+
+        // Main render loop
+        function render() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw environment
+            drawFloor();
+            drawWalls();
+            drawConferenceRoom();
+            drawBossOffice();
+            drawKitchen();
+            drawCubicles();
+            drawLounge();
+            drawPlants();
+
+            // Update and draw agents
+            updateAgents();
+
+            // Sort agents by Y position for proper layering
+            const sortedAgents = [...agents].sort((a, b) => a.y - b.y);
+            sortedAgents.forEach(agent => drawAgent(agent));
+
+            frameCount++;
+            requestAnimationFrame(render);
+        }
+
+        // Poll API for status updates
+        async function pollStatus() {
+            try {
+                const response = await fetch('/api/employee-status');
+                if (response.ok) {
+                    const data = await response.json();
+                    // Update agent statuses from API
+                    data.forEach(status => {
+                        const agent = agents.find(a => a.id === status.id);
+                        if (agent && agent.status !== status.status) {
+                            agent.status = status.status;
+                            if (status.status === 'idle') {
+                                // Start wandering
+                                agent.wanderTimer = 0;
+                            }
+                        }
+                    });
+                }
+            } catch (e) {
+                // API not available, use demo mode
+                console.log('API not available, running in demo mode');
+            }
+            updateStatusBar();
+        }
+
+        // Demo mode: randomly change statuses
+        function demoMode() {
+            setInterval(() => {
+                const agent = agents[Math.floor(Math.random() * agents.length)];
+                agent.status = agent.status === 'working' ? 'idle' : 'working';
+                if (agent.status === 'idle') {
+                    agent.wanderTimer = 0;
+                }
+                updateStatusBar();
+            }, 8000);
+        }
+
+        // Initialize
+        updateStatusBar();
+        render();
+
+        // Poll every 5 seconds
+        setInterval(pollStatus, 5000);
+        pollStatus();
+
+        // Start demo mode for visual testing
+        demoMode();
+    </script>
+</body>
+</html>

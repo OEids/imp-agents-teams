@@ -10,47 +10,154 @@ based on job title keywords found in customer data.
 
 # =============================================================================
 # STAFF ROLE GROUP CODES (StaffRoleGroupCode)
-# From XAV001 - StaffRoleGroups.csv
+# From XAV001 - StaffRoleGroups.csv and S2_Data_Field_Mappings.xlsx
 # =============================================================================
 STAFF_ROLE_GROUPS = {
+    # Teaching Category
+    'TEA': 'Teachers',
+    'LST': 'Leadership Teaching',
+    'SLT': 'Senior Leadership',
+    'SCITT': 'SCITT',
+    'STEA_LT': 'Supply Teacher Long Term',
+    'STEA_ST': 'Supply Teacher Short Term',
+
+    # Governance Category
+    'BRD_DIR': 'Board Director',
+    'BRD_IND': 'Board Independent',
+    'GOV': 'Governance',
+    'OTH_DIR': 'Other Director',
+
+    # Support Category
     'ADM': 'Finance and Admin',
+    'APP': 'Apprentice',
+    'ASC': 'After School Club',
+    'BFC': 'Breakfast Club',
     'CAT': 'Catering Staff',
+    'CEN': 'Central',
     'CLE': 'Cleaning Staff',
     'COM': 'Community Facilities Staff',
     'COV': 'Cover Supervisors',
+    'CT': 'Caretaker',
+    'CUR': 'Curriculum',
+    'DEV': 'Development',
+    'DRI': 'Driver',
+    'EDS': 'Educational Support',
+    'EST': 'Estate',
+    'ESTF': 'External Staff',
     'ESTF_SPO': 'External Staff - Sports',
     'ESTF_TEA': 'External Staff - Teaching',
+    'EXA': 'Exams',
+    'EXT': 'External',
+    'FIN': 'Finance',
+    'FLA': 'First Language Assistant',
     'FSW': 'Family Support Workers',
+    'HLTA': 'Higher Level TA',
+    'HR': 'Human Resources',
+    'INC': 'Inclusion',
     'INV': 'Exam Invigilators',
+    'IT': 'IT Support',
     'LIB': 'Librarians',
+    'LM': 'Line Manager',
     'LSN': 'Leadership Non-Teaching',
-    'LST': 'Leadership Teaching',
+    'LTS': 'Learning Support',
     'MDS': 'Midday Supervisors',
     'NUR': 'Nursery Staff',
     'OTH': 'Other Staff',
+    'OUT': 'Outreach',
+    'PAS': 'Pastoral',
+    'PERI': 'Peripatetic',
     'PRE': 'Site Staff',
+    'PS': 'Personal Support',
+    'SC': 'School Crossing',
+    'SPO': 'Sports',
+    'SSUP': 'Senior Support',
+    'STA': 'Staff',
     'TA': 'Teaching Assistants',
-    'TEA': 'Teachers',
     'TEC': 'Technicians',
+    'WEL': 'Welfare',
 }
 
 # Which role groups are teaching (use TPS pension, teaching pay scales)
-# From XAV001: Only LST and TEA have TeachingRoleGroup=True
-TEACHING_ROLE_GROUPS = {'LST', 'TEA'}
-SUPPORT_ROLE_GROUPS = {'ADM', 'CAT', 'CLE', 'COM', 'COV', 'FSW', 'INV', 'LIB', 'LSN', 'MDS', 'NUR', 'OTH', 'PRE', 'TA', 'TEC', 'ESTF_SPO', 'ESTF_TEA'}
+# From XAV001 and S2_Data_Field_Mappings.xlsx
+TEACHING_ROLE_GROUPS = {'LST', 'TEA', 'SLT', 'SCITT', 'STEA_LT', 'STEA_ST'}
+
+# Governance role groups
+GOVERNANCE_ROLE_GROUPS = {'BRD_DIR', 'BRD_IND', 'GOV', 'OTH_DIR'}
+
+# Support role groups
+SUPPORT_ROLE_GROUPS = {
+    'ADM', 'APP', 'ASC', 'BFC', 'CAT', 'CEN', 'CLE', 'COM', 'COV', 'CT',
+    'CUR', 'DEV', 'DRI', 'EDS', 'EST', 'ESTF', 'ESTF_SPO', 'ESTF_TEA',
+    'EXA', 'EXT', 'FIN', 'FLA', 'FSW', 'HLTA', 'HR', 'INC', 'INV', 'IT',
+    'LIB', 'LM', 'LSN', 'LTS', 'MDS', 'NUR', 'OTH', 'OUT', 'PAS', 'PERI',
+    'PRE', 'PS', 'SC', 'SPO', 'SSUP', 'STA', 'TA', 'TEC', 'WEL'
+}
 
 # =============================================================================
 # STAFF ROLE GROUP FINANCE CODES
-# From XAV001 - StaffRoleGroups.csv
+# From XAV001 - StaffRoleGroups.csv and S2_Data_Field_Mappings.xlsx
 # These are the official finance codes for each role group
 # =============================================================================
 STAFF_ROLE_GROUP_FINANCE_CODES = {
+    # Teaching roles
+    'LST': {
+        'GrossSalaryFinanceCode': '610100',
+        'EmployersNiFinanceCode': '610200',
+        'PensionFinanceCode': '610300',
+        'WeeklyFteFinanceCode': 'WK_FTE_LST',
+        'AnnualFteFinanceCode': 'A_FTE_LST',
+        'WeeklyLeaveAdjCode': 'WK_FTE_LEAVE_ADJ_LST',
+        'AnnualLeaveAdjCode': 'A_FTE_LEAVE_ADJ_LST',
+        'TeachingRoleGroup': True,
+    },
+    'LSN': {
+        'GrossSalaryFinanceCode': '625100',
+        'EmployersNiFinanceCode': '625200',
+        'PensionFinanceCode': '625300',
+        'WeeklyFteFinanceCode': 'WK_FTE_LSN',
+        'AnnualFteFinanceCode': 'A_FTE_LSN',
+        'WeeklyLeaveAdjCode': 'WK_FTE_LEAVE_ADJ_LSN',
+        'AnnualLeaveAdjCode': 'A_FTE_LEAVE_ADJ_LSN',
+        'TeachingRoleGroup': False,
+    },
+    'TEA': {
+        'GrossSalaryFinanceCode': '612100',
+        'EmployersNiFinanceCode': '612200',
+        'PensionFinanceCode': '612300',
+        'WeeklyFteFinanceCode': 'WK_FTE_TEA',
+        'AnnualFteFinanceCode': 'A_FTE_TEA',
+        'WeeklyLeaveAdjCode': 'WK_FTE_LEAVE_ADJ_TEA',
+        'AnnualLeaveAdjCode': 'A_FTE_LEAVE_ADJ_TEA',
+        'TeachingRoleGroup': True,
+    },
+
+    # Support roles
+    'TA': {
+        'GrossSalaryFinanceCode': '615100',
+        'EmployersNiFinanceCode': '615200',
+        'PensionFinanceCode': '615300',
+        'WeeklyFteFinanceCode': 'WK_FTE_TA',
+        'AnnualFteFinanceCode': 'A_FTE_TA',
+        'WeeklyLeaveAdjCode': 'WK_FTE_LEAVE_ADJ_TA',
+        'AnnualLeaveAdjCode': 'A_FTE_LEAVE_ADJ_TA',
+        'TeachingRoleGroup': False,
+    },
     'ADM': {
         'GrossSalaryFinanceCode': '625100',
         'EmployersNiFinanceCode': '625200',
         'PensionFinanceCode': '625300',
         'WeeklyFteFinanceCode': 'WK_FTE_ADM',
         'AnnualFteFinanceCode': 'A_FTE_ADM',
+        'WeeklyLeaveAdjCode': 'WK_FTE_LEAVE_ADJ_ADM',
+        'AnnualLeaveAdjCode': 'A_FTE_LEAVE_ADJ_ADM',
+        'TeachingRoleGroup': False,
+    },
+    'CAT': {
+        'GrossSalaryFinanceCode': '2700',
+        'EmployersNiFinanceCode': '2705',
+        'PensionFinanceCode': '2710',
+        'WeeklyFteFinanceCode': 'WK_FTE_CAT',
+        'AnnualFteFinanceCode': 'A_FTE_CAT',
         'TeachingRoleGroup': False,
     },
     'CLE': {
@@ -59,14 +166,56 @@ STAFF_ROLE_GROUP_FINANCE_CODES = {
         'PensionFinanceCode': '630300',
         'WeeklyFteFinanceCode': 'WK_FTE_CLE',
         'AnnualFteFinanceCode': 'A_FTE_CLE',
+        'WeeklyLeaveAdjCode': 'WK_FTE_LEAVE_ADJ_CLE',
+        'AnnualLeaveAdjCode': 'A_FTE_LEAVE_ADJ_CLE',
         'TeachingRoleGroup': False,
     },
-    'COM': {
-        'GrossSalaryFinanceCode': '645100',
-        'EmployersNiFinanceCode': '645200',
-        'PensionFinanceCode': '645300',
-        'WeeklyFteFinanceCode': 'WK_FTE_EXT',
-        'AnnualFteFinanceCode': 'A_FTE_EXT',
+    'PRE': {
+        'GrossSalaryFinanceCode': '627100',
+        'EmployersNiFinanceCode': '627200',
+        'PensionFinanceCode': '627300',
+        'WeeklyFteFinanceCode': 'WK_FTE_PRE',
+        'AnnualFteFinanceCode': 'A_FTE_PRE',
+        'WeeklyLeaveAdjCode': 'WK_FTE_LEAVE_ADJ_PRE',
+        'AnnualLeaveAdjCode': 'A_FTE_LEAVE_ADJ_PRE',
+        'TeachingRoleGroup': False,
+    },
+    'MDS': {
+        'GrossSalaryFinanceCode': '635100',
+        'EmployersNiFinanceCode': '635200',
+        'PensionFinanceCode': '635300',
+        'WeeklyFteFinanceCode': 'WK_FTE_MDS',
+        'AnnualFteFinanceCode': 'A_FTE_MDS',
+        'WeeklyLeaveAdjCode': 'WK_FTE_LEAVE_ADJ_MDS',
+        'AnnualLeaveAdjCode': 'A_FTE_LEAVE_ADJ_MDS',
+        'TeachingRoleGroup': False,
+    },
+    'NUR': {
+        'GrossSalaryFinanceCode': '637100',
+        'EmployersNiFinanceCode': '637200',
+        'PensionFinanceCode': '637300',
+        'WeeklyFteFinanceCode': 'WK_FTE_NUR',
+        'AnnualFteFinanceCode': 'A_FTE_NUR',
+        'WeeklyLeaveAdjCode': 'WK_FTE_LEAVE_ADJ_NUR',
+        'AnnualLeaveAdjCode': 'A_FTE_LEAVE_ADJ_NUR',
+        'TeachingRoleGroup': False,
+    },
+    'TEC': {
+        'GrossSalaryFinanceCode': '622100',
+        'EmployersNiFinanceCode': '622200',
+        'PensionFinanceCode': '622300',
+        'WeeklyFteFinanceCode': 'WK_FTE_TEC',
+        'AnnualFteFinanceCode': 'A_FTE_TEC',
+        'WeeklyLeaveAdjCode': 'WK_FTE_LEAVE_ADJ_TEC',
+        'AnnualLeaveAdjCode': 'A_FTE_LEAVE_ADJ_TEC',
+        'TeachingRoleGroup': False,
+    },
+    'LIB': {
+        'GrossSalaryFinanceCode': '620100',
+        'EmployersNiFinanceCode': '620200',
+        'PensionFinanceCode': '620300',
+        'WeeklyFteFinanceCode': 'WK_FTE_LIB',
+        'AnnualFteFinanceCode': 'A_FTE_LIB',
         'TeachingRoleGroup': False,
     },
     'FSW': {
@@ -77,44 +226,20 @@ STAFF_ROLE_GROUP_FINANCE_CODES = {
         'AnnualFteFinanceCode': 'A_FTE_FSW',
         'TeachingRoleGroup': False,
     },
-    'INV': {
-        'GrossSalaryFinanceCode': '642100',
-        'EmployersNiFinanceCode': '642200',
-        'PensionFinanceCode': '642300',
-        'WeeklyFteFinanceCode': 'WK_FTE_INV',
-        'AnnualFteFinanceCode': 'A_FTE_INV',
+    'COV': {
+        'GrossSalaryFinanceCode': '2720',
+        'EmployersNiFinanceCode': '2725',
+        'PensionFinanceCode': '2730',
+        'WeeklyFteFinanceCode': 'WK_FTE_COV',
+        'AnnualFteFinanceCode': 'A_FTE_COV',
         'TeachingRoleGroup': False,
     },
-    'LSN': {
-        'GrossSalaryFinanceCode': '625100',
-        'EmployersNiFinanceCode': '625200',
-        'PensionFinanceCode': '625300',
-        'WeeklyFteFinanceCode': 'WK_FTE_LSN',
-        'AnnualFteFinanceCode': 'A_FTE_LSN',
-        'TeachingRoleGroup': False,  # Non-teaching leadership (CFO, COO, CEO)
-    },
-    'LST': {
-        'GrossSalaryFinanceCode': '610100',
-        'EmployersNiFinanceCode': '610200',
-        'PensionFinanceCode': '610300',
-        'WeeklyFteFinanceCode': 'WK_FTE_LST',
-        'AnnualFteFinanceCode': 'A_FTE_LST',
-        'TeachingRoleGroup': True,  # Teaching leadership (HT, DHT, AHT)
-    },
-    'MDS': {
-        'GrossSalaryFinanceCode': '635100',
-        'EmployersNiFinanceCode': '635200',
-        'PensionFinanceCode': '635300',
-        'WeeklyFteFinanceCode': 'WK_FTE_MDS',
-        'AnnualFteFinanceCode': 'A_FTE_MDS',
-        'TeachingRoleGroup': False,
-    },
-    'NUR': {
-        'GrossSalaryFinanceCode': '637100',
-        'EmployersNiFinanceCode': '637200',
-        'PensionFinanceCode': '637300',
-        'WeeklyFteFinanceCode': 'WK_FTE_NUR',
-        'AnnualFteFinanceCode': 'A_FTE_NUR',
+    'COM': {
+        'GrossSalaryFinanceCode': '645100',
+        'EmployersNiFinanceCode': '645200',
+        'PensionFinanceCode': '645300',
+        'WeeklyFteFinanceCode': 'WK_FTE_COM',
+        'AnnualFteFinanceCode': 'A_FTE_COM',
         'TeachingRoleGroup': False,
     },
     'OTH': {
@@ -125,36 +250,20 @@ STAFF_ROLE_GROUP_FINANCE_CODES = {
         'AnnualFteFinanceCode': 'A_FTE_OTH',
         'TeachingRoleGroup': False,
     },
-    'PRE': {
-        'GrossSalaryFinanceCode': '627100',
-        'EmployersNiFinanceCode': '627200',
-        'PensionFinanceCode': '627300',
-        'WeeklyFteFinanceCode': 'WK_FTE_PRE',
-        'AnnualFteFinanceCode': 'A_FTE_PRE',
+    'EDS': {
+        'GrossSalaryFinanceCode': '619100',
+        'EmployersNiFinanceCode': '619200',
+        'PensionFinanceCode': '619300',
+        'WeeklyFteFinanceCode': 'WK_FTE_EDS',
+        'AnnualFteFinanceCode': 'A_FTE_EDS',
         'TeachingRoleGroup': False,
     },
-    'TA': {
-        'GrossSalaryFinanceCode': '615100',
-        'EmployersNiFinanceCode': '615200',
-        'PensionFinanceCode': '615300',
-        'WeeklyFteFinanceCode': 'WK_FTE_TA',
-        'AnnualFteFinanceCode': 'A_FTE_TA',
-        'TeachingRoleGroup': False,
-    },
-    'TEA': {
-        'GrossSalaryFinanceCode': '612100',
-        'EmployersNiFinanceCode': '612200',
-        'PensionFinanceCode': '612300',
-        'WeeklyFteFinanceCode': 'WK_FTE_TEA',
-        'AnnualFteFinanceCode': 'A_FTE_TEA',
-        'TeachingRoleGroup': True,  # Teachers
-    },
-    'TEC': {
-        'GrossSalaryFinanceCode': '622100',
-        'EmployersNiFinanceCode': '622200',
-        'PensionFinanceCode': '622300',
-        'WeeklyFteFinanceCode': 'WK_FTE_TEC',
-        'AnnualFteFinanceCode': 'A_FTE_TEC',
+    'INV': {
+        'GrossSalaryFinanceCode': '642100',
+        'EmployersNiFinanceCode': '642200',
+        'PensionFinanceCode': '642300',
+        'WeeklyFteFinanceCode': 'WK_FTE_INV',
+        'AnnualFteFinanceCode': 'A_FTE_INV',
         'TeachingRoleGroup': False,
     },
 }
@@ -169,14 +278,15 @@ def get_finance_codes_for_role_group(role_group: str) -> dict:
 
 # =============================================================================
 # LOCATION VARIANTS & DEFAULT HOURS
+# From S2_Data_Field_Mappings.xlsx sheet 7_Location_Hours
 # =============================================================================
 LOCATION_VARIANTS = {
-    'EW': {'name': 'England & Wales', 'hours': 32.5, 'support_hours': 37.0, 'pay_scale_suffix': '_EW'},
-    'FRI': {'name': 'Fringe', 'hours': 32.43, 'support_hours': 37.0, 'pay_scale_suffix': '_FRI'},
-    'IL': {'name': 'Inner London', 'hours': 25.0, 'support_hours': 36.0, 'pay_scale_suffix': '_IL'},
-    'OL': {'name': 'Outer London', 'hours': 27.5, 'support_hours': 37.5, 'pay_scale_suffix': '_OL'},
-    'KEN': {'name': 'Kent', 'hours': 32.5, 'support_hours': 37.0, 'pay_scale_suffix': '_KEN'},
-    'NMW': {'name': 'National Minimum Wage', 'hours': 37.0, 'support_hours': 37.0, 'pay_scale_suffix': '_NMW'},
+    'EW': {'name': 'England & Wales', 'teaching_hours': 32.5, 'support_hours': 37.0, 'pay_scale_suffix': '_EW'},
+    'FRI': {'name': 'Fringe', 'teaching_hours': 32.43, 'support_hours': 37.0, 'pay_scale_suffix': '_FRI'},
+    'IL': {'name': 'Inner London', 'teaching_hours': 25.0, 'support_hours': 36.0, 'pay_scale_suffix': '_IL'},
+    'OL': {'name': 'Outer London', 'teaching_hours': 27.5, 'support_hours': 37.5, 'pay_scale_suffix': '_OL'},
+    'KEN': {'name': 'Kent', 'teaching_hours': 32.5, 'support_hours': 37.0, 'pay_scale_suffix': '_KEN'},
+    'NMW': {'name': 'National Minimum Wage', 'teaching_hours': 37.0, 'support_hours': 37.0, 'pay_scale_suffix': '_NMW'},
 }
 
 # Default location when not specified
@@ -439,10 +549,12 @@ PAY_SCALE_BY_ROLE_GROUP = {
 
 # =============================================================================
 # DEPARTMENT CODE MAPPINGS BY ROLE GROUP
+# From S2_Data_Field_Mappings.xlsx sheet 6_Department_Codes
 # =============================================================================
 DEPARTMENT_BY_ROLE_GROUP = {
     'LST': 'SAL_LST',      # Leadership Teaching
     'LSN': 'SAL_LST',      # Leadership Non-Teaching (often same dept)
+    'SLT': 'SAL_LST',      # Senior Leadership
     'TEA': 'SAL_TEA',      # Teachers
     'TA': 'SAL_TA',        # Teaching Assistants
     'ADM': 'SAL_ADM',      # Admin
@@ -457,8 +569,10 @@ DEPARTMENT_BY_ROLE_GROUP = {
     'COV': 'SAL_COV',      # Cover Supervisors
     'COM': 'SAL_COM',      # Community
     'OTH': 'SAL_OTH',      # Other
-    'ESTF_SPO': 'SAL_EXT', # External Staff
-    'ESTF_TEA': 'SAL_EXT', # External Staff
+    'EDS': 'SAL_EDS',      # Educational Support
+    'ESTF': 'SAL_EXT',     # External Staff
+    'ESTF_SPO': 'SAL_EXT', # External Staff - Sports
+    'ESTF_TEA': 'SAL_EXT', # External Staff - Teaching
 }
 
 # =============================================================================

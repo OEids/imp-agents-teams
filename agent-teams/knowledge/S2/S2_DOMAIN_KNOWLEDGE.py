@@ -24,6 +24,40 @@ import re
 
 
 # =============================================================================
+# SECTION 0: S2 TEMPLATE SHEET MAPPINGS
+# From S2_Data_Field_Mappings.xlsx sheet 1_Sheet_Mappings
+# Maps internal names to S2 template sheet numbers/names
+# =============================================================================
+SHEET_MAPPINGS = {
+    'PayScales': '19_PayScales',
+    'PayScalePoints': '20_PayScalePoints',
+    'PayScaleGrades': '22_PayScaleGrades',
+    'PayScaleIncreasePercen': '21_PayScaleIncreasePercen',
+    'AllowanceTypes': '16_AllowanceTypes',
+    'AllowanceTypePoint': '17_AllowanceTypePoint',
+    'AllowanceIncreasePercen': '18_AllowanceIncreasePercen',
+    'Pensions': '24_Pensions',
+    'EQWPatterns': '23_EQWPatterns',
+    'StfRoleGroup': '26_StfRoleGroup',
+    'StfRole': '27_StfRole',
+    'StaffMembers': '25_StaffMembers',
+    'ContractsTeachFTE': '28_ContractsTeachFTE',
+    'ContractsSupportHours': '29_ContractsSupportHours',
+    'ContractAllowances': '34_ContractAllowances',
+    'ContractAdjustments': '33_ContractAdjustments',
+    'Finance Codes S2': '11_Finance Codes S2',
+    'Genders': '12_Genders',
+    'ContractTypes': '13_ContractTypes',
+    'LeaveTypes': '30_LeaveTypes',
+    'AdjustmentTypes': '31_AdjustmentTypes',
+    'StaffMemberLeaves': '32_StaffMemberLeaves',
+}
+
+# Reverse mapping: S2 template sheet -> internal name
+SHEET_MAPPINGS_REVERSE = {v: k for k, v in SHEET_MAPPINGS.items()}
+
+
+# =============================================================================
 # SECTION 1: COMBINED FIELD PARSING
 # =============================================================================
 
@@ -465,22 +499,55 @@ def get_equated_week_pattern(role_group: str, is_all_year: bool = False) -> str:
 # =============================================================================
 
 PENSION_SCHEMES = {
-    "0%": {
-        "title": "No Pension",
-        "contribution_rate": 0.0,
-        "description": "Opted out of pension",
-    },
+    # From S2_Data_Field_Mappings.xlsx sheet 8_Pension_Schemes
     "TPS": {
         "title": "Teachers Pensions Scheme",
         "contribution_rate": 0.236,  # 23.6% employer contribution
         "description": "Teacher pension scheme - mandatory for teachers",
+        "for_roles": "Teaching Staff",
         "for_teaching": True,
     },
     "LGPS_IMP": {
-        "title": "LGPS Imp",
-        "contribution_rate": 0.20,  # Varies by band
-        "description": "Local Government Pension Scheme",
+        "title": "LGPS IMP",
+        "contribution_rate": 0.20,  # ~20%, varies by band
+        "description": "Local Government Pension Scheme - IMP",
+        "for_roles": "Support Staff",
         "for_teaching": False,
+    },
+    "LGPS_BNT": {
+        "title": "LGPS Barnett",
+        "contribution_rate": None,  # Varies by employer
+        "description": "Local Government Pension Scheme - Barnett",
+        "for_roles": "Support Staff",
+        "for_teaching": False,
+    },
+    "LGPS_KEN": {
+        "title": "LGPS Kent",
+        "contribution_rate": None,  # Varies by employer
+        "description": "Local Government Pension Scheme - Kent",
+        "for_roles": "Support Staff",
+        "for_teaching": False,
+    },
+    "LGPS_LNS": {
+        "title": "LGPS Lincolnshire",
+        "contribution_rate": None,  # Varies by employer
+        "description": "Local Government Pension Scheme - Lincolnshire",
+        "for_roles": "Support Staff",
+        "for_teaching": False,
+    },
+    "OPTOUT": {
+        "title": "Opted Out",
+        "contribution_rate": 0.0,
+        "description": "Staff member has opted out of pension",
+        "for_roles": "Any",
+        "for_teaching": None,
+    },
+    "0%": {
+        "title": "No Pension",
+        "contribution_rate": 0.0,
+        "description": "No pension contribution",
+        "for_roles": "Any",
+        "for_teaching": None,
     },
 }
 
@@ -665,6 +732,7 @@ IMPORT_COLUMN_MAPPINGS = {
 }
 
 # Columns that contain combined "CODE: Title" format and need parsing
+# From S2_Data_Field_Mappings.xlsx sheet 11_Combined_Columns
 COMBINED_COLUMNS = [
     "Staff Member Combined",
     "Staff Role Combined",
@@ -676,6 +744,10 @@ COMBINED_COLUMNS = [
     "Equated Week Pattern Combined",
     "Department Combined",
     "Fund Combined",
+    "School Combined",
+    "Gender Combined",
+    "Activity Combined",
+    "Ledger Combined",
     "Gross Salary Code",
     "Leave Rebate Code",
     "Employers NI Code",
@@ -685,6 +757,24 @@ COMBINED_COLUMNS = [
     "Adjustments Code",
     "Allowances Code",
 ]
+
+# Combined column output mappings: Source Combined Column -> (Code Output, Title Output)
+COMBINED_COLUMN_OUTPUTS = {
+    'Staff Member Combined': ('StaffMemberCode', 'StaffMemberName'),
+    'Staff Role Combined': ('StaffRoleCode', 'StaffRoleTitle'),
+    'Contract Type Combined': ('ContractTypeCode', 'ContractTypeTitle'),
+    'Pay Scale Combined': ('PayScaleCode', 'PayScaleTitle'),
+    'Pay Scale Grade Combined': ('PayScaleGradeCode', 'PayScaleGradeTitle'),
+    'Pay Scale Point Combined': ('PayScalePointCode', 'PayScalePointTitle'),
+    'Pension Combined': ('PensionCode', 'PensionTitle'),
+    'Equated Week Pattern Combined': ('EquatedWeekPatternCode', 'EquatedWeekPatternTitle'),
+    'Department Combined': ('DepartmentCode', 'DepartmentTitle'),
+    'Fund Combined': ('FundCode', 'FundTitle'),
+    'School Combined': ('SchoolCode', 'SchoolName'),
+    'Gender Combined': ('GenderCode', 'GenderTitle'),
+    'Activity Combined': ('ActivityCode', 'ActivityTitle'),
+    'Ledger Combined': ('LedgerCode', 'LedgerTitle'),
+}
 
 
 # =============================================================================
@@ -884,6 +974,10 @@ def transform_contract_row(row: dict) -> dict:
 # =============================================================================
 
 __all__ = [
+    # Sheet mappings
+    "SHEET_MAPPINGS",
+    "SHEET_MAPPINGS_REVERSE",
+
     # Parsing functions
     "parse_combined_field",
     "extract_finance_code",
@@ -899,6 +993,7 @@ __all__ = [
     "ALLOWANCE_TYPES",
     "IMPORT_COLUMN_MAPPINGS",
     "COMBINED_COLUMNS",
+    "COMBINED_COLUMN_OUTPUTS",
     "VALIDATION_RULES",
 
     # Helper functions

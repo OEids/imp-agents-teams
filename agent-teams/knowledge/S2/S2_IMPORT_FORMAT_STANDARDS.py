@@ -223,38 +223,172 @@ EMPTY_VALUES = {
 
 # =============================================================================
 # COLUMN NAME MAPPINGS (customer data -> import file format)
+# From S2_Data_Field_Mappings.xlsx sheet 2_Column_Mappings
 # =============================================================================
 COLUMN_MAPPINGS = {
-    # Staff Members
-    'Staff Number': 'StaffMemberCode',
-    'Staff Code': 'StaffMemberCode',
-    'Surname': 'LastName',
-    'Forename': 'FirstName',
+    # Staff Names - FirstName variants
+    'first_name': 'FirstName',
+    'firstname': 'FirstName',
+    'forename': 'FirstName',
+    'given_name': 'FirstName',
+    'fname': 'FirstName',
     'First Name': 'FirstName',
-    'Gender': 'GenderCode',
-    'DOB': 'DateOfBirth',
-    'Date of Birth': 'DateOfBirth',
-    'Start Date': 'ServiceStartDate',
-    'Service Start': 'ServiceStartDate',
+    'Forename': 'FirstName',
 
-    # Contracts
-    'Contract Start': 'DateFrom',
-    'Contract End': 'DateTo',
+    # Staff Names - LastName variants
+    'last_name': 'LastName',
+    'lastname': 'LastName',
+    'surname': 'LastName',
+    'family_name': 'LastName',
+    'lname': 'LastName',
+    'Surname': 'LastName',
+
+    # Job Title / Role variants
+    'job_title': 'RoleTitle',
+    'jobtitle': 'RoleTitle',
+    'position': 'RoleTitle',
+    'role_title': 'RoleTitle',
+    'post': 'RoleTitle',
+    'Job Title': 'RoleTitle',
+    'Position': 'RoleTitle',
+    'Post': 'RoleTitle',
+
+    # Spot Salary variants
+    'spot_salary': 'spot_salary',
+    'spot scale': 'spot_salary',
+    'spot amount': 'spot_salary',
+    'Spot Salary': 'spot_salary',
+
+    # Annual Salary variants
+    'annual_salary': 'annual_salary',
+    'salary': 'annual_salary',
+    'annual_pay': 'annual_salary',
+    'gross_salary': 'annual_salary',
+    'basic_salary': 'annual_salary',
+    'Salary': 'annual_salary',
+    'Annual Salary': 'annual_salary',
+
+    # FTE variants
+    'fte': 'WeeklyFteOrHpw',
+    'full_time_equivalent': 'WeeklyFteOrHpw',
+    'weekly_fte': 'WeeklyFteOrHpw',
     'FTE': 'WeeklyFteOrHpw',
-    'Hours': 'WeeklyFteOrHpw',
-    'Pay Point': 'PayScalePointCode',
-    'Scale Point': 'PayScalePointCode',
-    'Grade': 'PayScaleGradeCode',
 
-    # Pay Scales
+    # Hours variants
+    'weekly_hours': 'WeeklyFteOrHpw',
+    'hours_per_week': 'WeeklyFteOrHpw',
+    'contracted_hours': 'WeeklyFteOrHpw',
+    'hours': 'WeeklyFteOrHpw',
+    'Hours': 'WeeklyFteOrHpw',
+    'Weekly Hours': 'WeeklyFteOrHpw',
+
+    # Full-time hours variants
+    'full_time_hours': 'full_time_hours',
+    'ft_hours': 'full_time_hours',
+    'standard_hours': 'full_time_hours',
+
+    # Scale Point variants
+    'scale_point': 'PayScalePointCode',
+    'scalepoint': 'PayScalePointCode',
+    'spine_point': 'PayScalePointCode',
+    'current_point': 'PayScalePointCode',
+    'pay_point': 'PayScalePointCode',
+    'scp': 'PayScalePointCode',
+    'Scale Point': 'PayScalePointCode',
+    'Pay Point': 'PayScalePointCode',
+    'SCP': 'PayScalePointCode',
+
+    # Pay Scale variants
+    'pay_scale': 'PayScaleCode',
+    'payscale': 'PayScaleCode',
+    'pay_range': 'PayScaleCode',
+    'salary_scale': 'PayScaleCode',
+    'pay_grade': 'PayScaleCode',
     'Scale': 'PayScaleCode',
     'Pay Scale': 'PayScaleCode',
-    'Increment Date': 'IncrementDate',
 
-    # General
+    # Pension variants
+    'pension': 'PensionCode',
+    'pension_code': 'PensionCode',
+    'pension_scheme': 'PensionCode',
+    'superannuation': 'PensionCode',
+    'Pension': 'PensionCode',
+
+    # Date variants
+    'start_date': 'DateFrom',
+    'startdate': 'DateFrom',
+    'commencement': 'DateFrom',
+    'hire_date': 'DateFrom',
+    'Start Date': 'DateFrom',
+    'Contract Start': 'DateFrom',
+    'end_date': 'DateTo',
+    'enddate': 'DateTo',
+    'termination': 'DateTo',
+    'leaving_date': 'DateTo',
+    'End Date': 'DateTo',
+    'Contract End': 'DateTo',
+
+    # Contract Type variants
+    'contract_type': 'ContractTypeCode',
+    'contracttype': 'ContractTypeCode',
+    'employment_type': 'ContractTypeCode',
+    'Contract Type': 'ContractTypeCode',
+
+    # Equated Weeks variants
+    'equated_weeks': 'EquatedWeekPatternCode',
+    'eqw': 'EquatedWeekPatternCode',
+    'term_weeks': 'EquatedWeekPatternCode',
+    'working_weeks': 'EquatedWeekPatternCode',
+    'Equated Weeks': 'EquatedWeekPatternCode',
+    'EQW': 'EquatedWeekPatternCode',
+
+    # Staff ID / Payroll variants
+    'payroll': 'StaffMemberCode',
+    'emp_no': 'StaffMemberCode',
+    'employee_number': 'StaffMemberCode',
+    'staff_id': 'StaffMemberCode',
+    'personnel_no': 'StaffMemberCode',
+    'Staff Number': 'StaffMemberCode',
+    'Staff Code': 'StaffMemberCode',
+    'Employee Number': 'StaffMemberCode',
+    'Payroll No': 'StaffMemberCode',
+
+    # Role Group variants
+    'role_group': 'StaffRoleGroupCode',
+    'staff_role_group': 'StaffRoleGroupCode',
+    'rolegroup': 'StaffRoleGroupCode',
+    'category': 'StaffRoleGroupCode',
+    'Role Group': 'StaffRoleGroupCode',
+    'Staff Category': 'StaffRoleGroupCode',
+
+    # Finance Code variants
+    'gross_salary_fc': 'GrossSalaryFinanceCode',
+    'salary_finance_code': 'GrossSalaryFinanceCode',
+    'gross_fc': 'GrossSalaryFinanceCode',
+    'ni_finance_code': 'EmployersNiFinanceCode',
+    'employers_ni_fc': 'EmployersNiFinanceCode',
+    'ni_fc': 'EmployersNiFinanceCode',
+    'pension_finance_code': 'PensionFinanceCode',
+    'pension_fc': 'PensionFinanceCode',
+    'super_fc': 'PensionFinanceCode',
+    'finance_code': 'FinanceCode',
+    'financecode': 'FinanceCode',
+    'nominal': 'FinanceCode',
+    'nominal_code': 'FinanceCode',
+    'account_code': 'FinanceCode',
+    'Finance Code': 'FinanceCode',
+    'Nominal Code': 'FinanceCode',
+
+    # Other fields
+    'Grade': 'PayScaleGradeCode',
+    'DOB': 'DateOfBirth',
+    'Date of Birth': 'DateOfBirth',
+    'Service Start': 'ServiceStartDate',
+    'Increment Date': 'IncrementDate',
     'Available': 'AvailableToAllSchools',
     'Enabled': 'Enabled',
     'Schools': 'SchoolCodes',
+    'Gender': 'GenderCode',
 }
 
 
