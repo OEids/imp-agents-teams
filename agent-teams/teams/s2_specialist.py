@@ -2014,9 +2014,9 @@ class S2SpecialistAgent:
             scale_title = 'Main Pay Scale'
             scale_type = 'teaching'
         else:
-            # Default to support if no prefix detected
-            scale_code = 'SUPPORT'
-            scale_title = 'Support Staff Scale'
+            # Default to support if no prefix detected — derive code from title
+            scale_code = self._derive_pay_scale_code("Support Pay Scale")
+            scale_title = 'Support Pay Scale'
             scale_type = 'support'
 
         if scale_code not in self.pay_scales_found:
@@ -3591,9 +3591,146 @@ class S2SpecialistAgent:
                             'date_from': get_default_increase_date(True),
                         })
 
-        # NEVER create inferred pay scales (MAIN, LS, MAT_SUP) from point patterns
-        # Only use customer-defined pay scales from the actual data
-        # If pay scales not explicitly defined in customer data, they won't be created
+        # -----------------------------------------------------------------------
+        # Build ExtractedPayScale objects from the collected points.
+        # No fallback to reference data — only what the customer provided.
+        # -----------------------------------------------------------------------
+        # Determine london weighting from sheet name
+        lw = 'EW'
+        for lw_code, lw_kws in [('IL', ['inner']), ('OL', ['outer']), ('FRI', ['fringe']), ('KEN', ['kent'])]:
+            if any(kw in sheet_lower for kw in lw_kws):
+                lw = lw_code
+                break
+
+        def _dedup(pts):
+            """Deduplicate by point code, keeping highest rate."""
+            seen = {}
+            for pt in pts:
+                code = pt['code']
+                if code not in seen or pt.get('rate', 0) > seen[code].get('rate', 0):
+                    seen[code] = pt
+            return sorted(seen.values(), key=lambda p: p.get('number', 0))
+
+        def _merge_or_create(scale_code, title, scale_type, inc_date, points_list):
+            """Add points to an existing scale or create a new one."""
+            if not points_list:
+                return
+            deduped = _dedup(points_list)
+            existing = next((ps for ps in self.extracted_pay_scales if ps.code == scale_code), None)
+            if existing:
+                existing_codes = {p['code'] for p in existing.points}
+                added = [p for p in deduped if p['code'] not in existing_codes]
+                existing.points.extend(added)
+                if added:
+                    self.log(f"    Updated {scale_code}: added {len(added)} point(s) from customer data")
+            else:
+                self.extracted_pay_scales.append(ExtractedPayScale(
+                    code=scale_code, title=title, scale_type=scale_type,
+                    london_weighting=lw, increment_date=inc_date,
+                    increase_date=inc_date, increase_percentage=0,
+                    points=deduped, grades=[],
+                ))
+                self.log(f"    Created pay scale {scale_code} with {len(deduped)} point(s) from customer data")
+
+        # Main Pay Scale (M1-M6) and Upper Pay Scale (UPS points) → MAIN
+        main_code = self._derive_pay_scale_code("Teachers Main")
+        _merge_or_create(main_code, f"Teachers Main Pay Scale - {lw}",
+                         'teaching', '09/01', main_points + upper_points)
+
+        # Leadership Scale (L01-L43) → LS
+        ls_code = self._derive_pay_scale_code("Leadership Group")
+        _merge_or_create(ls_code, f"Leadership Pay Scale - {lw}",
+                         'leadership', '09/01', leadership_points)
+
+        # Support scale — derive code from the sheet name so it reflects the title
+        if support_points:
+            sup_code = self._derive_pay_scale_code(sheet_name)
+            sup_title = f"{sheet_name.strip()} - {lw}" if sheet_name else f"Support Pay Scale - {lw}"
+            sup_type = 'support'
+            sup_inc = '09/01' if self._is_standard_teaching_scale(sup_code) else '04/01'
+            _merge_or_create(sup_code, sup_title, sup_type, sup_inc, support_points)
+
+    # -------------------------------------------------------------------------
+    # Known title-to-code mappings (from 18_IMPORT_PayScales.csv and S2 domain
+    # knowledge).  Checked in order; first match wins.
+    # Returns the base code only — no location suffix.
+    # -------------------------------------------------------------------------
+    _PAY_SCALE_TITLE_PATTERNS = [
+        # Standard teaching scales
+        (['lead practitioner'],               'LP'),
+        (['lead prac'],                       'LP'),
+        (['leadership group'],                'LS'),
+        (['leadership'],                      'LS'),
+        (['teachers main', 'main pay'],       'MAIN'),
+        (['main scale', 'main pay scale'],    'MAIN'),
+        (['teachers main'],                   'MAIN'),
+        (['main'],                            'MAIN'),
+        (['upper pay', 'upper scale', 'ups'], 'UPS'),
+        (['unqualified teacher'],             'UQ'),
+        (['unqualified'],                     'UQ'),
+        # Support / NJC
+        (['national joint council'],          'NJC'),
+        (['njc'],                             'NJC'),
+        (['kent'],                            'KENT'),
+        (['support pay', 'support scale',
+          'support staff'],                   'SUP'),
+        (['support'],                         'SUP'),
+        # Apprentice / spot / external
+        (['apprentice', 'nmw'],               'APP/NMW'),
+        (['apprentice'],                      'APP/NMW'),
+        (['spot salary', 'spot scale',
+          'spot rate'],                       'SPOT'),
+        (['external staff'],                  'ESTF'),
+    ]
+
+    # Words to strip before abbreviating an unknown title
+    _TITLE_NOISE_WORDS = frozenset([
+        'pay', 'scale', 'scales', 'group', 'standard', 'national',
+        'scheme', 'grade', 'band', 'rates', 'rate', 'staff',
+        'and', 'the', 'of', 'for', 'a', 'an',
+    ])
+
+    def _derive_pay_scale_code(self, title: str) -> str:
+        """Derive a pay scale code from a human-readable title.
+
+        Returns the base abbreviation only — no location suffix.
+        The caller appends _{LW} when location-specific codes are needed.
+
+        Examples:
+            "Support Pay Scale"     → SUP
+            "NJC"                   → NJC
+            "Leadership Group"      → LS
+            "Teachers Main"         → MAIN
+            "Lead Practitioner"     → LP
+            "Local Agreement Scale" → LAS   (abbreviate unknown title)
+        """
+        if not title:
+            return 'SUP'
+
+        title_lower = title.lower().strip()
+
+        # --- Step 1: known pattern match ---
+        for keywords, base_code in self._PAY_SCALE_TITLE_PATTERNS:
+            if all(kw in title_lower for kw in keywords):
+                return base_code
+
+        # --- Step 2: abbreviate significant words ---
+        # Strip location words so they don't pollute the abbreviation
+        for loc_word in ['inner london', 'outer london', 'fringe', 'inner', 'outer',
+                         'england and wales', 'england & wales']:
+            title_lower = title_lower.replace(loc_word, ' ')
+
+        words = [w for w in re.split(r'[\s\-_/]+', title_lower)
+                 if w and w not in self._TITLE_NOISE_WORDS]
+
+        if not words:
+            return 'SUP'
+
+        if len(words) == 1:
+            return words[0][:6].upper()
+
+        # First letter of each significant word (up to 5)
+        return ''.join(w[0] for w in words[:5]).upper()
 
     def _extract_point_number(self, code: str) -> int:
         """Extract numeric point number from code."""
@@ -4004,75 +4141,159 @@ class S2SpecialistAgent:
     def _extract_pay_scales_from_staff_data(self, df: pd.DataFrame):
         """
         Extract pay scale points from staff contract data.
-        This handles cases where pay scale info is embedded in staff rows.
+
+        Groups points by the actual pay scale code found in the row (pay_scale /
+        pay_scale_code column).  When no explicit code column exists, falls back
+        to inferring from point-code patterns (M→MAIN, L→LS, U→MAIN/UPS,
+        numeric→SUP).
+
+        Creates or updates ExtractedPayScale objects directly from customer data.
+        No reference-file fallback — only real data is used.
         """
         self.log("    Extracting pay scales from staff data...")
 
-        # Track unique scale points by scale type
-        teaching_points = {}  # {point_code: rate}
-        leadership_points = {}
-        support_points = {}
+        # Columns that carry the pay scale code for each staff member
+        scale_code_cols = [c for c in df.columns if any(
+            kw in str(c).lower() for kw in
+            ['pay_scale', 'payscale', 'scale_code', 'scale_type', 'pay scale']
+        )]
+
+        # Columns that carry the individual point code
+        point_cols = [c for c in df.columns if any(
+            kw in str(c).lower() for kw in
+            ['scale_point', 'scp', 'spine_point', 'current_scale_point', 'pay_point']
+        )]
+
+        # Columns that carry the salary/rate
+        rate_cols = [c for c in df.columns if any(
+            kw in str(c).lower() for kw in ['annual_salary', 'fte_salary', 'salary']
+        )]
+
+        if not point_cols:
+            self.log("    No scale point column found in staff data — skipping point extraction")
+            return
+
+        # Accumulate: {scale_code: {point_code: point_dict}}
+        points_by_scale: Dict[str, Dict[str, dict]] = {}
 
         for _, row in df.iterrows():
-            # Get scale point
-            scale_point = self._safe_get(row, 'scale_point', '')
-            if not self._safe_notna(scale_point):
-                scale_point = self._safe_get(row, 'scp', '')
-            if not self._safe_notna(scale_point):
-                scale_point = self._safe_get(row, 'spine_point', '')
-
-            scale_point_str = str(scale_point).strip() if self._safe_notna(scale_point) else ''
-            if not scale_point_str or scale_point_str == 'nan':
+            # --- get point code ---
+            pt_str = ''
+            for col in point_cols:
+                val = self._safe_get(row, col, '')
+                if self._safe_notna(val) and str(val).strip() not in ('', 'nan'):
+                    pt_str = str(val).strip()
+                    break
+            if not pt_str:
                 continue
 
-            # Get salary/rate if available - only use explicit salary values from data
-            rate = 0  # Default to 0 (blank) if not found
-            for col in ['annual_salary', 'fte_salary', 'salary']:
+            # --- get rate ---
+            rate = 0
+            for col in rate_cols:
                 val = self._safe_get(row, col, None)
                 if self._safe_notna(val):
                     try:
                         parsed = float(str(val).replace('£', '').replace(',', '').strip())
-                        # Only accept values that look like annual salaries (> 10000)
                         if parsed > 10000:
                             rate = parsed
                             break
                     except (ValueError, TypeError):
                         pass
 
-            # Determine scale type from job title or scale point
-            job_title = str(self._safe_get(row, 'job_title', '')).lower()
-            point_lower = scale_point_str.lower()
+            # --- resolve scale code ---
+            scale_code = ''
+            for col in scale_code_cols:
+                val = self._safe_get(row, col, '')
+                if self._safe_notna(val) and str(val).strip() not in ('', 'nan', 'none'):
+                    scale_code = str(val).strip()
+                    break
 
-            # Leadership points (L1-L43)
-            if 'l' in point_lower and any(c.isdigit() for c in scale_point_str):
-                normalized = self._normalize_scale_point(scale_point_str, 'teaching')
-                if normalized.startswith('L'):
-                    if normalized not in leadership_points or rate > 0:
-                        leadership_points[normalized] = rate
-                    continue
+            if not scale_code:
+                # Infer from point code pattern — derive code via title lookup
+                pt_upper = pt_str.upper()
+                job_title = str(self._safe_get(row, 'job_title', '')).lower()
+                if pt_upper.startswith('LP') and any(c.isdigit() for c in pt_upper):
+                    scale_code = self._derive_pay_scale_code("Lead Practitioner")
+                elif pt_upper.startswith('L') and any(c.isdigit() for c in pt_upper):
+                    scale_code = self._derive_pay_scale_code("Leadership Group")
+                elif pt_upper.startswith(('UPS', 'U')) and any(c.isdigit() for c in pt_upper):
+                    scale_code = self._derive_pay_scale_code("Teachers Main")
+                elif pt_upper.startswith('M') and any(c.isdigit() for c in pt_upper):
+                    scale_code = self._derive_pay_scale_code("Teachers Main")
+                elif pt_upper.isdigit():
+                    is_teaching = any(x in job_title for x in ['teacher', 'head', 'principal'])
+                    scale_code = (self._derive_pay_scale_code("Teachers Main")
+                                  if is_teaching
+                                  else self._derive_pay_scale_code("Support"))
+                else:
+                    scale_code = self._derive_pay_scale_code("Support")
 
-            # Teaching points (M1-M6, U1-U3)
-            if any(x in point_lower for x in ['m', 'u']) and any(c.isdigit() for c in scale_point_str):
-                normalized = self._normalize_scale_point(scale_point_str, 'teaching')
-                if normalized not in teaching_points or rate > 0:
-                    teaching_points[normalized] = rate
-                continue
+            # --- normalise point code and number ---
+            pt_upper = pt_str.upper()
+            pt_num = self._extract_point_number(pt_upper)
+            if pt_num == 0:
+                try:
+                    pt_num = int(float(pt_str))
+                except (ValueError, TypeError):
+                    pt_num = 0
 
-            # Check job title for teaching vs support
-            is_teaching = any(x in job_title for x in ['teacher', 'head', 'principal', 'lecturer'])
+            point_dict = {
+                'code': pt_upper,
+                'title': pt_upper,
+                'number': pt_num,
+                'rate': rate,
+                'date_from': '',
+            }
 
-            if is_teaching:
-                normalized = self._normalize_scale_point(scale_point_str, 'teaching')
-                if normalized not in teaching_points or rate > 0:
-                    teaching_points[normalized] = rate
+            if scale_code not in points_by_scale:
+                points_by_scale[scale_code] = {}
+            existing_pt = points_by_scale[scale_code].get(pt_upper)
+            if existing_pt is None or rate > existing_pt.get('rate', 0):
+                points_by_scale[scale_code][pt_upper] = point_dict
+
+        if not points_by_scale:
+            self.log("    No scale points found in staff data")
+            return
+
+        # Create or update ExtractedPayScale for each discovered scale
+        for scale_code, pts_dict in points_by_scale.items():
+            sorted_pts = sorted(pts_dict.values(), key=lambda p: p.get('number', 0))
+
+            # Infer scale meta from code
+            sc_upper = scale_code.upper()
+            if sc_upper.startswith('LS'):
+                scale_type, inc_date = 'leadership', '09/01'
+                title = f"Leadership Pay Scale"
+            elif sc_upper.startswith('LP'):
+                scale_type, inc_date = 'leadership', '09/01'
+                title = f"Lead Practitioner Pay Scale"
+            elif sc_upper.startswith(('MAIN', 'UPS', 'UQ')):
+                scale_type, inc_date = 'teaching', '09/01'
+                title = f"Teachers Pay Scale"
             else:
-                # Support scale - just numbers
-                normalized = self._normalize_scale_point(scale_point_str, 'support')
-                if normalized not in support_points or rate > 0:
-                    support_points[normalized] = rate
+                scale_type, inc_date = 'support', '04/01'
+                title = f"Support Pay Scale"
 
-        # NEVER create inferred pay scales (MAIN, LS, MAT_SUP) from point patterns
-        # Only use customer-defined pay scales from the actual data
+            existing = next((ps for ps in self.extracted_pay_scales if ps.code == scale_code), None)
+            if existing:
+                existing_codes = {p['code'] for p in existing.points}
+                added = [p for p in sorted_pts if p['code'] not in existing_codes]
+                existing.points.extend(added)
+                if added:
+                    self.log(f"    Updated {scale_code}: added {len(added)} point(s) from staff data")
+            else:
+                lw = 'EW'
+                for suffix in ['_IL', '_OL', '_FRI', '_KEN']:
+                    if sc_upper.endswith(suffix):
+                        lw = suffix.lstrip('_')
+                        break
+                self.extracted_pay_scales.append(ExtractedPayScale(
+                    code=scale_code, title=title, scale_type=scale_type,
+                    london_weighting=lw, increment_date=inc_date,
+                    increase_date=inc_date, increase_percentage=0,
+                    points=sorted_pts, grades=[],
+                ))
+                self.log(f"    Created pay scale {scale_code} with {len(sorted_pts)} point(s) from staff data")
 
     def _extract_allowances_from_staff_data(self, df: pd.DataFrame):
         """
@@ -4607,28 +4828,146 @@ class S2SpecialistAgent:
 
         self.log(f"  Total pay scale points: {len(added_points)}")
 
+    # Standard teaching scale prefixes — grades are generated per-point from the
+    # reference PayScalePoints CSV (19_IMPORT_PayScalesPoints.csv).
+    # These scales are the same for every build so no customer data is needed.
+    # NJC_*, SUP_* scales are intentionally excluded — they vary by LA/school
+    # and must come from customer data.
+    STANDARD_TEACHING_SCALE_PREFIXES = (
+        "MAIN_", "UPS_", "LS_", "LP_", "UQ_", "APP/NMW",
+    )
+
+    def _is_standard_teaching_scale(self, scale_code: str) -> bool:
+        """Return True if this is a standard teaching scale with fixed per-point grades.
+        NJC, SUP and custom support scales are NOT standard — they vary by LA/school."""
+        return any(scale_code.startswith(p) or scale_code == p
+                   for p in self.STANDARD_TEACHING_SCALE_PREFIXES)
+
+    def _load_reference_points(self) -> pd.DataFrame:
+        """Load PayScalePoints reference CSV (19_IMPORT_PayScalesPoints.csv)."""
+        ref_path = Path(__file__).parent.parent / "knowledge" / "S2" / "import files" / "19_IMPORT_PayScalesPoints.csv"
+        try:
+            df = pd.read_csv(ref_path)
+            df.columns = [c.strip() for c in df.columns]
+            self.log(f"  Reference points loaded: {len(df)} rows")
+            return df
+        except Exception as e:
+            self.log(f"  Warning: Could not load reference points CSV: {e}")
+            return pd.DataFrame()
+
+    def _load_reference_grades(self) -> pd.DataFrame:
+        """Load PayScaleGrades reference CSV (21_IMPORT_PayScalesGrades.csv).
+        Used as fallback for NJC and other non-standard scales."""
+        ref_path = Path(__file__).parent.parent / "knowledge" / "S2" / "import files" / "21_IMPORT_PayScalesGrades.csv"
+        try:
+            df = pd.read_csv(ref_path)
+            df.columns = [c.strip() for c in df.columns]
+            self.log(f"  Reference grades loaded: {len(df)} rows")
+            return df
+        except Exception as e:
+            self.log(f"  Warning: Could not load reference grades CSV: {e}")
+            return pd.DataFrame()
+
     def _build_pay_scale_grades(self):
-        """Build PayScaleGrades sheet from customer data only."""
+        """Build PayScaleGrades sheet — one grade per pay scale point.
+
+        Each grade code matches the point code (M1, M2, L01, L02, LP01, UQ1 …)
+        and covers exactly that one point (ScalePointNumberFrom = ScalePointNumberTo).
+
+        Priority order per scale:
+          1. Customer-defined grades (from Pay scale GROUP column in customer data)
+          2. Per-point grades derived from extracted pay scale points
+          3. Per-point grades from reference PayScalePoints CSV for standard
+             teaching scales (MAIN, UPS, LS, LP, UQ, APP/NMW) — same every build
+          4. Range-based grades from reference PayScaleGrades CSV for NJC and
+             any other non-standard scale
+        """
         self.log("Building PayScaleGrades...")
 
-        # NEVER create inferred grades - only use grades explicitly extracted from customer data
-        # If grades are in the extracted_pay_scales, use those
+        scales_with_customer_grades = {ps.code for ps in self.extracted_pay_scales if ps.grades}
+
+        # Step 1: Customer-defined grades (highest priority)
         for ps in self.extracted_pay_scales:
-            if ps.grades:  # Only if customer provided explicit grades
+            if ps.grades:
                 for grade in ps.grades:
                     self.template_data["PayScaleGrades"].append({
-                        "PayScaleGradeCode": grade.get('code', 'MISSING'),
-                        "Title": grade.get('title', 'MISSING'),
                         "PayScaleCode": ps.code,
-                        "ScalePointNumberFrom": grade.get('from_point', 'MISSING'),
-                        "ScalePointNumberTo": grade.get('to_point', 'MISSING'),
+                        "PayScaleGradeCode": grade.get('code', 'MISSING'),
+                        "Title": grade.get('title', grade.get('code', 'MISSING')),
+                        "ScalePointNumberFrom": grade.get('from_point', ''),
+                        "ScalePointNumberTo": grade.get('to_point', ''),
                         "AvailableToAllSchools": True,
                         "SchoolCodes": "",
                         "PayScaleGradeEnabled": True,
                     })
 
-        # Do NOT create default/inferred grades like "_FULL"
-        # If no grades were explicitly defined by customer, the sheet will be empty
+        # Step 2: Per-point grades from extracted points (customer provided points)
+        scales_from_extracted_points = set()
+        for ps in self.extracted_pay_scales:
+            if ps.code in scales_with_customer_grades:
+                continue
+            if not ps.points:
+                continue
+            sorted_points = sorted(ps.points, key=lambda p: p.get('number', 0))
+            for pt in sorted_points:
+                pt_code = pt.get('code', '')
+                pt_num = pt.get('number', '')
+                if not pt_code or pt_num == '':
+                    continue
+                self.template_data["PayScaleGrades"].append({
+                    "PayScaleCode": ps.code,
+                    "PayScaleGradeCode": pt_code,
+                    "Title": pt.get('title', pt_code),
+                    "ScalePointNumberFrom": pt_num,
+                    "ScalePointNumberTo": pt_num,
+                    "AvailableToAllSchools": True,
+                    "SchoolCodes": "",
+                    "PayScaleGradeEnabled": True,
+                })
+            scales_from_extracted_points.add(ps.code)
+            self.log(f"  {ps.code}: added {len(sorted_points)} per-point grade(s) from extracted data")
+
+        # Determine which scales still need grades
+        covered = scales_with_customer_grades | scales_from_extracted_points
+        scales_needing_grades = [ps.code for ps in self.extracted_pay_scales if ps.code not in covered]
+
+        if not scales_needing_grades:
+            return
+
+        # Step 3: Standard teaching scales → per-point grades from reference points CSV
+        ref_points = None
+        standard_covered = set()
+        standard_scales = [c for c in scales_needing_grades if self._is_standard_teaching_scale(c)]
+        if standard_scales:
+            ref_points = self._load_reference_points()
+            if not ref_points.empty and 'PayScaleCode' in ref_points.columns:
+                for scale_code in standard_scales:
+                    matches = ref_points[ref_points['PayScaleCode'] == scale_code].copy()
+                    if matches.empty:
+                        continue
+                    matches = matches.sort_values('ScalePointNumber') if 'ScalePointNumber' in matches.columns else matches
+                    for _, row in matches.iterrows():
+                        pt_code = str(row.get('PayScalePointCode', '')).strip()
+                        pt_num = row.get('ScalePointNumber', '')
+                        pt_title = str(row.get('PayScalePointTitle', pt_code)).strip()
+                        self.template_data["PayScaleGrades"].append({
+                            "PayScaleCode": scale_code,
+                            "PayScaleGradeCode": pt_code,
+                            "Title": pt_title,
+                            "ScalePointNumberFrom": pt_num,
+                            "ScalePointNumberTo": pt_num,
+                            "AvailableToAllSchools": True,
+                            "SchoolCodes": "",
+                            "PayScaleGradeEnabled": True,
+                        })
+                    standard_covered.add(scale_code)
+                    self.log(f"  {scale_code}: added {len(matches)} per-point grade(s) from reference")
+
+        # Non-standard scales (NJC, SUP, custom) with no extracted points →
+        # no grades generated. Grades can only come from customer data.
+        remaining = [c for c in scales_needing_grades if c not in standard_covered]
+        if remaining:
+            self.log(f"  No grades generated for {len(remaining)} scale(s) — no customer point data: {remaining}")
 
     def _build_allowance_types(self):
         """Build AllowanceTypes sheet."""
