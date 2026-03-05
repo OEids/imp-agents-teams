@@ -7029,28 +7029,38 @@ class S2SpecialistAgent:
     # MAIN ENTRY POINT
     # =========================================================================
 
-    def process(self, customer_data_dir: Path, output_dir: Path, use_import_files: bool = True, column_mappings: Dict[str, Dict[str, str]] = None) -> Dict[str, Any]:
+    def process(self, customer_data_dir: Path, output_dir: Path, use_import_files: bool = True, template_path: Path = None, column_mappings: Dict[str, Dict[str, str]] = None) -> Dict[str, Any]:
         """
         Main processing entry point.
 
         1. Load standardized import files (if available)
-        2. Deeply analyze all customer data
-        3. Extract pay scales, allowances, and staff data
-        4. Build ALL template sheets
-        5. Save output
+        2. Load template if provided (Template Mode)
+        3. Deeply analyze all customer data
+        4. Extract pay scales, allowances, and staff data
+        5. Build ALL template sheets
+        6. Save output (into template if provided)
 
         Args:
             customer_data_dir: Path to customer data files
             output_dir: Path to save output
             use_import_files: If True, load from knowledge/S2/import files/ first
+            template_path: Optional path to pre-populated S2 template workbook
             column_mappings: Optional dict of validated column mappings from pre-flight validation
         """
-        # Store column mappings for use during processing
+        # Store template path and column mappings for use during processing
+        self.template_path = template_path
         self.column_mappings = column_mappings or {}
 
         self.log("="*60)
         self.log("S2 SPECIALIST AGENT - STARTING PROCESSING")
         self.log("="*60)
+
+        # Log template mode
+        if self.template_path and Path(self.template_path).exists():
+            self.log(f"Template Mode: ENABLED - {Path(self.template_path).name}")
+            self.log("  Customer data will be written into the template")
+        else:
+            self.log("Template Mode: DISABLED - Creating new workbook")
 
         # Log column mappings received from pre-flight validation
         if self.column_mappings:
@@ -7171,9 +7181,26 @@ class S2SpecialistAgent:
         # Phase 4: Save output
         output_dir.mkdir(exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_file = output_dir / f"S2_complete_template_{timestamp}.xlsx"
 
-        with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
+        # Template Mode: Copy template and write into it
+        if self.template_path and Path(self.template_path).exists():
+            import shutil
+            output_file = output_dir / f"S2_complete_{Path(self.template_path).stem}_{timestamp}.xlsx"
+            shutil.copy2(self.template_path, output_file)
+            self.log(f"Template Mode: Copied template to {output_file.name}")
+            # Use mode='a' to append to existing workbook, if_sheet_exists='replace' to overwrite sheets
+            excel_mode = 'a'
+            if_sheet_exists = 'replace'
+        else:
+            output_file = output_dir / f"S2_complete_template_{timestamp}.xlsx"
+            excel_mode = 'w'
+            if_sheet_exists = None
+
+        writer_kwargs = {'engine': 'openpyxl', 'mode': excel_mode}
+        if if_sheet_exists:
+            writer_kwargs['if_sheet_exists'] = if_sheet_exists
+
+        with pd.ExcelWriter(output_file, **writer_kwargs) as writer:
             for sheet_name, df in formatted_sheets.items():
                 if len(df) > 0:
                     df.to_excel(writer, sheet_name=sheet_name, index=False)
@@ -7712,16 +7739,17 @@ class S2SpecialistAgent:
         }
 
 
-def run_s2_specialist(customer_data_dir: Path, output_dir: Path, column_mappings: Dict[str, Dict[str, str]] = None) -> Dict[str, Any]:
+def run_s2_specialist(customer_data_dir: Path, output_dir: Path, template_path: Path = None, column_mappings: Dict[str, Dict[str, str]] = None) -> Dict[str, Any]:
     """Run the S2 specialist agent.
 
     Args:
         customer_data_dir: Path to customer data files
         output_dir: Path to save output
+        template_path: Optional path to pre-populated S2 template workbook
         column_mappings: Optional dict of validated column mappings from pre-flight validation
 
     Returns:
         Processing result dictionary
     """
     agent = S2SpecialistAgent()
-    return agent.process(customer_data_dir, output_dir, column_mappings=column_mappings)
+    return agent.process(customer_data_dir, output_dir, template_path=template_path, column_mappings=column_mappings)

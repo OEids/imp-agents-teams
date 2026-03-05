@@ -391,7 +391,16 @@ def run_team_processing(team_id: str, column_mappings: dict = None) -> dict:
         }
     elif team_id == "S2":
         from teams.s2_specialist import run_s2_specialist
-        result = run_s2_specialist(customer_dir, output_dir, column_mappings=column_mappings)
+
+        # Get template path if user uploaded one
+        template_path = st.session_state.get("s2_template_path")
+
+        result = run_s2_specialist(
+            customer_dir,
+            output_dir,
+            template_path=template_path,
+            column_mappings=column_mappings
+        )
         return {
             "success": result.get("success", False),
             "summary": result.get("summary", {}),
@@ -404,6 +413,7 @@ def run_team_processing(team_id: str, column_mappings: dict = None) -> dict:
             "created_role_groups": result.get("created_role_groups", []),
             "skipped_staff": result.get("skipped_staff", []),
             "processing_log": result.get("processing_log", []),
+            "build_mode": "template" if template_path else "raw_data"
         }
     elif team_id == "S3":
         from teams.s3_specialist import run_s3_specialist
@@ -945,8 +955,53 @@ def render_data_upload(team_id: str):
     """Render the data upload section."""
     st.subheader("📤 Upload Customer Data")
 
+    # S2 Template Mode - Upload pre-populated template first
+    if team_id == "S2":
+        st.markdown("### 📋 Step 1: Upload Template (Required)")
+        st.info("""
+        **S2 Workflow:**
+        1. **Upload Template** → Contains reference data (Pay Scales, Staff Roles, Pensions)
+        2. **Upload Raw Data** → Your customer staff/payroll files
+        3. **Map Columns** → Match customer columns to template fields (in 'Validate & Map' tab)
+        4. **Run S2** → Process staff data into template format
+        """)
+
+        with st.container():
+            template_file = st.file_uploader(
+                "Upload S2 Template Workbook",
+                type=["xlsx", "xlsm"],
+                key="s2_template_upload",
+                help="Upload the pre-populated S2 template workbook. Customer data will be written into this template."
+            )
+
+            if template_file:
+                # Save template to templates directory
+                template_dir = TEMPLATES_DIR / "S2"
+                template_dir.mkdir(parents=True, exist_ok=True)
+                template_path = template_dir / template_file.name
+
+                with open(template_path, "wb") as f:
+                    f.write(template_file.getbuffer())
+
+                st.session_state["s2_template_path"] = template_path
+                st.success(f"✅ Template uploaded: {template_file.name}")
+                st.info("🔧 **Template Mode ENABLED** - Customer data will be written into this template")
+
+            # Show current template status
+            current_template = st.session_state.get("s2_template_path")
+            if current_template and Path(current_template).exists():
+                st.success(f"📋 Active Template: {Path(current_template).name}")
+                if st.button("Clear Template (use Raw Data mode)", key="clear_s2_template"):
+                    st.session_state["s2_template_path"] = None
+                    st.rerun()
+            else:
+                st.caption("No template selected - using Raw Data mode")
+
+        st.markdown("---")
+        st.markdown("### 📁 Step 2: Upload Raw Customer Data")
+
     # S3 Template Mode - Upload pre-populated template first
-    if team_id == "S3":
+    elif team_id == "S3":
         st.markdown("### 📋 Step 1: Upload Template (Required)")
         st.info("""
         **S3 Workflow:**
@@ -996,15 +1051,23 @@ def render_data_upload(team_id: str):
         st.success("⚡ Auto-processing is **ON** - Files will be processed immediately after upload")
 
     upload_dir = CUSTOMER_DATA_DIR / team_id
-    if team_id != "S3":
+    if team_id not in ["S2", "S3"]:
         st.caption(f"Upload to: {upload_dir}")
 
     # Use type=None to accept all files (Streamlit has MIME type issues with .docx on Windows)
     # Validate file types after upload instead
     ALLOWED_EXTENSIONS = {".xlsx", ".xlsm", ".xls", ".csv", ".pdf", ".docx", ".doc", ".png", ".jpg", ".jpeg"}
 
+    # Label based on team
+    if team_id == "S2":
+        upload_label = "Upload raw staff/payroll files for S2"
+    elif team_id == "S3":
+        upload_label = "Upload raw budget files for S3"
+    else:
+        upload_label = f"Upload files for {team_id}"
+
     uploaded_files = st.file_uploader(
-        f"Upload {'raw budget files' if team_id == 'S3' else 'files'} for {team_id}",
+        upload_label,
         type=None,  # Accept all files - validate after upload (MIME type issues on Windows)
         accept_multiple_files=True,
         key=f"upload_{team_id}",
