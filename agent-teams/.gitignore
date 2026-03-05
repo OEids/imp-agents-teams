@@ -25,3 +25,21 @@ config/user_config.json
 # Memory/cache
 memory/
 .claude/
+
+# Non-code folders
+backup/
+Git/
+portfolio/
+purchasing/
+database planner/
+
+# Test outputs
+testing/**/Output/
+
+# Knowledge non-code files
+knowledge/**/*.md
+knowledge/**/*.txt
+knowledge/**/*.xlsx
+knowledge/**/budget examples/
+knowledge/**/finished work book/
+knowledge/**/import files/
