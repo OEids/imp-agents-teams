@@ -1749,6 +1749,9 @@ def render_validate_and_map(team_id: str):
         st.markdown("### Map Columns")
         st.caption("Review each column and confirm or change the mapping. Columns are grouped by file.")
 
+        # Track seen keys to handle duplicates
+        seen_keys = {}
+
         for file_key, result in results.items():
             # Get all columns for this file (matched + review + unmapped)
             all_columns = result.matched_columns + result.review_columns + result.unmapped_columns
@@ -1760,10 +1763,18 @@ def render_validate_and_map(team_id: str):
             # Show file/sheet as expander
             file_label = file_key.replace(":", " / ")
             with st.expander(f"**{file_label}** ({len(all_columns)} columns)", expanded=True):
-                for mapping in all_columns:
+                for col_idx, mapping in enumerate(all_columns):
                     source_col = mapping.source_column
-                    # Use hash of file_key + source_col for unique, consistent keys
-                    key_hash = hashlib.md5(f"{file_key}:{source_col}".encode()).hexdigest()[:8]
+                    # Create base key from team, file, and column
+                    base_key = f"{team_id}_{file_key}_{source_col}"
+                    # Add occurrence counter for duplicates
+                    if base_key in seen_keys:
+                        seen_keys[base_key] += 1
+                    else:
+                        seen_keys[base_key] = 0
+                    occurrence = seen_keys[base_key]
+                    # Hash with occurrence number for uniqueness
+                    key_hash = hashlib.md5(f"{base_key}_{occurrence}".encode()).hexdigest()[:10]
                     mapping_key = f"m_{key_hash}"
 
                     col1, col2, col3, col4 = st.columns([3, 3, 2, 2])
@@ -1818,20 +1829,29 @@ def render_validate_and_map(team_id: str):
         col1, col2, col3 = st.columns(3)
         with col1:
             if st.button("Confirm Mappings", type="primary", use_container_width=True):
-                # Collect all final mappings using hash-based keys
+                # Collect all final mappings - regenerate keys the same way as UI
                 all_mappings = {}
                 custom_maps = st.session_state.get("custom_mappings", {})
+                seen_keys_confirm = {}
 
                 for file_key, result in results.items():
                     file_mappings = {}
+                    all_cols = result.matched_columns + result.review_columns + result.unmapped_columns
+                    all_cols = [m for m in all_cols if m.source_column and m.source_column.strip()]
 
-                    for mapping in result.column_mappings:
+                    for mapping in all_cols:
                         source_col = mapping.source_column
                         if not source_col or not source_col.strip():
                             continue
 
-                        # Same hash as used in UI
-                        key_hash = hashlib.md5(f"{file_key}:{source_col}".encode()).hexdigest()[:8]
+                        # Same key generation as UI
+                        base_key = f"{team_id}_{file_key}_{source_col}"
+                        if base_key in seen_keys_confirm:
+                            seen_keys_confirm[base_key] += 1
+                        else:
+                            seen_keys_confirm[base_key] = 0
+                        occurrence = seen_keys_confirm[base_key]
+                        key_hash = hashlib.md5(f"{base_key}_{occurrence}".encode()).hexdigest()[:10]
                         mapping_key = f"m_{key_hash}"
 
                         # Check custom_maps first (user typed custom value)
