@@ -1729,11 +1729,22 @@ class S2SpecialistAgent:
                                 except Exception:
                                     pass
                                 for sheet_name, df in xls.items():
-                                    if sheet_name.lower() not in ['guidance', 'notes', 'instructions', 'help']:
-                                        if df is not None and len(df) > 0:
-                                            # Apply validated column mappings
-                                            df = self._apply_column_mappings(df, file_path.name, sheet_name)
-                                            self._analyze_dataframe(df, file_path.name, sheet_name)
+                                    # Extended skip list including templates and examples
+                                    skip_sheets = [
+                                        'guidance', 'notes', 'instructions', 'help',
+                                        'checklist', 'template', 'equated weeks example', 'cenchg'
+                                    ]
+                                    if any(skip in sheet_name.lower() for skip in skip_sheets):
+                                        self.log(f"    Skipping non-data sheet: {sheet_name}")
+                                        continue
+                                    if df is not None and len(df) > 0:
+                                        # Apply smart header detection for fallback reads
+                                        df = self._apply_smart_header_detection(df, sheet_name)
+                                        if df is None or len(df) == 0:
+                                            continue
+                                        # Apply validated column mappings
+                                        df = self._apply_column_mappings(df, file_path.name, sheet_name)
+                                        self._analyze_dataframe(df, file_path.name, sheet_name)
                                 return
                         except Exception as e3:
                             error_msg = "Multiple engine failures"
@@ -1747,7 +1758,10 @@ class S2SpecialistAgent:
                     except Exception:
                         pass
                     for sheet in xl.sheet_names:
-                        if sheet.lower() in ['guidance', 'notes', 'instructions', 'help']:
+                        # Extended skip list - template and example sheets are handled in _read_sheet_smart
+                        skip_sheets = ['guidance', 'notes', 'instructions', 'help', 'cenchg']
+                        if any(skip in sheet.lower() for skip in skip_sheets):
+                            self.log(f"    Skipping non-data sheet: {sheet}")
                             continue
 
                         df = self._read_sheet_smart(xl, sheet)
@@ -2545,19 +2559,127 @@ class S2SpecialistAgent:
                 self.pay_scales_found.add(scale_key)
                 self.log(f"  ✓ Extracted {scale_key} pay scale with {len(points_list)} points from OCR")
 
+    def _is_template_or_example_sheet(self, sheet_name: str, df_raw: pd.DataFrame) -> bool:
+        """
+        Detect if a sheet is a template/example/checklist rather than actual data.
+        These sheets describe the format but don't contain real staff data.
+
+        IMPORTANT: A sheet might have template-like headers at the top but still contain
+        real data below. We need to check for actual data content, not just header text.
+        """
+        sheet_lower = sheet_name.lower()
+
+        # Skip sheets with these names - but NOT data sheets like "Staff Contract Information" or "LGPS Information"
+        skip_sheet_names = [
+            'checklist', 'template', 'guidance', 'notes', 'instructions',
+            'help', 'readme', 'about', 'equated weeks example', 'cenchg'
+        ]
+
+        # These sheets typically have real data, don't skip them even if they contain "info"
+        # But "checklist" sheets should still be skipped
+        if 'checklist' in sheet_lower:
+            return True
+
+        data_sheet_patterns = [
+            'staff contract info', 'contract information', 'lgps info', 'pension info',
+            'statutory leave', 'leave data', 'payroll data'
+        ]
+        if any(pattern in sheet_lower for pattern in data_sheet_patterns):
+            return False
+
+        if any(skip in sheet_lower for skip in skip_sheet_names):
+            return True
+
+        # Check if sheet has actual data (not just example rows)
+        if df_raw is not None and len(df_raw) > 5:
+            # Look for data rows with actual staff identifiers (payroll numbers, names)
+            # Skip first 5 rows which might be headers/descriptions
+            has_real_data = False
+
+            for idx in range(5, min(15, len(df_raw))):
+                row = df_raw.iloc[idx]
+                row_values = [str(v).strip() for v in row if pd.notna(v) and str(v).strip()]
+
+                if not row_values:
+                    continue
+
+                # Check for real data indicators:
+                # - Alphanumeric codes (like EP203, 12345)
+                # - Names (short strings without template keywords)
+                # - Currency values
+                has_codes = any(v.upper().startswith('EP') or v.isdigit() for v in row_values if len(v) < 20)
+                has_dates = any('/' in v or '-' in v for v in row_values if len(v) < 15)
+                has_numbers = any(v.replace('.', '').isdigit() for v in row_values if len(v) < 15)
+
+                # If row has multiple data-like values, it's likely real data
+                if has_codes or (has_dates and has_numbers):
+                    has_real_data = True
+                    break
+
+                # Check for typical name patterns (short strings)
+                short_strings = [v for v in row_values if 2 < len(v) < 25]
+                if len(short_strings) >= 5:  # Row with multiple short values is likely data
+                    # Make sure they're not all template keywords
+                    template_words = ['example', 'template', 'sample', 'optional', 'required']
+                    non_template = [v for v in short_strings if not any(tw in v.lower() for tw in template_words)]
+                    if len(non_template) >= 4:
+                        has_real_data = True
+                        break
+
+            if has_real_data:
+                return False  # Has real data, don't skip
+
+        # Check first few rows for pure template indicators (no data below)
+        if df_raw is not None and len(df_raw) > 0:
+            # Only flag as template if it's a small sheet OR has explicit template language
+            first_rows_text = ''
+            for idx in range(min(5, len(df_raw))):
+                row = df_raw.iloc[idx]
+                first_rows_text += ' '.join([str(v).lower() for v in row if pd.notna(v)]) + ' '
+
+            # Strong template indicators that suggest NO real data
+            strong_template_indicators = [
+                'example person a', 'example person b', 'working weeks',
+                'this can be used as a template'
+            ]
+
+            strong_template_count = sum(1 for ind in strong_template_indicators if ind in first_rows_text)
+
+            # Only skip if very small sheet with template indicators
+            if strong_template_count >= 1 and len(df_raw) < 10:
+                return True
+
+        return False
+
     def _read_sheet_smart(self, xl: pd.ExcelFile, sheet: str) -> Optional[pd.DataFrame]:
         """Smart read that finds the header row automatically."""
         try:
             # First read to find header
             df_raw = pd.read_excel(xl, sheet, header=None, nrows=20)
 
-            # Key column indicators for staff data
-            staff_indicators = ['payroll', 'last name', 'first name', 'surname', 'forename',
-                               'unique', 'employee', 'empoyee', 'emp ref', 'pers ref', 'emp no',
-                               'staff', 'contract', 'role', 'job title', 'hours', 'fte',
-                               'salary', 'scale point', 'scp', 'pension', 'service start',
-                               'contract ref', 'pay scale', 'name', 'ni number', 'gender',
-                               'cost code', 'paid weeks', 'ft hours', 'grade', 'school']
+            # Check if this is a template/example sheet that should be skipped
+            if self._is_template_or_example_sheet(sheet, df_raw):
+                self.log(f"    Skipping template/example sheet: {sheet}")
+                return None
+
+            # Key column indicators for staff data - ordered by importance
+            # Primary indicators are most distinctive for staff data
+            primary_indicators = [
+                'payroll', 'unique payroll', 'person identifier', 'employee ref',
+                'emp ref', 'emp no', 'pers ref', 'staff id', 'staff ref'
+            ]
+
+            # Secondary indicators support identification
+            secondary_indicators = [
+                'last name', 'first name', 'surname', 'forename',
+                'employee', 'empoyee', 'contract ref', 'job title',
+                'hours', 'fte', 'salary', 'scale point', 'scp', 'pension',
+                'service start', 'pay scale', 'ni number', 'gender',
+                'cost code', 'paid weeks', 'ft hours', 'grade', 'school',
+                'weekly hours', 'annual salary', 'contract type', 'date of birth'
+            ]
+
+            all_indicators = primary_indicators + secondary_indicators
 
             # Find the best header row - prefer rows with staff-related column names
             best_row = 0
@@ -2567,16 +2689,40 @@ class S2SpecialistAgent:
                 row = df_raw.iloc[idx]
                 row_str = ' '.join([str(v).lower() for v in row if pd.notna(v)])
 
-                # Score based on staff indicators found
-                indicator_score = sum(3 for ind in staff_indicators if ind in row_str)
-                # Also score non-empty strings
-                string_score = sum(1 for v in row if isinstance(v, str) and len(str(v).strip()) > 2)
+                # Skip rows that are mostly empty or have very long single values (descriptions)
+                non_empty_values = [v for v in row if pd.notna(v) and str(v).strip()]
+                if len(non_empty_values) < 3:
+                    continue
 
-                total_score = indicator_score + string_score
+                # Check for very long values that indicate description text, not headers
+                max_val_len = max((len(str(v)) for v in non_empty_values), default=0)
+                if max_val_len > 100:  # Descriptions are usually very long
+                    continue
+
+                # Score based on primary indicators (higher weight)
+                primary_score = sum(5 for ind in primary_indicators if ind in row_str)
+                # Score based on secondary indicators
+                secondary_score = sum(2 for ind in secondary_indicators if ind in row_str)
+                # Bonus for having multiple short column-like values
+                column_like_score = sum(1 for v in non_empty_values
+                                       if isinstance(v, str) and 3 < len(str(v).strip()) < 50)
+
+                total_score = primary_score + secondary_score + column_like_score
 
                 if total_score > best_score:
                     best_score = total_score
                     best_row = idx
+
+            # If we found a good header row, ensure it's not row 0 with description text
+            if best_score < 5 and best_row == 0:
+                # Try to find a better row by looking for non-description content
+                for idx in range(min(10, len(df_raw))):
+                    row = df_raw.iloc[idx]
+                    non_empty = [str(v).strip() for v in row if pd.notna(v) and str(v).strip()]
+                    # Good header rows have multiple short values
+                    if len(non_empty) >= 5 and all(len(v) < 80 for v in non_empty):
+                        best_row = idx
+                        break
 
             # Re-read with correct header
             df = pd.read_excel(xl, sheet, header=best_row)
@@ -2586,12 +2732,28 @@ class S2SpecialistAgent:
             if len(df) > 0:
                 try:
                     first_col = df.iloc[:, 0].astype(str).str.lower()
-                    df = df[~first_col.isin(['core', 'essential', 'desirable', 'optional', 'core/mappable'])]
+                    skip_values = [
+                        'core', 'essential', 'desirable', 'optional', 'core/mappable',
+                        'person information', 'role information', 'contract hours',
+                        'salary information', 'pension information', 'other information',
+                        'allowances / payments', 'allowances/payments'
+                    ]
+                    df = df[~first_col.isin(skip_values)]
                 except Exception:
                     pass  # Continue if this operation fails
 
             # Clean column names
             df.columns = [self._clean_column_name(c) for c in df.columns]
+
+            # Final validation - check if we have any usable identifier column
+            # If not, this sheet might not be staff data
+            possible_id_cols = ['payroll_number', 'emp_no', 'employee_number', 'employee_id',
+                               'staff_id', 'staff_number', 'unique_id', 'code', 'ref']
+            has_id_column = any(col in df.columns for col in possible_id_cols)
+
+            if not has_id_column and len(df) <= 10:
+                # Small sheet without ID column - might be a reference sheet, not staff data
+                self.log(f"    Sheet '{sheet}' has no identifier column - may need manual mapping")
 
             return df
 
@@ -2606,6 +2768,98 @@ class S2SpecialistAgent:
             except Exception:
                 pass
             return None
+
+    def _apply_smart_header_detection(self, df: pd.DataFrame, sheet_name: str = "") -> Optional[pd.DataFrame]:
+        """
+        Apply smart header detection to a DataFrame that may have been read with wrong header row.
+        This is used for fallback paths that use pd.read_excel without smart reading.
+        """
+        try:
+            # Check if columns look like they're from wrong row (very long names or numbered names)
+            col_names = [str(c).lower() for c in df.columns]
+
+            # Indicators of wrong header row
+            wrong_header_indicators = [
+                any(len(c) > 100 for c in col_names),  # Very long column names
+                any('this example' in c for c in col_names),
+                any('should be included' in c for c in col_names),
+                col_names[0].startswith('1.') or col_names[0].startswith('1_'),
+                sum(1 for c in col_names if c.startswith('unnamed')) > len(col_names) / 2
+            ]
+
+            if not any(wrong_header_indicators):
+                # Headers look OK, just clean them
+                df.columns = [self._clean_column_name(c) for c in df.columns]
+                return df
+
+            self.log(f"    Detected incorrect header row in '{sheet_name}', searching for correct row...")
+
+            # Headers look wrong - we need to find the actual header row
+            # Convert current df to raw format by prepending the current column names as a row
+            raw_data = [list(df.columns)] + df.values.tolist()
+            df_raw = pd.DataFrame(raw_data)
+
+            # Find the best header row using same logic as _read_sheet_smart
+            primary_indicators = [
+                'payroll', 'unique payroll', 'person identifier', 'employee ref',
+                'emp ref', 'emp no', 'pers ref', 'staff id', 'staff ref'
+            ]
+            secondary_indicators = [
+                'last name', 'first name', 'surname', 'forename',
+                'hours', 'fte', 'salary', 'scale point', 'pension',
+                'pay scale', 'gender', 'grade', 'school', 'weekly hours'
+            ]
+
+            best_row = 0
+            best_score = 0
+
+            for idx in range(min(10, len(df_raw))):
+                row = df_raw.iloc[idx]
+                row_str = ' '.join([str(v).lower() for v in row if pd.notna(v)])
+
+                non_empty_values = [v for v in row if pd.notna(v) and str(v).strip()]
+                if len(non_empty_values) < 3:
+                    continue
+
+                max_val_len = max((len(str(v)) for v in non_empty_values), default=0)
+                if max_val_len > 100:
+                    continue
+
+                primary_score = sum(5 for ind in primary_indicators if ind in row_str)
+                secondary_score = sum(2 for ind in secondary_indicators if ind in row_str)
+                column_like_score = sum(1 for v in non_empty_values
+                                       if isinstance(v, str) and 3 < len(str(v).strip()) < 50)
+
+                total_score = primary_score + secondary_score + column_like_score
+
+                if total_score > best_score:
+                    best_score = total_score
+                    best_row = idx
+
+            if best_row > 0:
+                self.log(f"    Found header at row {best_row} (score: {best_score})")
+                # Reconstruct DataFrame with correct header
+                new_columns = df_raw.iloc[best_row].tolist()
+                new_data = df_raw.iloc[best_row + 1:].values.tolist()
+                df = pd.DataFrame(new_data, columns=new_columns)
+                df = df.dropna(how='all')
+
+                # Remove category header rows
+                if len(df) > 0:
+                    try:
+                        first_col = df.iloc[:, 0].astype(str).str.lower()
+                        skip_values = ['core', 'essential', 'desirable', 'optional', 'core/mappable']
+                        df = df[~first_col.isin(skip_values)]
+                    except Exception:
+                        pass
+
+            # Clean column names
+            df.columns = [self._clean_column_name(c) for c in df.columns]
+            return df
+
+        except Exception as e:
+            self.log(f"    Error in smart header detection: {e}")
+            return df
 
     def _clean_column_name(self, col: Any) -> str:
         """Standardize column name."""
@@ -3180,6 +3434,38 @@ class S2SpecialistAgent:
         cols_lower = [str(c).lower() for c in df.columns]
         cols_str = ' '.join(cols_lower)
         sheet_lower = sheet_name.lower()
+
+        # ===== EARLY DETECTION: Reference/Configuration Data =====
+        # These should NOT be classified as staff contracts
+        # IMPORTANT: Be strict - only classify as pension_rates if it's PRIMARILY pension config
+
+        # PENSION CONTRIBUTION RATES - small sheets with specific pension config columns
+        # Must have: "contribution" or "employer %", and few columns, and few rows
+        # Note: Column names may have underscores after cleaning
+        pension_rate_indicators = [
+            'employer_contribution', 'contribution_percentage', 'employer contribution',
+            'rate_date_from', 'rate_date_to', 'rate date', 'scheme_name'
+        ]
+        pension_indicator_count = sum(1 for ind in pension_rate_indicators if ind in cols_str)
+
+        # Only classify as pension_rates if:
+        # 1. Has multiple pension rate indicators (at least 2)
+        # 2. Small number of columns (config tables are narrow, typically 4-8 columns)
+        # 3. Does NOT have staff identifier columns (payroll_number, surname, forename)
+        staff_id_columns = ['payroll_number', 'payroll', 'emp_no', 'employee_number', 'staff_id', 'surname', 'forename', 'first_name', 'last_name']
+        has_staff_columns = any(ind in cols_str for ind in staff_id_columns)
+
+        if pension_indicator_count >= 2 and len(df.columns) <= 10 and not has_staff_columns:
+            # This is pension configuration data, not staff data
+            self.log(f"    Classified as pension_rates: {sheet_name}")
+            return 'pension_rates'
+
+        # STATUTORY LEAVE - has columns like "Leave Type", "Leave Date From"
+        # These ARE staff-related but should be handled differently
+        leave_indicators = ['leave type', 'leave date', 'maternity', 'paternity', 'adoption']
+        if any(ind in cols_str for ind in leave_indicators):
+            # Still treat as staff contracts for now (they link to staff by ID)
+            pass
 
         # ===== LOGIC-BASED DATA ANALYSIS =====
         # Analyze actual data patterns, not just column names

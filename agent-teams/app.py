@@ -6,6 +6,13 @@ A web interface for managing and running the S1, S2, S3 agent teams.
 """
 from docx import Document
 
+# PDF support
+try:
+    import pdfplumber
+    PDF_AVAILABLE = True
+except ImportError:
+    PDF_AVAILABLE = False
+
 import streamlit as st
 import pandas as pd
 from pathlib import Path
@@ -227,7 +234,7 @@ def get_customer_files(team_id: str) -> list:
     team_dir = CUSTOMER_DATA_DIR / team_id
     files = []
     if team_dir.exists():
-        for ext in ["*.xlsx", "*.xlsm", "*.xls", "*.csv", "*.docx", "*.doc"]:
+        for ext in ["*.xlsx", "*.xlsm", "*.xls", "*.csv", "*.docx", "*.doc", "*.pdf", "*.png", "*.jpg", "*.jpeg"]:
             files.extend(team_dir.rglob(ext))
     return [f for f in files if not f.name.startswith("~$")]
 
@@ -289,14 +296,28 @@ def run_team_processing(team_id: str, column_mappings: dict = None) -> dict:
         }
     elif team_id == "S3":
         from teams.s3_specialist import run_s3_specialist
-        result = run_s3_specialist(customer_dir, output_dir, column_mappings=column_mappings)
+
+        # Get template path if user uploaded one
+        template_path = st.session_state.get("s3_template_path")
+
+        # Get code mappings (customer codes -> template codes)
+        code_mappings = st.session_state.get("s3_code_mappings")
+
+        result = run_s3_specialist(
+            customer_dir,
+            output_dir,
+            template_path=template_path,
+            column_mappings=column_mappings,
+            code_mappings=code_mappings
+        )
         return {
             "success": result.get("success", False),
             "summary": result.get("summary", {}),
             "issues": result.get("issues", []),
             "assumptions": result.get("assumptions", []),
             "output_file": result.get("output_file"),
-            "template_sheets": result.get("template_sheets", {})
+            "template_sheets": result.get("template_sheets", {}),
+            "build_mode": "template" if template_path else "raw_data"
         }
     else:
         return {
@@ -342,6 +363,19 @@ def _extract_text_from_upload(uploaded_file) -> str:
         if name.endswith(".docx"):
             doc = Document(str(uploaded_file))
             return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+        if name.endswith(".pdf"):
+            if not PDF_AVAILABLE:
+                return ""
+            try:
+                text_parts = []
+                with pdfplumber.open(str(uploaded_file)) as pdf:
+                    for page in pdf.pages:
+                        page_text = page.extract_text()
+                        if page_text:
+                            text_parts.append(page_text)
+                return "\n".join(text_parts)
+            except Exception:
+                return ""
         return ""
 
     name = uploaded_file.name.lower()
@@ -356,6 +390,20 @@ def _extract_text_from_upload(uploaded_file) -> str:
     if name.endswith(".docx"):
         doc = Document(uploaded_file)
         return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+    if name.endswith(".pdf"):
+        if not PDF_AVAILABLE:
+            return ""
+        try:
+            import io
+            text_parts = []
+            with pdfplumber.open(io.BytesIO(uploaded_file.getvalue())) as pdf:
+                for page in pdf.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        text_parts.append(page_text)
+            return "\n".join(text_parts)
+        except Exception:
+            return ""
     return ""
 
 
@@ -786,15 +834,62 @@ def render_data_upload(team_id: str):
     """Render the data upload section."""
     st.subheader("📤 Upload Customer Data")
 
+    # S3 Template Mode - Upload pre-populated template first
+    if team_id == "S3":
+        st.markdown("### 📋 Step 1: Upload Template (Required)")
+        st.info("""
+        **S3 Workflow:**
+        1. **Upload Template** → Contains reference codes (Schools, Finance Codes, Depts)
+        2. **Upload Raw Data** → Your customer budget files
+        3. **Map Codes** → Match customer codes to template codes (in 'Validate & Map' tab)
+        4. **Run S3** → Process data into template format
+        """)
+
+        with st.container():
+
+            template_file = st.file_uploader(
+                "Upload S3 Template Workbook",
+                type=["xlsx", "xlsm"],
+                key="s3_template_upload",
+                help="Upload the pre-populated S3 template workbook. Customer data will be written into this template."
+            )
+
+            if template_file:
+                # Save template to templates directory
+                template_dir = TEMPLATES_DIR / "S3"
+                template_dir.mkdir(parents=True, exist_ok=True)
+                template_path = template_dir / template_file.name
+
+                with open(template_path, "wb") as f:
+                    f.write(template_file.getbuffer())
+
+                st.session_state["s3_template_path"] = template_path
+                st.success(f"✅ Template uploaded: {template_file.name}")
+                st.info("🔧 **Template Mode ENABLED** - Customer data will be written into this template")
+
+            # Show current template status
+            current_template = st.session_state.get("s3_template_path")
+            if current_template and Path(current_template).exists():
+                st.success(f"📋 Active Template: {Path(current_template).name}")
+                if st.button("Clear Template (use Raw Data mode)", key="clear_s3_template"):
+                    st.session_state["s3_template_path"] = None
+                    st.rerun()
+            else:
+                st.caption("No template selected - using Raw Data mode")
+
+        st.markdown("---")
+        st.markdown("### 📁 Step 2: Upload Raw Customer Data")
+
     # Show auto-processing status
     if st.session_state.auto_process:
         st.success("⚡ Auto-processing is **ON** - Files will be processed immediately after upload")
 
     upload_dir = CUSTOMER_DATA_DIR / team_id
-    st.caption(f"Upload to: {upload_dir}")
+    if team_id != "S3":
+        st.caption(f"Upload to: {upload_dir}")
 
     uploaded_files = st.file_uploader(
-        f"Upload files for {team_id}",
+        f"Upload {'raw budget files' if team_id == 'S3' else 'files'} for {team_id}",
         type=["xlsx", "xlsm", "xls", "csv", "pdf", "png", "jpg", "jpeg", "docx", "doc"],
         accept_multiple_files=True,
         key=f"upload_{team_id}"
@@ -1031,6 +1126,13 @@ def render_processing(team_id: str):
                                 st.caption(f"Reason: {rec.get('reason', '')}")
 
             elif team_id == "S3":
+                # Show build mode
+                build_mode = result.get("build_mode", "raw_data")
+                if build_mode == "template":
+                    st.info("📋 **Template Mode** - Data written into pre-populated template")
+                else:
+                    st.caption("📄 **Raw Data Mode** - New workbook created")
+
                 cols = st.columns(4)
                 cols[0].metric("Pupil Records", summary.get("pupils", 0))
                 cols[1].metric("Grants", summary.get("grants", 0))
@@ -1286,7 +1388,7 @@ def render_validate_and_map(team_id: str):
     # File checkboxes
     selected_files = []
     cols = st.columns(2)
-    for idx, f in enumerate(files[:10]):  # Limit to 10 files
+    for idx, f in enumerate(files):  # Show all files
         col_idx = idx % 2
         with cols[col_idx]:
             if st.checkbox(f.name, key=f"validate_file_{f.name}_{team_id}", value=True):
@@ -1505,6 +1607,187 @@ def render_validate_and_map(team_id: str):
                         st.dataframe(mapping_df, width="stretch", hide_index=True)
                     else:
                         st.caption("No mappings")
+
+    # S3 Code Mapping Section
+    if team_id == "S3":
+        st.markdown("---")
+        if st.session_state.mapping_validated.get(team_id, False):
+            render_s3_code_mapping(team_id)
+        else:
+            st.markdown("### Step 3: Map Codes to Template")
+            st.info("👆 **Complete Step 2 above first** - Confirm column mappings to unlock code mapping.")
+
+
+def render_s3_code_mapping(team_id: str):
+    """Render the S3 code mapping section (customer codes -> template codes)."""
+    st.markdown("### Step 3: Map Codes to Template")
+
+    template_path = st.session_state.get("s3_template_path")
+
+    if not template_path or not Path(template_path).exists():
+        st.info("📋 **Template Mode Required** - Upload a template in the 'Upload & Files' tab to enable code mapping.")
+        st.caption("Without a template, customer codes will be used as-is.")
+        return
+
+    st.markdown(f"**Template:** {Path(template_path).name}")
+    st.markdown("""
+    This step maps your customer's codes to the template's codes:
+    - **School codes** (e.g., "London Academy" → "SCH001")
+    - **Finance codes** (e.g., "611100" → "I1201")
+    - **Department codes** (e.g., "Teaching" → "TEACH")
+    """)
+
+    # Analyze codes button
+    if st.button("🔍 Analyze Customer Codes", type="primary", key="analyze_codes"):
+        with st.spinner("Analyzing customer data for codes..."):
+            try:
+                from teams.s3_code_mapper import run_code_mapping
+
+                customer_dir = CUSTOMER_DATA_DIR / team_id
+                column_mappings = st.session_state.column_mappings.get(team_id, {})
+
+                result = run_code_mapping(
+                    template_path=Path(template_path),
+                    customer_data_dir=customer_dir,
+                    column_mappings=column_mappings
+                )
+
+                st.session_state["s3_code_mapping_result"] = result
+                st.success(f"Found {len(result.school_mappings)} schools, {len(result.finance_mappings)} finance codes")
+            except Exception as e:
+                st.error(f"Error analyzing codes: {e}")
+                return
+
+    # Show code mapping results
+    result = st.session_state.get("s3_code_mapping_result")
+    if result:
+        # Warnings
+        if result.warnings:
+            for warning in result.warnings:
+                st.warning(warning)
+
+        # School Mappings
+        if result.school_mappings:
+            st.markdown("### School Mappings")
+            review_schools = [m for m in result.school_mappings if m.requires_review]
+            auto_schools = [m for m in result.school_mappings if not m.requires_review]
+
+            if auto_schools:
+                with st.expander(f"✅ Auto-matched Schools ({len(auto_schools)})", expanded=False):
+                    school_df = pd.DataFrame([
+                        {"Customer": m.customer_value, "Template": m.proposed_template_code,
+                         "Description": m.proposed_template_description, "Confidence": f"{m.confidence:.0%}"}
+                        for m in auto_schools
+                    ])
+                    st.dataframe(school_df, hide_index=True)
+
+            if review_schools:
+                st.markdown(f"**Review Required ({len(review_schools)} schools)**")
+                for m in review_schools:
+                    col1, col2, col3 = st.columns([2, 2, 1])
+                    with col1:
+                        st.text(f"{m.customer_value}")
+                        if m.customer_description:
+                            st.caption(m.customer_description)
+                    with col2:
+                        options = [m.proposed_template_code] if m.proposed_template_code else []
+                        options += [alt['code'] for alt in m.alternatives if alt['code'] not in options]
+                        options.append("-- Skip --")
+                        selected = st.selectbox(
+                            "Map to",
+                            options,
+                            key=f"school_map_{m.customer_value}",
+                            label_visibility="collapsed"
+                        )
+                        st.session_state[f"approved_school_{m.customer_value}"] = selected if selected != "-- Skip --" else None
+                    with col3:
+                        st.caption(f"{m.confidence:.0%}")
+
+        # Finance Code Mappings
+        if result.finance_mappings:
+            st.markdown("### Finance Code Mappings")
+            review_finance = [m for m in result.finance_mappings if m.requires_review]
+            auto_finance = [m for m in result.finance_mappings if not m.requires_review]
+
+            if auto_finance:
+                with st.expander(f"✅ Auto-matched Finance Codes ({len(auto_finance)})", expanded=False):
+                    fin_df = pd.DataFrame([
+                        {"Customer": m.customer_value, "Template": m.proposed_template_code,
+                         "Description": m.proposed_template_description, "Confidence": f"{m.confidence:.0%}"}
+                        for m in auto_finance
+                    ])
+                    st.dataframe(fin_df, hide_index=True)
+
+            if review_finance:
+                st.markdown(f"**Review Required ({len(review_finance)} codes)**")
+                for m in review_finance[:20]:  # Limit to 20 for UI
+                    col1, col2, col3 = st.columns([2, 2, 1])
+                    with col1:
+                        st.text(f"{m.customer_value}")
+                        if m.customer_description:
+                            st.caption(m.customer_description[:30])
+                    with col2:
+                        options = [m.proposed_template_code] if m.proposed_template_code else []
+                        options += [alt['code'] for alt in m.alternatives if alt['code'] not in options]
+                        options.append("-- Skip --")
+                        selected = st.selectbox(
+                            "Map to",
+                            options,
+                            key=f"finance_map_{m.customer_value}",
+                            label_visibility="collapsed"
+                        )
+                        st.session_state[f"approved_finance_{m.customer_value}"] = selected if selected != "-- Skip --" else None
+                    with col3:
+                        st.caption(f"{m.confidence:.0%}")
+
+                if len(review_finance) > 20:
+                    st.caption(f"... and {len(review_finance) - 20} more")
+
+        # Confirm button
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ Confirm Code Mappings", type="primary", key="confirm_codes"):
+                # Build code mappings from session state
+                code_mappings = {
+                    "school_mappings": {},
+                    "finance_mappings": {},
+                    "department_mappings": {}
+                }
+
+                # Auto-matched
+                for m in result.school_mappings:
+                    if not m.requires_review and m.proposed_template_code:
+                        code_mappings["school_mappings"][m.customer_value] = m.proposed_template_code
+                for m in result.finance_mappings:
+                    if not m.requires_review and m.proposed_template_code:
+                        code_mappings["finance_mappings"][m.customer_value] = m.proposed_template_code
+
+                # User approved
+                for m in result.school_mappings:
+                    if m.requires_review:
+                        approved = st.session_state.get(f"approved_school_{m.customer_value}")
+                        if approved:
+                            code_mappings["school_mappings"][m.customer_value] = approved
+                for m in result.finance_mappings:
+                    if m.requires_review:
+                        approved = st.session_state.get(f"approved_finance_{m.customer_value}")
+                        if approved:
+                            code_mappings["finance_mappings"][m.customer_value] = approved
+
+                st.session_state["s3_code_mappings"] = code_mappings
+                st.success(f"✅ Code mappings confirmed! {len(code_mappings['school_mappings'])} schools, {len(code_mappings['finance_mappings'])} finance codes")
+
+        with col2:
+            if st.button("🔄 Clear & Re-analyze", key="clear_codes"):
+                if "s3_code_mapping_result" in st.session_state:
+                    del st.session_state["s3_code_mapping_result"]
+                if "s3_code_mappings" in st.session_state:
+                    del st.session_state["s3_code_mappings"]
+                st.rerun()
+
+        # Show confirmed status
+        if st.session_state.get("s3_code_mappings"):
+            st.success("✅ Code mappings are confirmed. Ready to process!")
 
 
 # =============================================================================
