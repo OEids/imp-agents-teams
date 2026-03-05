@@ -477,6 +477,43 @@ def run_team_processing(team_id: str, column_mappings: dict = None) -> dict:
             column_mappings=column_mappings,
             code_mappings=code_mappings
         )
+
+        # Merge census data if available
+        census_result = st.session_state.get("s3_census_result")
+        if census_result and census_result.get("success") and result.get("output_file"):
+            try:
+                from openpyxl import load_workbook
+                output_file = Path(result["output_file"])
+
+                if output_file.exists():
+                    pupils_df = census_result.get("pupils_sheet")
+                    if pupils_df is not None and len(pupils_df) > 0:
+                        # Append census data to Pupils sheet
+                        wb = load_workbook(str(output_file))
+
+                        if "Pupils" in wb.sheetnames:
+                            ws = wb["Pupils"]
+                            # Find the last row with data
+                            last_row = ws.max_row + 1
+
+                            # Append census rows
+                            for _, row in pupils_df.iterrows():
+                                for col_idx, col_name in enumerate(pupils_df.columns, 1):
+                                    ws.cell(row=last_row, column=col_idx, value=row[col_name])
+                                last_row += 1
+
+                            wb.save(str(output_file))
+
+                            # Update result summary
+                            if "summary" not in result:
+                                result["summary"] = {}
+                            result["summary"]["census_rows_added"] = len(pupils_df)
+
+            except Exception as e:
+                if "issues" not in result:
+                    result["issues"] = []
+                result["issues"].append(f"Census merge warning: {e}")
+
         return {
             "success": result.get("success", False),
             "summary": result.get("summary", {}),
@@ -543,6 +580,18 @@ def _extract_text_from_upload(uploaded_file) -> str:
                 return "\n".join(text_parts)
             except Exception:
                 return ""
+        if name.endswith((".html", ".htm")):
+            try:
+                import re
+                html_content = uploaded_file.read_text(encoding="utf-8", errors="ignore")
+                # Strip HTML tags and decode entities
+                text = re.sub(r'<script[^>]*>.*?</script>', '', html_content, flags=re.DOTALL | re.IGNORECASE)
+                text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL | re.IGNORECASE)
+                text = re.sub(r'<[^>]+>', ' ', text)
+                text = re.sub(r'\s+', ' ', text).strip()
+                return text
+            except Exception:
+                return ""
         return ""
 
     name = uploaded_file.name.lower()
@@ -569,6 +618,17 @@ def _extract_text_from_upload(uploaded_file) -> str:
                     if page_text:
                         text_parts.append(page_text)
             return "\n".join(text_parts)
+        except Exception:
+            return ""
+    if name.endswith((".html", ".htm")):
+        try:
+            import re
+            html_content = uploaded_file.getvalue().decode("utf-8", errors="ignore")
+            text = re.sub(r'<script[^>]*>.*?</script>', '', html_content, flags=re.DOTALL | re.IGNORECASE)
+            text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL | re.IGNORECASE)
+            text = re.sub(r'<[^>]+>', ' ', text)
+            text = re.sub(r'\s+', ' ', text).strip()
+            return text
         except Exception:
             return ""
     return ""
@@ -1047,7 +1107,73 @@ def render_data_upload(team_id: str):
                 st.caption("No template selected - using Raw Data mode")
 
         st.markdown("---")
-        st.markdown("### 📁 Step 2: Upload Raw Customer Data")
+        st.markdown("### 📊 Step 2: Upload Census Files (Optional)")
+        st.info("Upload HTML or PDF census files to extract pupil numbers for the Pupils sheet.")
+
+        census_files = st.file_uploader(
+            "Upload Census Files (HTML/PDF)",
+            type=["html", "htm", "pdf"],
+            accept_multiple_files=True,
+            key="s3_census_upload",
+            help="School census files from DfE. Supports HTML and PDF formats."
+        )
+
+        if census_files:
+            # Save census files to a census subfolder
+            census_dir = get_session_data_dir() / team_id / "census"
+            census_dir.mkdir(parents=True, exist_ok=True)
+
+            for census_file in census_files:
+                census_path = census_dir / census_file.name
+                with open(census_path, "wb") as f:
+                    f.write(census_file.getbuffer())
+                st.success(f"✅ Census file uploaded: {census_file.name}")
+
+            st.session_state["s3_census_folder"] = census_dir
+
+        # Show census processing status
+        census_folder = st.session_state.get("s3_census_folder")
+        if census_folder and Path(census_folder).exists():
+            census_count = len(list(Path(census_folder).glob("*.html"))) + \
+                          len(list(Path(census_folder).glob("*.htm"))) + \
+                          len(list(Path(census_folder).glob("*.pdf")))
+            if census_count > 0:
+                st.success(f"📊 {census_count} census file(s) ready for processing")
+
+                # Process census button
+                if st.button("🔄 Process Census Files", key="process_census"):
+                    with st.spinner("Processing census files..."):
+                        try:
+                            from teams.s3_census_processor import run_census_processor
+
+                            # Get school codes from template if available
+                            school_codes_df = None
+                            template_path = st.session_state.get("s3_template_path")
+                            if template_path and Path(template_path).exists():
+                                try:
+                                    school_codes_df = pd.read_excel(template_path, sheet_name="Schools")
+                                except Exception:
+                                    pass
+
+                            result = run_census_processor(
+                                census_folder=Path(census_folder),
+                                school_codes_df=school_codes_df
+                            )
+
+                            st.session_state["s3_census_result"] = result
+
+                            if result.get("success"):
+                                summary = result.get("summary", {})
+                                st.success(f"✅ Census processed: {summary.get('pupils_rows', 0)} pupil records created")
+                                if summary.get("failed_count", 0) > 0:
+                                    st.warning(f"⚠️ {summary['failed_count']} file(s) could not be processed")
+                            else:
+                                st.error("Census processing failed")
+                        except Exception as e:
+                            st.error(f"Error processing census: {e}")
+
+        st.markdown("---")
+        st.markdown("### 📁 Step 3: Upload Raw Customer Data")
 
     # Show auto-processing status
     if st.session_state.auto_process:
@@ -1059,7 +1185,7 @@ def render_data_upload(team_id: str):
 
     # Use type=None to accept all files (Streamlit has MIME type issues with .docx on Windows)
     # Validate file types after upload instead
-    ALLOWED_EXTENSIONS = {".xlsx", ".xlsm", ".xls", ".csv", ".pdf", ".docx", ".doc", ".png", ".jpg", ".jpeg"}
+    ALLOWED_EXTENSIONS = {".xlsx", ".xlsm", ".xls", ".csv", ".pdf", ".docx", ".doc", ".png", ".jpg", ".jpeg", ".html", ".htm"}
 
     # Label based on team
     if team_id == "S2":
@@ -1074,7 +1200,7 @@ def render_data_upload(team_id: str):
         type=None,  # Accept all files - validate after upload (MIME type issues on Windows)
         accept_multiple_files=True,
         key=f"upload_{team_id}",
-        help="Supported: Excel (.xlsx, .xls), CSV, PDF, Word (.docx, .doc), Images"
+        help="Supported: Excel (.xlsx, .xls), CSV, PDF, Word (.docx, .doc), HTML, Images"
     )
 
     if uploaded_files:
