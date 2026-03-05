@@ -1,8 +1,11 @@
 
 """
-IMP Planner Agent Teams - Web Application
+IMP Planner - Agent Teams Web Application
 
-A web interface for managing and running the S1, S2, S3 agent teams.
+A web interface for managing and running the S1, S2, S3 specialist agent teams.
+Behind Ambitious MAT Finance Teams.
+
+Brand: IMP Software (impsoftware.co.uk)
 """
 from docx import Document
 
@@ -53,15 +56,112 @@ try:
 except ImportError:
     PREFLIGHT_AVAILABLE = False
 
+# Import Column Mapping Learner for persistent learning
+try:
+    from memory.column_mapping_learner import ColumnMappingLearner
+    LEARNER_AVAILABLE = True
+except ImportError:
+    LEARNER_AVAILABLE = False
+    ColumnMappingLearner = None
+
 import os
 
 # Page config
 st.set_page_config(
-    page_title="IMP Agent Teams",
-    page_icon="🤖",
+    page_title="IMP Planner",
+    page_icon="app brand/imp_logo_final.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# =============================================================================
+# IMP BRAND COLORS
+# =============================================================================
+IMP_COLORS = {
+    "deep_purple": "#261342",
+    "purple": "#6A0F8E",
+    "light_purple": "#A093DB",
+    "white": "#FFFFFF",
+    "violet": "#6C63FF",
+    "cyan": "#67D1FF",
+    "dark_grey": "#B2B2B2",
+    "light_grey": "#E5E5E5",
+}
+
+# Custom CSS for IMP branding
+st.markdown(f"""
+<style>
+    /* Sidebar styling - subtle purple accent */
+    [data-testid="stSidebar"] {{
+        background: linear-gradient(180deg, {IMP_COLORS['white']} 0%, {IMP_COLORS['light_purple']}22 100%);
+        border-right: 3px solid {IMP_COLORS['purple']};
+    }}
+
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3 {{
+        color: {IMP_COLORS['deep_purple']} !important;
+    }}
+
+    [data-testid="stSidebar"] .stCaption {{
+        color: {IMP_COLORS['purple']} !important;
+    }}
+
+    /* Button styling */
+    .stButton > button[kind="primary"] {{
+        background-color: {IMP_COLORS['purple']};
+        border-color: {IMP_COLORS['purple']};
+    }}
+
+    .stButton > button[kind="primary"]:hover {{
+        background-color: {IMP_COLORS['deep_purple']};
+        border-color: {IMP_COLORS['deep_purple']};
+    }}
+
+    /* Tab styling */
+    .stTabs [data-baseweb="tab-list"] {{
+        gap: 8px;
+    }}
+
+    .stTabs [data-baseweb="tab"] {{
+        background-color: {IMP_COLORS['light_grey']};
+        border-radius: 4px;
+        color: {IMP_COLORS['deep_purple']};
+    }}
+
+    .stTabs [aria-selected="true"] {{
+        background-color: {IMP_COLORS['light_purple']} !important;
+        color: {IMP_COLORS['deep_purple']} !important;
+    }}
+
+    /* Metric styling */
+    [data-testid="stMetricValue"] {{
+        color: {IMP_COLORS['deep_purple']};
+    }}
+
+    /* Expander styling */
+    .streamlit-expanderHeader {{
+        background-color: {IMP_COLORS['light_grey']};
+        border-radius: 4px;
+    }}
+
+    /* Success/Info/Warning boxes */
+    .stSuccess {{
+        background-color: {IMP_COLORS['light_purple']}22;
+        border-left-color: {IMP_COLORS['purple']};
+    }}
+
+    /* Links */
+    a {{
+        color: {IMP_COLORS['purple']} !important;
+    }}
+
+    /* Dividers */
+    hr {{
+        border-color: {IMP_COLORS['light_grey']};
+    }}
+</style>
+""", unsafe_allow_html=True)
 
 # Base paths
 BASE_DIR = Path(__file__).parent
@@ -91,7 +191,7 @@ TEAMS = {
     "S1": {
         "name": "Structure Team",
         "icon": "🏗️",
-        "color": "#4CAF50",
+        "color": IMP_COLORS["purple"],
         "description": "Specialist Agent - Handles finance codes, schools, departments, and Chart of Accounts",
         "capabilities": [
             "🤖 Deep analysis of customer structure data",
@@ -107,7 +207,7 @@ TEAMS = {
     "S2": {
         "name": "Staff Team",
         "icon": "👥",
-        "color": "#2196F3",
+        "color": IMP_COLORS["violet"],
         "description": "Specialist Agent - Processes staff contracts, pay scales, and personnel data",
         "capabilities": [
             "🤖 Deep analysis extracts ALL pay scales & points",
@@ -124,7 +224,7 @@ TEAMS = {
     "S3": {
         "name": "Financial Team",
         "icon": "💰",
-        "color": "#FF9800",
+        "color": IMP_COLORS["cyan"],
         "description": "Specialist Agent - Manages budgets, grants, funding, and pupil numbers",
         "capabilities": [
             "🤖 Deep analysis of budget & financial data",
@@ -161,6 +261,11 @@ if "preflight_validator" not in st.session_state:
     st.session_state.preflight_validator = None
 if "custom_mappings" not in st.session_state:
     st.session_state.custom_mappings = {}  # stores custom typed mappings
+if "column_learner" not in st.session_state:
+    if LEARNER_AVAILABLE:
+        st.session_state.column_learner = ColumnMappingLearner()
+    else:
+        st.session_state.column_learner = None
 
 
 # =============================================================================
@@ -234,7 +339,7 @@ def get_customer_files(team_id: str) -> list:
     team_dir = CUSTOMER_DATA_DIR / team_id
     files = []
     if team_dir.exists():
-        for ext in ["*.xlsx", "*.xlsm", "*.xls", "*.csv", "*.docx", "*.doc", "*.pdf", "*.png", "*.jpg", "*.jpeg"]:
+        for ext in ["*.xlsx", "*.xlsm", "*.xls", "*.csv", "*.pdf", "*.docx", "*.doc", "*.png", "*.jpg", "*.jpeg"]:
             files.extend(team_dir.rglob(ext))
     return [f for f in files if not f.name.startswith("~$")]
 
@@ -292,7 +397,12 @@ def run_team_processing(team_id: str, column_mappings: dict = None) -> dict:
             "issues": result.get("issues", []),
             "assumptions": result.get("assumptions", []),
             "output_file": result.get("output_file"),
-            "template_sheets": result.get("template_sheets", {})
+            "template_sheets": result.get("template_sheets", {}),
+            "unclassified_data": result.get("unclassified_data", []),
+            "created_role_codes": result.get("created_role_codes", []),
+            "created_role_groups": result.get("created_role_groups", []),
+            "skipped_staff": result.get("skipped_staff", []),
+            "processing_log": result.get("processing_log", []),
         }
     elif team_id == "S3":
         from teams.s3_specialist import run_s3_specialist
@@ -592,8 +702,13 @@ def _render_lc_documents(locations: list, customers: list, key_prefix: str = "lc
 def render_sidebar():
     """Render the sidebar navigation."""
     with st.sidebar:
-        st.image("https://img.icons8.com/color/96/000000/robot-2.png", width=80)
-        st.title("IMP Agent Teams")
+        # IMP Logo
+        st.image("app brand/imp_logo_final.png", width=180)
+        st.markdown(f"""
+        <p style="color: {IMP_COLORS['purple']}; font-size: 0.9em; margin-top: -10px;">
+        Behind Ambitious MAT Finance Teams
+        </p>
+        """, unsafe_allow_html=True)
         st.markdown("---")
 
         st.caption(f"Data folder: {CUSTOMER_DATA_DIR}")
@@ -813,12 +928,13 @@ def render_team_overview(team_id: str):
     """Render the team overview section."""
     team = TEAMS[team_id]
 
-    # Header
+    # Header with IMP branding
     st.markdown(f"""
-    <div style="background: linear-gradient(135deg, {team['color']}22, {team['color']}11);
-                padding: 20px; border-radius: 10px; border-left: 5px solid {team['color']};">
-        <h1>{team['icon']} {team['name']}</h1>
-        <p style="font-size: 1.2em; color: #666;">{team['description']}</p>
+    <div style="background: linear-gradient(135deg, {IMP_COLORS['deep_purple']}15, {team['color']}20);
+                padding: 20px; border-radius: 10px; border-left: 5px solid {team['color']};
+                border-top: 1px solid {IMP_COLORS['light_grey']};">
+        <h1 style="color: {IMP_COLORS['deep_purple']};">{team['icon']} {team['name']}</h1>
+        <p style="font-size: 1.2em; color: {IMP_COLORS['dark_grey']};">{team['description']}</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -888,17 +1004,28 @@ def render_data_upload(team_id: str):
     if team_id != "S3":
         st.caption(f"Upload to: {upload_dir}")
 
+    # Use type=None to accept all files (Streamlit has MIME type issues with .docx on Windows)
+    # Validate file types after upload instead
+    ALLOWED_EXTENSIONS = {".xlsx", ".xlsm", ".xls", ".csv", ".pdf", ".docx", ".doc", ".png", ".jpg", ".jpeg"}
+
     uploaded_files = st.file_uploader(
         f"Upload {'raw budget files' if team_id == 'S3' else 'files'} for {team_id}",
-        type=["xlsx", "xlsm", "xls", "csv", "pdf", "png", "jpg", "jpeg", "docx", "doc"],
+        type=None,  # Accept all files - validate after upload (MIME type issues on Windows)
         accept_multiple_files=True,
-        key=f"upload_{team_id}"
+        key=f"upload_{team_id}",
+        help="Supported: Excel (.xlsx, .xls), CSV, PDF, Word (.docx, .doc), Images"
     )
 
     if uploaded_files:
         upload_dir.mkdir(parents=True, exist_ok=True)
 
         for uploaded_file in uploaded_files:
+            # Validate file extension
+            file_ext = Path(uploaded_file.name).suffix.lower()
+            if file_ext not in ALLOWED_EXTENSIONS:
+                st.error(f"❌ {uploaded_file.name}: Unsupported file type '{file_ext}'")
+                continue
+
             file_path = upload_dir / uploaded_file.name
             with open(file_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
@@ -1217,11 +1344,65 @@ def render_processing(team_id: str):
                     if skipped_staff:
                         st.warning(f"⚠️ {len(skipped_staff)} staff records were skipped - check _SkippedStaff sheet for details")
 
-        # Issues
+            # Show unclassified data that needs user mapping
+            unclassified_data = result.get("unclassified_data", [])
+            if unclassified_data:
+                with st.expander(f"🔍 Unclassified Data - Needs Manual Mapping ({len(unclassified_data)} sheets)", expanded=True):
+                    st.warning(f"**{len(unclassified_data)} data sheet(s) could not be auto-classified.** Please review and specify the data type.")
+
+                    for idx, item in enumerate(unclassified_data):
+                        st.markdown(f"**{item['file_name']}** / {item['sheet_name']} ({item['row_count']} rows)")
+                        st.caption(f"Columns: {', '.join(item['columns'][:10])}{'...' if len(item['columns']) > 10 else ''}")
+
+                        # Show sample data
+                        if item.get('sample_data'):
+                            # Pad arrays to same length to avoid DataFrame error
+                            sample_items = list(item['sample_data'].items())[:5]
+                            if sample_items:
+                                max_len = max(len(v) for k, v in sample_items)
+                                padded_data = {k: v + [None] * (max_len - len(v)) for k, v in sample_items}
+                                sample_df = pd.DataFrame(padded_data)
+                                st.dataframe(sample_df, use_container_width=True, hide_index=True)
+
+                        # Let user specify what type of data this is
+                        data_type = st.selectbox(
+                            "What type of data is this?",
+                            ["-- Select --", "Staff Contracts", "Pay Scales", "Allowances", "Not S2 Data (Ignore)"],
+                            key=f"unclassified_type_{idx}"
+                        )
+
+                        if data_type != "-- Select --":
+                            st.success(f"Marked as: {data_type}")
+                            # Store in session state for reprocessing
+                            if "unclassified_mappings" not in st.session_state:
+                                st.session_state.unclassified_mappings = {}
+                            st.session_state.unclassified_mappings[f"{item['file_name']}_{item['sheet_name']}"] = data_type
+
+                        st.divider()
+
+                    if st.button("Reprocess with Manual Classifications", key="reprocess_unclassified"):
+                        st.info("Please re-run processing to apply your classifications")
+
+        # Issues - show with full detail
         if result.get("issues"):
             with st.expander(f"⚠️ Issues ({len(result['issues'])})", expanded=True):
-                for issue in result["issues"]:
-                    st.error(issue)
+                for idx, issue in enumerate(result["issues"]):
+                    # Check if it's a multi-line detailed error
+                    if "\n" in str(issue):
+                        # Show detailed errors in code block for readability
+                        st.markdown(f"**Issue {idx + 1}:**")
+                        st.code(issue, language=None)
+                    else:
+                        st.error(issue)
+
+        # Processing Log (diagnostic info) - ALWAYS show for debugging
+        processing_log = result.get("processing_log", [])
+        with st.expander(f"📋 Processing Log ({len(processing_log)} entries)", expanded=True):
+            if processing_log:
+                for entry in processing_log:
+                    st.text(entry)
+            else:
+                st.warning("No processing log entries - this may indicate the changes haven't been deployed yet")
 
         # Assumptions (for non-S2 teams, or as fallback)
         if team_id != "S2" and result.get("assumptions"):
@@ -1366,15 +1547,28 @@ def render_validate_and_map(team_id: str):
         st.warning("Pre-flight validation module not available. Install required dependencies.")
         return
 
-    # Initialize validator if needed
+    # Initialize validator if needed (with column learner for learned mappings)
     if st.session_state.preflight_validator is None:
         try:
-            st.session_state.preflight_validator = PreFlightValidator()
+            learner = st.session_state.get("column_learner")
+            st.session_state.preflight_validator = PreFlightValidator(column_learner=learner)
         except Exception as e:
             st.error(f"Failed to initialize validator: {e}")
             return
 
     validator = st.session_state.preflight_validator
+
+    # Show learned mappings info
+    learner = st.session_state.get("column_learner")
+    if learner and LEARNER_AVAILABLE:
+        stats = learner.get_statistics()
+        if stats['total_mappings'] > 0:
+            with st.expander(f"Learned Mappings ({stats['total_mappings']} saved)", expanded=False):
+                cols = st.columns(3)
+                cols[0].metric("Total Learned", stats['total_mappings'])
+                cols[1].metric("Times Applied", stats['total_applications'])
+                cols[2].metric("Ignored Columns", stats['ignored_columns'])
+                st.caption("Column mappings you've confirmed are automatically applied to new files.")
 
     # Step 1: File Selection
     st.markdown("### Step 1: Select Files to Validate")
@@ -1404,14 +1598,21 @@ def render_validate_and_map(team_id: str):
             results = {}
             for file_path in selected_files:
                 try:
-                    result = validator.validate_file(file_path, strand=team_id)
-                    key = f"{result.file_name}:{result.sheet_name or 'default'}"
-                    results[key] = result
+                    # Use validate_file_all_sheets to get all sheets/tables
+                    file_results = validator.validate_file_all_sheets(file_path, strand=team_id)
+                    for result in file_results:
+                        key = f"{result.file_name}:{result.sheet_name or 'default'}"
+                        results[key] = result
                 except Exception as e:
-                    st.error(f"Error validating {file_path.name}: {e}")
+                    error_type = type(e).__name__
+                    st.error(f"Error validating {file_path.name}")
+                    with st.expander("Error Details", expanded=True):
+                        st.code(f"File: {file_path}\nType: {error_type}\nDetails: {str(e)}", language=None)
 
             st.session_state.validation_results[team_id] = results
-            st.success(f"Analyzed {len(results)} file(s)")
+            total_sheets = len(results)
+            total_files = len(selected_files)
+            st.success(f"Analyzed {total_sheets} sheet(s)/table(s) from {total_files} file(s)")
 
     # Step 2: Show Results
     if team_id in st.session_state.validation_results and st.session_state.validation_results[team_id]:
@@ -1419,38 +1620,72 @@ def render_validate_and_map(team_id: str):
 
         st.markdown("### Step 2: Column Analysis Results")
 
-        # Show file summaries and matched columns per file
+        # Group results by file name (consolidate multiple sheets into one entry per file)
+        files_grouped = {}
         for file_key, result in results.items():
-            with st.expander(f"**{result.file_name}** ({result.row_count} rows, {result.column_count} columns)", expanded=True):
-                # Summary metrics
-                summary = result.mapping_summary
-                cols = st.columns(5)
-                cols[0].metric("Matched", summary['matched'], help="Exact or variation matches")
-                cols[1].metric("Review", summary['review'], help="Fuzzy matches needing review")
-                cols[2].metric("Unmapped", summary['unmapped'], help="Could not map")
-                cols[3].metric("Corrected", summary['corrected'], help="User corrections applied")
-                cols[4].metric("Ignored", summary['ignored'], help="Columns marked to ignore")
+            file_name = result.file_name
+            if file_name not in files_grouped:
+                files_grouped[file_name] = []
+            files_grouped[file_name].append(result)
+
+        # Show one expander per file with aggregated metrics
+        for file_name, file_results in files_grouped.items():
+            # Aggregate metrics across all sheets/tables in this file
+            total_rows = sum(r.row_count for r in file_results)
+            total_cols = sum(r.column_count for r in file_results)
+            total_matched = sum(r.mapping_summary['matched'] for r in file_results)
+            total_review = sum(r.mapping_summary['review'] for r in file_results)
+            total_unmapped = sum(r.mapping_summary['unmapped'] for r in file_results)
+            total_corrected = sum(r.mapping_summary['corrected'] for r in file_results)
+            total_ignored = sum(r.mapping_summary['ignored'] for r in file_results)
+
+            # Get best strand detection
+            best_strand = None
+            best_confidence = 0
+            for r in file_results:
+                if r.detected_strand and r.strand_confidence > best_confidence:
+                    best_strand = r.detected_strand
+                    best_confidence = r.strand_confidence
+
+            sheet_count = len(file_results)
+            sheet_info = f", {sheet_count} sheets" if sheet_count > 1 else ""
+
+            with st.expander(f"**{file_name}** ({total_rows} rows, {total_cols} columns{sheet_info})", expanded=True):
+                # Summary metrics (aggregated)
+                # Note: All mappings require user review - no auto-acceptance
+                total_suggestions = total_matched + total_review  # Columns with suggested mappings
+                cols = st.columns(4)
+                cols[0].metric("Suggested", total_suggestions, help="Columns with suggested mappings (require confirmation)")
+                cols[1].metric("Unmapped", total_unmapped, help="No suggestions - needs manual mapping")
+                cols[2].metric("Corrected", total_corrected, help="User corrections applied")
+                cols[3].metric("Ignored", total_ignored, help="Columns marked to ignore")
 
                 # Strand detection
-                if result.detected_strand:
-                    confidence_color = "green" if result.strand_confidence >= 0.8 else "orange" if result.strand_confidence >= 0.6 else "red"
-                    st.markdown(f"**Detected Strand:** {result.detected_strand} (:{confidence_color}[{result.strand_confidence:.0%}])")
+                if best_strand:
+                    confidence_color = "green" if best_confidence >= 0.8 else "orange" if best_confidence >= 0.6 else "red"
+                    st.markdown(f"**Detected Strand:** {best_strand} (:{confidence_color}[{best_confidence:.0%}])")
 
-                # Warnings
-                if result.warnings:
-                    for warning in result.warnings:
-                        st.warning(warning)
+                # Errors (deduplicated across sheets) - show with full detail
+                all_errors = []
+                for r in file_results:
+                    if hasattr(r, 'errors') and r.errors:
+                        all_errors.extend(r.errors)
+                if all_errors:
+                    st.markdown("**Errors:**")
+                    for error in all_errors:
+                        # Show errors in expandable format for readability
+                        with st.expander(f"Error: {error.split(chr(10))[0][:80]}...", expanded=True):
+                            st.code(error, language=None)
 
-                # Show matched columns per file
-                if result.matched_columns:
-                    matched_cols = [c for c in result.matched_columns if c.source_column and c.source_column.strip()]
-                    if matched_cols:
-                        st.markdown("**Matched Columns (auto-accepted)**")
-                        matched_df = pd.DataFrame([
-                            {"Source": c.source_column, "Mapped To": c.mapped_to, "Confidence": f"{c.confidence:.0%}"}
-                            for c in matched_cols
-                        ])
-                        st.dataframe(matched_df, width="stretch", hide_index=True)
+                # Warnings (deduplicated across sheets)
+                all_warnings = set()
+                for r in file_results:
+                    all_warnings.update(r.warnings or [])
+                for warning in all_warnings:
+                    st.warning(warning)
+
+                # NOTE: All columns now require user review - no auto-accepted columns
+                # Matched columns are included in the review section below
 
         # Collect and deduplicate columns needing review across all files
         all_review = {}  # source_column -> (mapping, file_keys)
@@ -1471,8 +1706,10 @@ def render_validate_and_map(team_id: str):
                         all_unmapped[m.source_column][1].append(file_key)
 
         # Show consolidated review columns (deduplicated)
+        # All columns with suggested mappings require user confirmation
         if all_review:
-            st.markdown("**Review Suggested (fuzzy matches)**")
+            st.markdown("**Review Column Mappings** *(confirm or change each mapping)*")
+            st.caption("All mappings require your confirmation. Use the dropdown to change any mapping regardless of confidence score.")
             for source_col, (mapping, file_keys) in all_review.items():
                 col1, col2, col3, col4 = st.columns([3, 3, 2, 2])
                 mapping_key = f"review_{source_col}"
@@ -1504,7 +1741,14 @@ def render_validate_and_map(team_id: str):
                     elif selected != "── All Fields ──" and selected:
                         st.session_state.custom_mappings[mapping_key] = selected
                 with col3:
-                    st.caption(f"Score: {mapping.confidence:.0%}")
+                    # Color-coded confidence indicator
+                    conf = mapping.confidence
+                    if conf >= 0.95:
+                        st.caption(f":green[{conf:.0%}] (high)")
+                    elif conf >= 0.8:
+                        st.caption(f":orange[{conf:.0%}] (medium)")
+                    else:
+                        st.caption(f":red[{conf:.0%}] (low)")
                 with col4:
                     if mapping.sample_values:
                         st.caption(f"e.g., {str(mapping.sample_values[0])[:20]}")
@@ -1548,9 +1792,9 @@ def render_validate_and_map(team_id: str):
         # Step 3: Confirm & Proceed
         st.markdown("### Step 3: Confirm & Proceed")
 
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         with col1:
-            if st.button("Confirm Mappings", type="primary", width="stretch"):
+            if st.button("Confirm Mappings", type="primary", use_container_width=True):
                 # Collect all final mappings using deduplicated keys
                 all_mappings = {}
                 custom_maps = st.session_state.get("custom_mappings", {})
@@ -1563,12 +1807,25 @@ def render_validate_and_map(team_id: str):
                         review_key = f"review_{source_col}"
                         unmap_key = f"unmap_{source_col}"
 
+                        # Check for user selection in custom_maps
                         if review_key in custom_maps and custom_maps[review_key] != "__IGNORE__":
                             file_mappings[source_col] = custom_maps[review_key]
                         elif unmap_key in custom_maps and custom_maps[unmap_key] != "__IGNORE__":
                             file_mappings[source_col] = custom_maps[unmap_key]
-                        elif mapping.final_mapping:
-                            file_mappings[source_col] = mapping.final_mapping
+                        elif mapping.user_override and mapping.user_override != "__IGNORE__":
+                            # User explicitly overrode this mapping
+                            file_mappings[source_col] = mapping.user_override
+                        else:
+                            # Check selectbox state directly for review columns
+                            selectbox_key = f"map_{review_key}"
+                            selectbox_value = st.session_state.get(selectbox_key)
+                            if selectbox_value and selectbox_value not in ["── All Fields ──", "-- Type custom --", "-- Ignore this column --", "-- Keep original --"]:
+                                file_mappings[source_col] = selectbox_value
+                            elif selectbox_value == "-- Keep original --":
+                                file_mappings[source_col] = source_col
+                            elif mapping.mapped_to and mapping.status == 'review':
+                                # Use suggested mapping if user didn't change it
+                                file_mappings[source_col] = mapping.mapped_to
 
                     all_mappings[file_key] = file_mappings
 
@@ -1577,7 +1834,38 @@ def render_validate_and_map(team_id: str):
                 st.success("Mappings confirmed! You can now proceed to Process tab.")
 
         with col2:
-            if st.button("Clear & Re-analyze", width="stretch"):
+            # Save to Memory button - learns from user corrections
+            learner = st.session_state.get("column_learner")
+            custom_maps = st.session_state.get("custom_mappings", {})
+            has_corrections = any(
+                k.startswith("review_") or k.startswith("unmap_")
+                for k in custom_maps.keys()
+            )
+
+            if st.button("Save to Memory", use_container_width=True, disabled=not has_corrections,
+                        help="Save your column mappings so future files use them automatically"):
+                if learner and has_corrections:
+                    # Extract user corrections (both review and unmapped)
+                    corrections = {}
+                    for key, value in custom_maps.items():
+                        if key.startswith("review_"):
+                            source_col = key[7:]  # Remove "review_" prefix
+                            corrections[source_col] = value
+                        elif key.startswith("unmap_"):
+                            source_col = key[6:]  # Remove "unmap_" prefix
+                            corrections[source_col] = value
+
+                    # Learn from corrections
+                    learned_count = learner.learn_from_corrections(corrections, strand=team_id)
+                    if learned_count > 0:
+                        st.success(f"Learned {learned_count} column mappings for future use!")
+                    else:
+                        st.info("No new mappings to learn.")
+                else:
+                    st.warning("No corrections to save." if not has_corrections else "Learner not available.")
+
+        with col3:
+            if st.button("Clear & Re-analyze", use_container_width=True):
                 if team_id in st.session_state.validation_results:
                     del st.session_state.validation_results[team_id]
                 if team_id in st.session_state.column_mappings:
@@ -1833,12 +2121,16 @@ def main():
 
     # Footer
     st.markdown("---")
-    st.markdown(
-        "<div style='text-align: center; color: #888;'>"
-        "IMP Planner Agent Teams v2.0 | Specialist Agents | Built with Streamlit"
-        "</div>",
-        unsafe_allow_html=True
-    )
+    st.markdown(f"""
+    <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, {IMP_COLORS['deep_purple']}11, {IMP_COLORS['light_purple']}11); border-radius: 8px;'>
+        <p style='color: {IMP_COLORS['deep_purple']}; margin-bottom: 5px;'>
+            <strong>IMP Planner</strong> | Agent Teams v2.0
+        </p>
+        <p style='color: {IMP_COLORS['dark_grey']}; font-size: 0.85em; margin: 0;'>
+            hello@impsoftware.co.uk | impsoftware.co.uk | 01392 573 620
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 if __name__ == "__main__":

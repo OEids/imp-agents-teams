@@ -12,8 +12,16 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import pandas as pd
 
+# PDF support (optional)
 try:
-    import docx
+    import pdfplumber
+    PDF_SUPPORT = True
+except ImportError:
+    PDF_SUPPORT = False
+
+# Word document support (optional)
+try:
+    from docx import Document as DocxDocument
     DOCX_SUPPORT = True
 except ImportError:
     DOCX_SUPPORT = False
@@ -33,26 +41,30 @@ class ColumnMappingResult:
 
     @property
     def status(self) -> str:
-        """Get status for UI display."""
+        """Get status for UI display.
+
+        All mappings require user review/confirmation - never auto-accept.
+        """
         if self.ignored:
             return 'ignored'
         if self.user_override:
             return 'corrected'
-        if self.match_type == 'exact':
-            return 'matched'
-        if self.match_type in ('variation', 'fuzzy') and self.confidence >= 0.7:
+        # All mappings go to review - user must always confirm
+        if self.mapped_to:
             return 'review'
         return 'unmapped'
 
     @property
     def final_mapping(self) -> Optional[str]:
-        """Get final mapping (user override or auto-mapped)."""
+        """Get final mapping - only returns value if user confirmed.
+
+        Never auto-accept based on confidence - always require user confirmation.
+        """
         if self.ignored:
             return None
         if self.user_override:
             return self.user_override
-        if self.confidence >= 0.7:
-            return self.mapped_to
+        # Do NOT auto-return based on confidence - require user confirmation
         return None
 
     def to_dict(self) -> Dict:
@@ -181,14 +193,16 @@ class PreFlightValidator:
         }
     }
 
-    def __init__(self, inference_engine=None):
+    def __init__(self, inference_engine=None, column_learner=None):
         """
         Initialize PreFlightValidator.
 
         Args:
             inference_engine: Optional InferenceEngine instance
+            column_learner: Optional ColumnMappingLearner for learned mappings
         """
         self.inference_engine = inference_engine
+        self.column_learner = column_learner
         self._results: Dict[str, FileValidationResult] = {}
         self._corrections: Dict[str, Dict[str, str]] = {}
 
@@ -197,6 +211,14 @@ class PreFlightValidator:
             try:
                 from intelligence import InferenceEngine
                 self.inference_engine = InferenceEngine()
+            except ImportError:
+                pass
+
+        # Try to get column learner if not provided
+        if self.column_learner is None:
+            try:
+                from memory.column_mapping_learner import ColumnMappingLearner
+                self.column_learner = ColumnMappingLearner()
             except ImportError:
                 pass
 
@@ -249,28 +271,43 @@ class PreFlightValidator:
 
             elif file_path.suffix.lower() == '.csv':
                 df = pd.read_csv(file_path)
+            elif file_path.suffix.lower() == '.pdf':
+                if not PDF_SUPPORT:
+                    return self._create_error_result(file_path, "PDF support not available (install pdfplumber)")
+                # Extract tables from PDF, fallback to text-based extraction
+                df = self._extract_pdf_tables(file_path)
+                if df is None or df.empty:
+                    # Try text-based extraction for pay scales
+                    df = self._extract_pdf_text_as_data(file_path)
+                    if df is None or df.empty:
+                        return self._create_error_result(file_path, "No tables or pay scale data found in PDF. The PDF may be scanned/image-based.")
+                sheet_name = "PDF_Table"
             elif file_path.suffix.lower() in ['.docx', '.doc']:
                 if not DOCX_SUPPORT:
                     return self._create_error_result(file_path, "Word document support not available (install python-docx)")
-                document = docx.Document(file_path)
-                if not document.tables:
-                    return self._create_error_result(file_path, "No tables found in Word document")
-                # Use the first table with data
-                table = document.tables[0]
-                rows = [[cell.text.strip() for cell in row.cells] for row in table.rows]
-                if len(rows) < 2:
-                    return self._create_error_result(file_path, "Word document table has no data rows")
-                df = pd.DataFrame(rows[1:], columns=rows[0])
+                # Extract tables from Word document, fallback to text-based extraction
+                df = self._extract_word_tables(file_path)
+                if df is None or df.empty:
+                    # Try text-based extraction for pay scales
+                    df = self._extract_word_text_as_data(file_path)
+                    if df is None or df.empty:
+                        return self._create_error_result(file_path, "No tables or pay scale data found in Word document")
+                sheet_name = "Word_Table"
             else:
                 return self._create_error_result(file_path, f"Unsupported file type: {file_path.suffix}")
         except Exception as e:
             error_msg = str(e).lower()
+            error_type = type(e).__name__
+            full_error = f"{error_type}: {str(e)}"
+
             if "password" in error_msg or "encrypted" in error_msg:
-                return self._create_error_result(file_path, "File is password-protected. Please remove password and re-upload.")
+                return self._create_error_result(file_path, f"File is password-protected.\nDetails: {full_error}")
             elif "could not read" in error_msg or "no engine" in error_msg:
-                return self._create_error_result(file_path, "Cannot read file - may be corrupted, password-protected, or unsupported format. Try re-saving in Excel.")
+                return self._create_error_result(file_path, f"Cannot read file - may be corrupted, password-protected, or unsupported format.\nDetails: {full_error}")
+            elif "~" in file_path.name:
+                return self._create_error_result(file_path, f"Windows truncated filename detected (8.3 format). Rename file to shorter name.\nDetails: {full_error}")
             else:
-                return self._create_error_result(file_path, f"Error reading file: {e}")
+                return self._create_error_result(file_path, f"Error reading file.\nType: {error_type}\nDetails: {str(e)}")
 
         # Detect strand if not provided
         detected_strand = strand
@@ -340,7 +377,34 @@ class PreFlightValidator:
         match_type = 'unmapped'
         alternatives = []
 
-        # First try inference engine if available
+        # FIRST: Check learned mappings from user corrections
+        if self.column_learner and strand:
+            # Check if this column should be ignored
+            if self.column_learner.should_ignore(str(column_name), strand):
+                return ColumnMappingResult(
+                    source_column=str(column_name),
+                    mapped_to="__IGNORE__",
+                    confidence=1.0,
+                    match_type='exact',
+                    alternatives=[],
+                    sample_values=sample_values,
+                    user_override="__IGNORE__"
+                )
+
+            # Check for learned mapping
+            learned_mapping = self.column_learner.get_learned_mapping(str(column_name), strand)
+            if learned_mapping:
+                return ColumnMappingResult(
+                    source_column=str(column_name),
+                    mapped_to=learned_mapping,
+                    confidence=0.98,  # High confidence for learned mappings
+                    match_type='exact',  # Treat as exact match
+                    alternatives=[],
+                    sample_values=sample_values,
+                    user_override=learned_mapping  # Mark as user-overridden
+                )
+
+        # SECOND: Try inference engine if available
         if self.inference_engine and strand:
             try:
                 result = self.inference_engine.infer_column_mapping(
@@ -468,25 +532,424 @@ class PreFlightValidator:
         unmapped_count = sum(1 for c in column_mappings if c.status == 'unmapped')
         total_count = len(column_mappings)
 
-        if unmapped_count > total_count * 0.5:
+        if total_count > 0 and unmapped_count > total_count * 0.5:
             warnings.append(
                 f"High proportion of unmapped columns ({unmapped_count}/{total_count}). "
                 "Consider checking file format."
             )
 
-        # Check for empty columns
-        empty_cols = [col for col in df.columns if df[col].isna().all()]
-        if empty_cols:
-            warnings.append(f"Empty columns detected: {', '.join(empty_cols[:5])}")
+        # Check for empty columns (with error handling for non-standard data)
+        try:
+            empty_cols = []
+            for col in df.columns:
+                try:
+                    col_data = df[col]
+                    if isinstance(col_data, pd.DataFrame):
+                        col_data = col_data.iloc[:, 0]
+                    if isinstance(col_data, pd.Series) and col_data.isna().all():
+                        empty_cols.append(str(col))
+                except Exception:
+                    pass
+            if empty_cols:
+                warnings.append(f"Empty columns detected: {', '.join(empty_cols[:5])}")
+        except Exception:
+            pass
 
         # Check for duplicate columns
-        if len(df.columns) != len(set(df.columns)):
-            warnings.append("Duplicate column names detected")
+        try:
+            if len(df.columns) != len(set(df.columns)):
+                warnings.append("Duplicate column names detected")
+        except Exception:
+            pass
 
         return warnings
 
+    def _extract_pdf_tables(self, file_path: Path) -> Optional[pd.DataFrame]:
+        """Extract the largest table from a PDF file."""
+        tables = self._extract_all_pdf_tables(file_path)
+        if tables:
+            # Return the largest table (most likely to be the main data)
+            return max(tables.values(), key=lambda x: len(x) * len(x.columns))
+        return None
+
+    def _extract_all_pdf_tables(self, file_path: Path) -> Dict[str, pd.DataFrame]:
+        """Extract ALL tables from a PDF file as a dict of table_name -> DataFrame."""
+        if not PDF_SUPPORT:
+            return {}
+
+        all_tables = {}
+        try:
+            with pdfplumber.open(file_path) as pdf:
+                table_idx = 0
+                for page_num, page in enumerate(pdf.pages):
+                    tables = page.extract_tables()
+                    for t_idx, table in enumerate(tables):
+                        if table and len(table) > 1:
+                            try:
+                                # Use first row as header
+                                headers = table[0]
+                                data = table[1:]
+
+                                # Clean and validate headers
+                                clean_headers = []
+                                for i, h in enumerate(headers):
+                                    if h is None or (isinstance(h, str) and not h.strip()):
+                                        clean_headers.append(f'unnamed_{i}')
+                                    else:
+                                        clean_h = str(h).strip().lower().replace(' ', '_').replace('\n', '_')
+                                        clean_headers.append(clean_h if clean_h else f'unnamed_{i}')
+
+                                # Create DataFrame
+                                df = pd.DataFrame(data, columns=clean_headers)
+
+                                # Convert all columns to proper types (avoid list objects)
+                                for col in df.columns:
+                                    df[col] = df[col].apply(lambda x: str(x) if x is not None else None)
+
+                                if len(df) > 0 and len(df.columns) >= 2:
+                                    table_name = f"PDF_Page{page_num+1}_Table{t_idx+1}"
+                                    all_tables[table_name] = df
+                                    table_idx += 1
+                            except Exception:
+                                continue
+            return all_tables
+        except Exception:
+            return {}
+
+    def _extract_pdf_text_as_data(self, file_path: Path) -> Optional[pd.DataFrame]:
+        """Extract pay scale data from PDF text (non-table format)."""
+        if not PDF_SUPPORT:
+            return None
+
+        try:
+            import re
+            all_text = []
+            with pdfplumber.open(file_path) as pdf:
+                for page in pdf.pages:
+                    text = page.extract_text()
+                    if text:
+                        all_text.append(text)
+
+            if not all_text:
+                return None
+
+            full_text = '\n'.join(all_text)
+            return self._parse_payscale_text(full_text)
+        except Exception:
+            return None
+
+    def _extract_word_tables(self, file_path: Path) -> Optional[pd.DataFrame]:
+        """Extract the largest table from a Word document."""
+        tables = self._extract_all_word_tables(file_path)
+        if tables:
+            # Return the largest table
+            return max(tables.values(), key=lambda x: len(x) * len(x.columns))
+        return None
+
+    def _extract_all_word_tables(self, file_path: Path) -> Dict[str, pd.DataFrame]:
+        """Extract ALL tables from a Word document."""
+        if not DOCX_SUPPORT:
+            return {}
+
+        all_tables = {}
+        try:
+            doc = DocxDocument(str(file_path))
+
+            for t_idx, table in enumerate(doc.tables):
+                if len(table.rows) < 2:
+                    continue
+
+                # Extract table data
+                data = []
+                for row in table.rows:
+                    row_data = [cell.text.strip() for cell in row.cells]
+                    data.append(row_data)
+
+                if not data:
+                    continue
+
+                # Use first row as header
+                headers = data[0]
+                table_data = data[1:]
+
+                # Clean headers
+                clean_headers = []
+                for i, h in enumerate(headers):
+                    if not h or not h.strip():
+                        clean_headers.append(f'unnamed_{i}')
+                    else:
+                        clean_h = h.strip().lower().replace(' ', '_').replace('\n', '_')
+                        clean_headers.append(clean_h if clean_h else f'unnamed_{i}')
+
+                df = pd.DataFrame(table_data, columns=clean_headers)
+
+                if len(df) > 0 and len(df.columns) >= 2:
+                    table_name = f"Word_Table_{t_idx + 1}"
+                    all_tables[table_name] = df
+
+            return all_tables
+        except Exception:
+            return {}
+
+    def _extract_word_text_as_data(self, file_path: Path) -> Optional[pd.DataFrame]:
+        """Extract pay scale data from Word document text (non-table format)."""
+        if not DOCX_SUPPORT:
+            return None
+
+        try:
+            import re
+            doc = DocxDocument(str(file_path))
+
+            # Get all text from paragraphs
+            all_text = []
+            for para in doc.paragraphs:
+                text = para.text.strip()
+                if text:
+                    all_text.append(text)
+
+            if not all_text:
+                return None
+
+            full_text = '\n'.join(all_text)
+            return self._parse_payscale_text(full_text)
+        except Exception:
+            return None
+
+    def _parse_payscale_text(self, text: str) -> Optional[pd.DataFrame]:
+        """
+        Parse pay scale data from plain text.
+
+        Handles formats like:
+        - "M1 £30,000" or "M1: £30,000"
+        - "Point 1 - £25,000"
+        - "Leadership L1 £45,000"
+        - "UPS1: £40,000"
+        - Lines with salary values
+        """
+        import re
+
+        # Patterns to match pay scale points with values
+        patterns = [
+            # M1 £30,000 or M1: £30,000 or M1 - £30,000
+            r'([MULP](?:PS|QT)?[0-9]+|L[0-9]+|SCP[0-9]+|Point\s*[0-9]+|TLR[0-9][ABC]?|SEN[0-9]?)\s*[:=-]?\s*[£$]?\s*([0-9,]+(?:\.[0-9]{2})?)',
+            # Leadership L01 £45,000
+            r'(Leadership\s*L?[0-9]+)\s*[:=-]?\s*[£$]?\s*([0-9,]+(?:\.[0-9]{2})?)',
+            # Main Scale 1 £30,000
+            r'((?:Main|Upper|Unqualified)\s*(?:Scale|Pay)?\s*[0-9]+)\s*[:=-]?\s*[£$]?\s*([0-9,]+(?:\.[0-9]{2})?)',
+            # TMPS1 £30,000 or UPS1 £40,000
+            r'((?:TMPS|UPS|MPS)[0-9]+)\s*[:=-]?\s*[£$]?\s*([0-9,]+(?:\.[0-9]{2})?)',
+            # Grade A £25,000 or Band 1 £25,000
+            r'((?:Grade|Band|Scale)\s*[A-Z0-9]+)\s*[:=-]?\s*[£$]?\s*([0-9,]+(?:\.[0-9]{2})?)',
+        ]
+
+        extracted = []
+        lines = text.split('\n')
+
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            for pattern in patterns:
+                matches = re.findall(pattern, line, re.IGNORECASE)
+                for match in matches:
+                    point_code = match[0].strip()
+                    value_str = match[1].replace(',', '')
+                    try:
+                        value = float(value_str)
+                        # Only include if it looks like a salary (> 1000) or hourly rate (< 100)
+                        if value > 1000 or (value > 5 and value < 100):
+                            extracted.append({
+                                'point_code': point_code,
+                                'value': value,
+                                'original_line': line[:100]  # Keep context
+                            })
+                    except ValueError:
+                        continue
+
+        if not extracted:
+            return None
+
+        df = pd.DataFrame(extracted)
+        return df
+
+    def validate_file_all_sheets(
+        self,
+        file_path: Path,
+        strand: Optional[str] = None
+    ) -> List[FileValidationResult]:
+        """
+        Validate ALL sheets/tables from a file.
+
+        For Excel files: validates each sheet separately
+        For PDFs: validates each extracted table separately
+        For CSV: validates the single file
+
+        Returns:
+            List of FileValidationResult, one per sheet/table
+        """
+        file_path = Path(file_path)
+        results = []
+
+        try:
+            if file_path.suffix.lower() in ['.xlsx', '.xlsm', '.xls']:
+                # Excel: validate each sheet
+                xl = pd.ExcelFile(file_path)
+                for sheet_name in xl.sheet_names:
+                    # Skip common non-data sheets
+                    if sheet_name.lower() in ['guidance', 'notes', 'instructions', 'help', 'contents']:
+                        continue
+                    try:
+                        result = self.validate_file(file_path, sheet_name=sheet_name, strand=strand)
+                        results.append(result)
+                    except Exception:
+                        continue
+
+            elif file_path.suffix.lower() == '.pdf':
+                # PDF: validate each table + text-based data
+                if not PDF_SUPPORT:
+                    results.append(self._create_error_result(file_path, "PDF support not available"))
+                    return results
+
+                all_tables = self._extract_all_pdf_tables(file_path)
+
+                # Also try text-based extraction for pay scales
+                text_df = self._extract_pdf_text_as_data(file_path)
+                if text_df is not None and not text_df.empty:
+                    all_tables["PDF_Text_Data"] = text_df
+
+                if not all_tables:
+                    results.append(self._create_error_result(file_path, "No tables or pay scale data found in PDF. The PDF may be scanned/image-based."))
+                    return results
+
+                for table_name, df in all_tables.items():
+                    result = self._validate_dataframe(file_path, df, table_name, strand)
+                    results.append(result)
+
+            elif file_path.suffix.lower() == '.csv':
+                # CSV: single file
+                result = self.validate_file(file_path, strand=strand)
+                results.append(result)
+            elif file_path.suffix.lower() in ['.docx', '.doc']:
+                # Word: validate each table + text-based data
+                if not DOCX_SUPPORT:
+                    results.append(self._create_error_result(file_path, "Word document support not available"))
+                    return results
+
+                all_tables = self._extract_all_word_tables(file_path)
+
+                # Also try text-based extraction
+                text_df = self._extract_word_text_as_data(file_path)
+                if text_df is not None and not text_df.empty:
+                    all_tables["Word_Text_Data"] = text_df
+
+                if not all_tables:
+                    results.append(self._create_error_result(file_path, "No tables or pay scale data found in Word document"))
+                    return results
+
+                for table_name, df in all_tables.items():
+                    result = self._validate_dataframe(file_path, df, table_name, strand)
+                    results.append(result)
+            else:
+                results.append(self._create_error_result(file_path, f"Unsupported file type: {file_path.suffix}"))
+
+        except Exception as e:
+            results.append(self._create_error_result(file_path, f"Error processing file: {e}"))
+
+        return results if results else [self._create_error_result(file_path, "No data found")]
+
+    def _validate_dataframe(
+        self,
+        file_path: Path,
+        df: pd.DataFrame,
+        sheet_name: str,
+        strand: Optional[str] = None
+    ) -> FileValidationResult:
+        """Validate a DataFrame directly (used for PDF tables)."""
+        # Detect strand if not provided
+        detected_strand = strand
+        strand_confidence = 1.0 if strand else 0.0
+
+        if not strand and self.inference_engine:
+            try:
+                strand_result = self.inference_engine.infer_strand(columns=list(df.columns))
+                detected_strand = strand_result.decision
+                strand_confidence = strand_result.confidence
+            except Exception:
+                detected_strand = None
+                strand_confidence = 0.0
+
+        # Analyze each column
+        column_mappings = []
+        for col in df.columns:
+            if col is None or (isinstance(col, float) and pd.isna(col)):
+                continue
+            col_str = str(col).strip()
+            if not col_str or col_str.lower().startswith('unnamed'):
+                continue
+
+            # Get column data as a proper Series
+            try:
+                col_data = df[col]
+                if isinstance(col_data, pd.DataFrame):
+                    col_data = col_data.iloc[:, 0]
+                # Ensure we have a Series
+                if not isinstance(col_data, pd.Series):
+                    col_data = pd.Series(col_data)
+            except Exception:
+                col_data = pd.Series(dtype=object)
+
+            # Try to match column (pass Series, not list)
+            mapping_result = self._analyze_column(col_str, col_data, detected_strand)
+            column_mappings.append(mapping_result)
+
+        # Generate warnings
+        warnings = self._generate_warnings(column_mappings, df)
+
+        # Store result
+        result = FileValidationResult(
+            file_path=file_path,
+            file_name=file_path.name,
+            sheet_name=sheet_name,
+            row_count=len(df),
+            column_count=len(df.columns),
+            column_mappings=column_mappings,
+            detected_strand=detected_strand,
+            strand_confidence=strand_confidence,
+            warnings=warnings
+        )
+
+        key = f"{file_path.name}:{sheet_name}"
+        self._results[key] = result
+        return result
+
     def _create_error_result(self, file_path: Path, error: str) -> FileValidationResult:
-        """Create an error result for failed validation."""
+        """Create an error result for failed validation with detailed context."""
+        # Build detailed error message with suggestions
+        detailed_error = f"FILE: {file_path.name}\nPATH: {file_path}\nERROR: {error}"
+
+        # Add specific suggestions based on error type
+        suggestions = []
+        error_lower = error.lower()
+
+        if "password" in error_lower:
+            suggestions.append("SUGGESTION: Open the file in Excel, go to File > Info > Protect Workbook > Encrypt with Password, and remove the password")
+        elif "corrupt" in error_lower or "cannot read" in error_lower:
+            suggestions.append("SUGGESTION: Try opening the file in Excel and re-saving it as a new .xlsx file")
+            suggestions.append("SUGGESTION: Check if the file is still open in another application")
+        elif "no tables found" in error_lower and "pdf" in error_lower:
+            suggestions.append("SUGGESTION: This PDF may be scanned/image-based. Try using OCR software to convert it, or manually enter the data into Excel")
+            suggestions.append("SUGGESTION: Check if the PDF contains actual tables or just formatted text")
+        elif "pdf support" in error_lower:
+            suggestions.append("SUGGESTION: Install pdfplumber with: pip install pdfplumber")
+        elif "unsupported file type" in error_lower:
+            suggestions.append("SUGGESTION: Convert the file to .xlsx, .xls, .csv, or .pdf format")
+        elif "8.3" in str(file_path) or "~" in file_path.name:
+            suggestions.append("SUGGESTION: The filename appears truncated (Windows 8.3 format). Rename the file to a shorter name without special characters")
+
+        if suggestions:
+            detailed_error += "\n" + "\n".join(suggestions)
+
         return FileValidationResult(
             file_path=file_path,
             file_name=file_path.name,
@@ -496,7 +959,7 @@ class PreFlightValidator:
             column_mappings=[],
             detected_strand=None,
             strand_confidence=0.0,
-            errors=[error]
+            errors=[detailed_error]
         )
 
     def get_unmapped_columns(self, file_key: Optional[str] = None) -> List[ColumnMappingResult]:

@@ -291,6 +291,7 @@ class S2SpecialistAgent:
         self.extracted_allowances: List[ExtractedAllowance] = []
         self.staff_data: List[pd.DataFrame] = []
         self.staff_lookup: Dict[str, Dict[str, Any]] = {}  # Consolidated lookup by payroll number
+        self.unclassified_data: List[Dict[str, Any]] = []  # Data that couldn't be auto-classified
         self.issues: List[str] = []
         self.assumptions: List[str] = []
 
@@ -330,6 +331,9 @@ class S2SpecialistAgent:
 
         # Track DataFrames skipped because no unique identifier column was found
         self.unmapped_dataframes = []  # List of dicts: {columns, row_count, reason}
+
+        # Processing log for diagnostics
+        self.processing_log = []  # List of processing events for debugging
 
         # Audit tracking
         self.audit_results = {}
@@ -430,6 +434,50 @@ class S2SpecialistAgent:
             # Completely silent - don't let logging break execution
             pass
 
+    def _format_detailed_error(self, file_path: Path, action: str, exception: Exception) -> str:
+        """Format a detailed error message with context and suggestions."""
+        error_type = type(exception).__name__
+        error_msg = str(exception)
+
+        # Build detailed error
+        details = [
+            f"ERROR {action}: {file_path.name}",
+            f"  Type: {error_type}",
+            f"  Details: {error_msg}",
+            f"  Path: {file_path}",
+        ]
+
+        # Add specific suggestions based on error type
+        error_lower = error_msg.lower()
+        suggestions = []
+
+        if "password" in error_lower or "encrypted" in error_lower:
+            suggestions.append("Remove password protection: Open in Excel > File > Info > Protect Workbook")
+        elif "corrupt" in error_lower or "invalid" in error_lower:
+            suggestions.append("Try re-saving the file in Excel as a new .xlsx file")
+        elif "permission" in error_lower or "access" in error_lower:
+            suggestions.append("Close the file if open in another application")
+            suggestions.append("Check file permissions")
+        elif "no tables" in error_lower:
+            suggestions.append("PDF may be scanned/image-based - convert to Excel manually or use OCR")
+        elif "xlrd" in error_lower or "openpyxl" in error_lower:
+            suggestions.append("File format issue - try saving as .xlsx in Excel")
+        elif "codec" in error_lower or "encoding" in error_lower:
+            suggestions.append("Character encoding issue - save file as UTF-8 in Excel")
+        elif "~" in file_path.name or len(file_path.name) > 50:
+            suggestions.append("Rename file to shorter name without special characters")
+
+        # Check for Windows 8.3 short filename
+        if "~" in file_path.name:
+            suggestions.insert(0, "FILENAME ISSUE: Windows truncated filename detected. Rename to a shorter name.")
+
+        if suggestions:
+            details.append("  Suggestions:")
+            for s in suggestions:
+                details.append(f"    - {s}")
+
+        return "\n".join(details)
+
     # Column name variations - maps expected name to possible variations
     # Column aliases for flexible matching - maps internal keys to possible column names
     # Also includes reverse mappings for schema standard names
@@ -439,15 +487,16 @@ class S2SpecialistAgent:
                           'empno', 'empid', 'payroll_no', 'unique_id', 'staff_id', 'emp_ref',
                           'employee no', 'payroll number', 'staff code', 'code'],
         'surname': ['surname', 'last_name', 'lastname', 'family_name', 'familyname', 'lname', 'ln'],
-        'forename': ['forename', 'first_name', 'firstname', 'given_name', 'givenname', 'fname', 'fn'],
+        'forename': ['forename', 'forenames', 'first_name', 'firstname', 'given_name', 'givenname', 'fname', 'fn'],
         # Schema standard names (reverse mappings)
         'last_name': ['last_name', 'surname', 'lastname', 'family_name', 'familyname', 'lname', 'ln'],
-        'first_name': ['first_name', 'forename', 'firstname', 'given_name', 'givenname', 'fname', 'fn'],
+        'first_name': ['first_name', 'forename', 'forenames', 'firstname', 'given_name', 'givenname', 'fname', 'fn'],
         'job_title': ['job_title', 'jobtitle', 'position', 'role_title', 'title', 'role', 'post',
-                     'job', 'designation', 'occupation'],
+                     'job', 'designation', 'occupation', 'job_description', 'job description'],
         'weekly_hours': ['weekly_hours', 'hours_per_week', 'contracted_hours', 'hpw', 'hrs',
-                        'ft_hours', 'full_time_hours', 'hours', 'weekly hrs', 'contract hours'],
-        'school_code': ['school_code', 'school', 'site_code', 'establishment', 'location',
+                        'ft_hours', 'full_time_hours', 'hours', 'weekly hrs', 'contract hours',
+                        'hours_worked', 'hours worked'],
+        'school_code': ['school_code', 'school', 'schools', 'site_code', 'establishment', 'location',
                        'site', 'academy', 'school_name', 'cost_centre', 'cost_center', 'cc'],
         'service_start_date': ['service_start_date', 'start_date', 'join_date', 'commence_date',
                               'commencement', 'hire_date', 'date_joined', 'service_start',
@@ -469,7 +518,8 @@ class S2SpecialistAgent:
                         'contract_number', 'contract_id'],
         'pay_scale': ['pay_scale', 'payscale', 'scale', 'pay_scale_code', 'salary_scale',
                      'pay_grade', 'pay scale', 'paygrade', 'grade_scale', 'scale_type',
-                     'pay scale type', 'pay_scale_type', 'salary_grade', 'scale_code'],
+                     'pay scale type', 'pay_scale_type', 'salary_grade', 'scale_code',
+                     'grade_name', 'grade name', 'grade'],
         'pay_scale_type': ['pay_scale_type', 'scale_type', 'pay_type', 'scale type',
                           'payscale type', 'pay_scale_group', 'scale_group'],
         'pay_scale_contract': ['pay_scale_contract', 'contract_scale', 'contract_payscale',
@@ -1166,7 +1216,9 @@ class S2SpecialistAgent:
                     self.staff_data.append(df)
 
             except Exception as e:
-                self.log(f"  Error loading {file_path.name}: {str(e)[:100]}")
+                error_detail = self._format_detailed_error(file_path, "loading file", e)
+                self.log(f"  {error_detail}")
+                self.issues.append(error_detail)
 
         self._log_import_summary()
         return self.import_data
@@ -1649,6 +1701,12 @@ class S2SpecialistAgent:
         self.log("PHASE 1: DEEP ANALYSIS OF CUSTOMER DATA")
         self.log("="*60)
 
+        # Log the directory being searched
+        self.log(f"Searching in: {data_dir}")
+        self.log(f"Directory exists: {data_dir.exists()}")
+        self.processing_log.append(f"Data directory: {data_dir}")
+        self.processing_log.append(f"Directory exists: {data_dir.exists()}")
+
         # Find all supported file types
         all_files = list(data_dir.rglob("*.xls*")) + list(data_dir.rglob("*.csv"))
         pdf_files = list(data_dir.rglob("*.pdf")) if PDF_SUPPORT else []
@@ -1660,6 +1718,9 @@ class S2SpecialistAgent:
         docx_files = [f for f in docx_files if not f.name.startswith("~$")]
 
         self.log(f"Found {len(all_files)} spreadsheet files to analyze")
+        self.processing_log.append(f"Spreadsheet files found: {len(all_files)}")
+        for f in all_files:
+            self.processing_log.append(f"  - {f.name}")
         if pdf_files:
             self.log(f"Found {len(pdf_files)} PDF files to analyze")
         if docx_files:
@@ -1729,10 +1790,12 @@ class S2SpecialistAgent:
                                 except Exception:
                                     pass
                                 for sheet_name, df in xls.items():
-                                    # Extended skip list including templates and examples
+                                    # Extended skip list including templates, examples, and admin sheets
                                     skip_sheets = [
-                                        'guidance', 'notes', 'instructions', 'help',
-                                        'checklist', 'template', 'equated weeks example', 'cenchg'
+                                        'guidance', 'notes', 'instructions', 'help', 'contents',
+                                        'checklist', 'template', 'equated weeks example', 'cenchg',
+                                        'lgps', 'lgps information', 'pension', 'pensions',
+                                        'changelog', 'change log', 'version', 'cover', 'summary'
                                     ]
                                     if any(skip in sheet_name.lower() for skip in skip_sheets):
                                         self.log(f"    Skipping non-data sheet: {sheet_name}")
@@ -1747,8 +1810,8 @@ class S2SpecialistAgent:
                                         self._analyze_dataframe(df, file_path.name, sheet_name)
                                 return
                         except Exception as e3:
-                            error_msg = "Multiple engine failures"
-                            self.issues.append(f"Error analyzing {file_path.name}: Could not read with any engine")
+                            error_detail = self._format_detailed_error(file_path, "reading Excel (all engines failed)", e3)
+                            self.issues.append(error_detail)
                             return
                 
                 # If we have a valid ExcelFile object, proceed normally
@@ -1758,8 +1821,13 @@ class S2SpecialistAgent:
                     except Exception:
                         pass
                     for sheet in xl.sheet_names:
-                        # Extended skip list - template and example sheets are handled in _read_sheet_smart
-                        skip_sheets = ['guidance', 'notes', 'instructions', 'help', 'cenchg']
+                        # Extended skip list including templates, examples, and admin sheets
+                        skip_sheets = [
+                            'guidance', 'notes', 'instructions', 'help', 'contents',
+                            'checklist', 'template', 'equated weeks example', 'cenchg',
+                            'lgps', 'lgps information', 'pension', 'pensions',
+                            'changelog', 'change log', 'version', 'cover', 'summary'
+                        ]
                         if any(skip in sheet.lower() for skip in skip_sheets):
                             self.log(f"    Skipping non-data sheet: {sheet}")
                             continue
@@ -1771,7 +1839,8 @@ class S2SpecialistAgent:
                             self._analyze_dataframe(df, file_path.name, sheet)
 
         except Exception as e:
-            self.issues.append(f"Error analyzing {file_path.name}: {str(e)[:100]}")
+            error_detail = self._format_detailed_error(file_path, "analyzing file", e)
+            self.issues.append(error_detail)
 
     def _analyze_pdf_file(self, file_path: Path):
         """Analyze a PDF file - extract tables and text."""
@@ -1789,6 +1858,29 @@ class S2SpecialistAgent:
                     tables = page.extract_tables()
                     for table_idx, table in enumerate(tables):
                         if table and len(table) > 1:
+                            # Skip very small tables (likely headers, footers, notes)
+                            # Need at least 5 data rows (excluding header) for meaningful data
+                            data_rows = len(table) - 1  # Exclude header row
+                            if data_rows < 5:
+                                # Only skip if it doesn't look like it has salary data
+                                has_salary_like = False
+                                for row in table[1:]:
+                                    for cell in row:
+                                        if cell and isinstance(cell, str):
+                                            # Check for salary-like values (£ or large numbers)
+                                            cleaned = cell.replace(',', '').replace('£', '').strip()
+                                            try:
+                                                val = float(cleaned)
+                                                if val > 10000:
+                                                    has_salary_like = True
+                                                    break
+                                            except:
+                                                pass
+                                    if has_salary_like:
+                                        break
+                                if not has_salary_like:
+                                    continue  # Skip small tables without salary data
+
                             tables_found += 1
 
                             # First try specialized PDF pay scale parsing (handles multiline cells)
@@ -1827,7 +1919,8 @@ class S2SpecialistAgent:
                     self.log(f"  Tabula extraction failed: {str(e)[:50]}")
 
         except Exception as e:
-            self.issues.append(f"Error analyzing PDF {file_path.name}: {str(e)[:100]}")
+            error_detail = self._format_detailed_error(file_path, "reading PDF", e)
+            self.issues.append(error_detail)
 
     def _analyze_docx_file(self, file_path: Path):
         """Analyze a Word document file - extract tables and text."""
@@ -2246,7 +2339,8 @@ class S2SpecialistAgent:
                 self.log(f"  No significant text found in image")
 
         except Exception as e:
-            self.issues.append(f"Error analyzing image {file_path.name}: {str(e)[:100]}")
+            error_detail = self._format_detailed_error(file_path, "reading image/OCR", e)
+            self.issues.append(error_detail)
 
     def _parse_tlr_from_ocr_text(self, text: str, source_name: str):
         """Parse TLR allowance rates from OCR text."""
@@ -3084,8 +3178,8 @@ class S2SpecialistAgent:
             content_type = self._detect_content_type(non_null)
             data_quality[col]['content_type'] = content_type
 
-        # Determine what type of data this is
-        data_type = self._classify_data_type(df, sheet_name)
+        # Determine what type of data this is (use file name for hints)
+        data_type = self._classify_data_type(df, sheet_name, file_name)
 
         report = AnalysisReport(
             file_name=file_name,
@@ -3101,6 +3195,9 @@ class S2SpecialistAgent:
         )
 
         self.analysis_reports.append(report)
+
+        # Log classification result
+        self.processing_log.append(f"Sheet '{file_name}/{sheet_name}': {len(df)} rows -> {data_type}")
 
         # Store data for processing
         if data_type == 'staff_contracts':
@@ -3119,14 +3216,30 @@ class S2SpecialistAgent:
             self._extract_allowances_from_df(df)
             self.log(f"    -> Allowance data extracted")
         else:
-            # Sheet was not recognised as any known type — warn so user can map it
+            # Store unclassified data for user review and manual mapping
             available_cols = list(df.columns)
             self.log(
                 f"    -> WARNING: Sheet '{sheet_name}' in '{file_name}' "
-                f"could not be classified (scored below threshold for staff_contracts, "
-                f"pay_scales, and allowances). Columns found: {available_cols}. "
-                f"Use the Pre-Flight Validator tab to manually map this sheet."
+                f"could not be classified. Columns: {available_cols[:10]}. "
+                f"Use Pre-Flight Validator to manually map this sheet."
             )
+            # Use _safe_get_column to handle duplicate column names (returns DataFrame instead of Series)
+            sample_data = {}
+            for col in df.columns[:10]:
+                try:
+                    col_data = self._safe_get_column(df, col)
+                    sample_data[col] = col_data.dropna().head(3).tolist()
+                except Exception:
+                    sample_data[col] = []
+            self.unclassified_data.append({
+                'file_name': file_name,
+                'sheet_name': sheet_name,
+                'data': df,
+                'columns': list(df.columns),
+                'row_count': len(df),
+                'sample_data': sample_data
+            })
+            self.issues.append(f"Unclassified data in {file_name} / {sheet_name}: {len(df)} rows need manual mapping")
 
     def _detect_content_type(self, series: pd.Series) -> str:
         """Detect the type of content in a series."""
@@ -3340,44 +3453,60 @@ class S2SpecialistAgent:
         """
         score = 0
         try:
-            # Check for sequential or point-like values in first column
-            if len(df.columns) > 0:
-                first_col = self._safe_get_column(df, df.columns[0])
-                sample = first_col.dropna().head(20).astype(str).tolist()
+            # Check for sequential or point-like values in ANY column (not just first)
+            point_patterns = [
+                r'^\d{1,2}$',              # 1, 2, 43
+                r'^[SsMmUuLlNnPp]\d{1,2}$',  # S1, M1, L01, U1, P1, N1
+                r'^SCP\s*\d{1,2}$',         # SCP1, SCP 1
+                r'^[Pp]oint\s*\d+$',        # Point 1
+                r'^[Gg]rade\s*\d+$',        # Grade 1
+                r'^[Ll]evel\s*\d+$',        # Level 1
+                r'^[Bb]and\s*\d+$',         # Band 1
+                r'^MIN$', r'^MAX$',         # MIN, MAX (common in pay tables)
+                r'^[Uu]\d$',                # U1, U2, U3
+                r'^[Mm]\d$',                # M1-M6
+                r'^[Ll]\d{1,2}$',           # L1-L43
+            ]
 
-                # Point patterns: 1, 2, 3 or SCP1, M1, L01, etc.
-                point_patterns = [
-                    r'^\d{1,2}$',              # 1, 2, 43
-                    r'^[SsMmUuLlNn]\d{1,2}$',  # S1, M1, L01
-                    r'^SCP\d{1,2}$',           # SCP1
-                    r'^[Pp]oint\s*\d+$',       # Point 1
-                    r'^[Gg]rade\s*\d+$',       # Grade 1
-                ]
+            for col in df.columns:
+                col_data = self._safe_get_column(df, col)
+                sample = col_data.dropna().head(20).astype(str).tolist()
+                if not sample:
+                    continue
+
                 point_matches = sum(
                     1 for v in sample
                     if any(re.match(p, str(v).strip(), re.IGNORECASE) for p in point_patterns)
                 )
-                if point_matches >= len(sample) * 0.5 and len(sample) >= 3:
+                # Lower threshold for small tables: 40% match and >= 2 samples
+                if point_matches >= len(sample) * 0.4 and len(sample) >= 2:
                     score += 2  # Strong indicator
+                    break
 
             # Check for salary-like values (> 10000, typically 20000-100000)
-            for col in df.columns[1:] if len(df.columns) > 1 else df.columns:
+            # IMPORTANT: Clean currency formatting (£, commas) from PDF data first
+            for col in df.columns:
                 col_data = self._safe_get_column(df, col)
                 try:
-                    numeric = pd.to_numeric(col_data, errors='coerce').dropna()
-                    if len(numeric) >= 3:
+                    # Clean currency formatting before converting to numeric
+                    cleaned = col_data.astype(str).str.replace('£', '', regex=False)
+                    cleaned = cleaned.str.replace(',', '', regex=False).str.strip()
+                    numeric = pd.to_numeric(cleaned, errors='coerce').dropna()
+                    # Lower threshold: >= 2 values for small tables
+                    if len(numeric) >= 2:
                         salary_like = numeric[(numeric >= 10000) & (numeric <= 200000)]
-                        if len(salary_like) >= len(numeric) * 0.7:
+                        # Lower threshold: 50% for small tables
+                        if len(salary_like) >= len(numeric) * 0.5:
                             score += 2  # Strong indicator
                             break
                 except Exception:
                     pass
 
-            # Typical pay scale size: 5-60 rows
+            # Typical pay scale size: 3-100 rows (lowered minimum)
             if 3 <= len(df) <= 100:
                 score += 1
 
-            # Few columns (point, rate, maybe date) - typically 2-6
+            # Few columns (point, rate, maybe date) - typically 2-10
             if 2 <= len(df.columns) <= 10:
                 score += 1
 
@@ -3396,19 +3525,23 @@ class S2SpecialistAgent:
             # Check for allowance-type keywords in data values
             all_text = ' '.join(df.astype(str).values.flatten()).lower()
             allowance_keywords = ['tlr', 'sen ', 'recruit', 'retain', 'london', 'weighting',
-                                 'allowance', 'supplement', 'enhancement']
+                                 'allowance', 'supplement', 'enhancement', 'payment',
+                                 'special educational', 'teaching & learning']
             keyword_matches = sum(1 for kw in allowance_keywords if kw in all_text)
-            if keyword_matches >= 2:
+            if keyword_matches >= 1:  # Lowered from 2 to 1
                 score += 2
 
-            # Check for amount-like values (typically 500-20000 for allowances)
+            # Check for amount-like values (typically 500-30000 for allowances)
+            # Clean currency formatting first
             for col in df.columns:
                 col_data = self._safe_get_column(df, col)
                 try:
-                    numeric = pd.to_numeric(col_data, errors='coerce').dropna()
+                    cleaned = col_data.astype(str).str.replace('£', '', regex=False)
+                    cleaned = cleaned.str.replace(',', '', regex=False).str.strip()
+                    numeric = pd.to_numeric(cleaned, errors='coerce').dropna()
                     if len(numeric) >= 2:
                         allowance_like = numeric[(numeric >= 100) & (numeric <= 30000)]
-                        if len(allowance_like) >= len(numeric) * 0.7:
+                        if len(allowance_like) >= len(numeric) * 0.5:  # Lowered threshold
                             score += 1
                             break
                 except Exception:
@@ -3423,10 +3556,11 @@ class S2SpecialistAgent:
 
         return score
 
-    def _classify_data_type(self, df: pd.DataFrame, sheet_name: str) -> str:
+    def _classify_data_type(self, df: pd.DataFrame, sheet_name: str, file_name: str = "") -> str:
         """
         Classify what type of data this sheet contains.
         LOGIC-BASED: Analyze actual data content, not just names/titles.
+        Also uses file name hints when available.
         """
         if df.empty or len(df.columns) == 0:
             return 'unknown'
@@ -3434,6 +3568,43 @@ class S2SpecialistAgent:
         cols_lower = [str(c).lower() for c in df.columns]
         cols_str = ' '.join(cols_lower)
         sheet_lower = sheet_name.lower()
+        file_lower = file_name.lower() if file_name else ""
+
+        # ===== FILE NAME HINTS (HIGH PRIORITY) =====
+        # If file name clearly indicates pay scales, trust it
+        pay_scale_file_hints = ['pay scale', 'payscale', 'pay_scale', 'salary scale',
+                                'pay spine', 'payspine', 'pay rates', 'salary rates',
+                                'njc', 'support staff scale', 'teacher pay']
+        strong_pay_scale_hints = ['pay scale', 'payscale', 'salary scale', 'pay spine']
+
+        if any(hint in file_lower for hint in pay_scale_file_hints):
+            # Verify it has numeric/salary data (not just mentioned in name)
+            # Clean currency formatting before checking
+            has_salary_data = False
+            for col in df.columns:
+                try:
+                    col_data = self._safe_get_column(df, col)
+                    # Clean currency: £, commas
+                    cleaned = col_data.astype(str).str.replace('£', '', regex=False)
+                    cleaned = cleaned.str.replace(',', '', regex=False).str.strip()
+                    numeric_vals = pd.to_numeric(cleaned, errors='coerce').dropna()
+                    if len(numeric_vals) > 0 and numeric_vals.max() > 1000:
+                        has_salary_data = True
+                        break
+                except Exception:
+                    pass
+
+            # If strong file name match, classify as pay_scales even without salary verification
+            # (PDF tables often have header tables without salary data)
+            is_strong_match = any(hint in file_lower for hint in strong_pay_scale_hints)
+            if has_salary_data or is_strong_match:
+                self.log(f"  Classified as pay_scales based on file name: {file_name}")
+                return 'pay_scales'
+
+        allowance_file_hints = ['allowance', 'tlr', 'sen allowance']
+        if any(hint in file_lower for hint in allowance_file_hints):
+            self.log(f"  Classified as allowances based on file name: {file_name}")
+            return 'allowances'
 
         # ===== EARLY DETECTION: Reference/Configuration Data =====
         # These should NOT be classified as staff contracts
@@ -3480,10 +3651,38 @@ class S2SpecialistAgent:
         if pay_scale_score >= 3:
             return 'pay_scales'
 
+        # 2b. Special case for PDF tables: lower threshold if they have salary data
+        # PDF pay scale tables are often small and might not score high enough
+        is_pdf = '.pdf' in file_lower or 'pdf_' in sheet_lower
+        if is_pdf and pay_scale_score >= 2:
+            self.log(f"  Classified as pay_scales (PDF with score {pay_scale_score}): {sheet_name}")
+            return 'pay_scales'
+
         # 3. Check for ALLOWANCES by data patterns
         allowance_score = self._score_as_allowances(df)
         if allowance_score >= 2:
             return 'allowances'
+
+        # 3b. Special case for PDF tables: if small table with salary data, likely pay scales
+        # This catches PDF pay scale tables that don't score high on patterns
+        if is_pdf and len(df) <= 10:
+            has_salary_values = False
+            for col in df.columns:
+                try:
+                    col_data = self._safe_get_column(df, col)
+                    cleaned = col_data.astype(str).str.replace('£', '', regex=False)
+                    cleaned = cleaned.str.replace(',', '', regex=False).str.strip()
+                    numeric = pd.to_numeric(cleaned, errors='coerce').dropna()
+                    if len(numeric) >= 2:
+                        salary_like = numeric[(numeric >= 5000) & (numeric <= 200000)]
+                        if len(salary_like) >= 2:
+                            has_salary_values = True
+                            break
+                except Exception:
+                    pass
+            if has_salary_values:
+                self.log(f"  Classified as pay_scales (PDF with salary values): {sheet_name}")
+                return 'pay_scales'
 
         # ===== FALLBACK: Column/sheet name hints (lower priority) =====
 
@@ -3625,6 +3824,14 @@ class S2SpecialistAgent:
         """Extract pay scales and points from a dedicated pay scale dataframe."""
         self.log(f"  Extracting pay scales from dedicated sheet: {sheet_name}")
 
+        # =====================================================================
+        # FIRST: Check for MATRIX FORMAT (common in PDF pay scale tables)
+        # Matrix format: First column = point codes, other columns = regional salaries
+        # Example: | Point | Inner London | Outer London | Fringe | Rest of England |
+        # =====================================================================
+        if self._try_extract_matrix_pay_scale(df, sheet_name):
+            return  # Successfully extracted from matrix format
+
         # Check for customer-defined scale column dynamically
         # Collect ALL candidate columns and score them to find the best one
         scale_candidates = []
@@ -3700,23 +3907,56 @@ class S2SpecialistAgent:
         else:
             scale_type_hint = 'auto'  # Will detect from point codes
 
-        # Extended column detection for rates/salaries - only explicit salary columns
-        rate_keywords = ['salary', 'annual', '£', 'amount']
+        # Extended column detection for rates/salaries
+        rate_keywords = ['salary', 'annual', '£', 'amount', 'rate', 'pay', 'value', 'fte']
         rate_cols = [c for c in df.columns if any(x in str(c).lower() for x in rate_keywords)]
 
         # Extended column detection for point codes (includes NJC/SCP patterns)
         point_keywords = ['point', 'scp', 'spine', 'spinal', 'scale', 'grade', 'code', 'level', 'step', 'band', 'njc']
         point_cols = [c for c in df.columns if any(x in str(c).lower() for x in point_keywords)]
 
-        # Also check first column - often contains point codes
-        if len(df.columns) > 0:
-            first_col = df.columns[0]
-            if first_col not in point_cols:
-                # Check if first column contains point-like values
-                first_col_data = self._safe_get_column(df, first_col)
-                sample = first_col_data.dropna().head(5).astype(str).tolist()
-                if any(re.match(r'^[MLU]?\d+$', str(v).strip(), re.IGNORECASE) for v in sample):
-                    point_cols = [first_col] + point_cols
+        # Also check columns for point-like values by content (not just keywords)
+        # This handles PDFs with generic column names
+        point_patterns = [
+            r'^[MLU]?\d{1,2}$',        # M1, L01, U1, 1, 43
+            r'^SCP\s*\d{1,2}$',        # SCP1, SCP 43
+            r'^[Pp]oint\s*\d+$',       # Point 1
+            r'^[Nn][Jj][Cc]?\s*\d+$',  # NJC1, NJ 1
+        ]
+        for col in df.columns:
+            if col in point_cols:
+                continue
+            col_data = self._safe_get_column(df, col)
+            sample = col_data.dropna().head(10).astype(str).tolist()
+            point_matches = sum(
+                1 for v in sample
+                if any(re.match(p, str(v).strip(), re.IGNORECASE) for p in point_patterns)
+            )
+            # If >50% of values look like points, add this column
+            if len(sample) >= 3 and point_matches >= len(sample) * 0.5:
+                point_cols = [col] + point_cols  # Add to front (higher priority)
+                self.log(f"    Detected point column by content: {col}")
+
+        # FALLBACK: If no rate columns found by keyword, check ALL columns for salary-like values
+        # This handles PDFs with generic column names like "unnamed_0", "column_1", etc.
+        if not rate_cols:
+            for col in df.columns:
+                if col in point_cols:
+                    continue  # Skip point columns
+                col_data = self._safe_get_column(df, col)
+                try:
+                    # Clean currency formatting
+                    cleaned = col_data.astype(str).str.replace('£', '', regex=False)
+                    cleaned = cleaned.str.replace(',', '', regex=False).str.strip()
+                    numeric = pd.to_numeric(cleaned, errors='coerce').dropna()
+                    if len(numeric) >= 3:
+                        # Check if values look like salaries (10000-200000 range)
+                        salary_like = numeric[(numeric >= 10000) & (numeric <= 200000)]
+                        if len(salary_like) >= len(numeric) * 0.5:
+                            rate_cols.append(col)
+                            self.log(f"    Detected salary column by content: {col}")
+                except Exception:
+                    pass
 
         self.log(f"    Rate columns found: {rate_cols[:5]}")
         self.log(f"    Point columns found: {point_cols[:5]}")
@@ -6880,6 +7120,8 @@ class S2SpecialistAgent:
                 "customer_data_dir": str(customer_data_dir),
                 "files_found": [f.name for f in all_files],
                 "issues": self.issues,
+                "unclassified_data": self.unclassified_data,
+                "processing_log": self.processing_log,
             }
 
         # Phase 3: Format data to match official template schema
@@ -7041,6 +7283,8 @@ class S2SpecialistAgent:
             "created_role_codes": self.created_role_codes,
             "created_role_groups": self.created_role_groups,
             "skipped_staff": self.skipped_staff,
+            "unclassified_data": self.unclassified_data,
+            "processing_log": self.processing_log,
             "summary": {
                 "staff_members": len(template_sheets.get("StaffMembers", [])),
                 "staff_roles": len(template_sheets.get("StfRole", [])),

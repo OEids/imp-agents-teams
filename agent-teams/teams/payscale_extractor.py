@@ -41,6 +41,20 @@ from datetime import datetime
 import warnings
 warnings.filterwarnings('ignore')
 
+# PDF support (optional)
+try:
+    import pdfplumber
+    PDF_SUPPORT = True
+except ImportError:
+    PDF_SUPPORT = False
+
+# Word document support (optional)
+try:
+    from docx import Document as DocxDocument
+    DOCX_SUPPORT = True
+except ImportError:
+    DOCX_SUPPORT = False
+
 
 @dataclass
 class PayScalePoint:
@@ -106,12 +120,36 @@ class PayScaleExtractor:
 
     def extract_from_file(self, file_path: Path) -> Dict[str, Any]:
         """
-        Extract all pay scales and allowances from an Excel file.
+        Extract all pay scales and allowances from a file.
+
+        Supports: Excel (.xlsx, .xlsm, .xls), PDF, Word (.docx)
 
         Returns dict with 'pay_scales', 'allowances', 'grades'
         """
         self.log(f"Processing file: {file_path.name}")
+        file_ext = file_path.suffix.lower()
 
+        try:
+            if file_ext in ['.xlsx', '.xlsm', '.xls']:
+                self._extract_from_excel(file_path)
+            elif file_ext == '.pdf':
+                self._extract_from_pdf(file_path)
+            elif file_ext in ['.docx', '.doc']:
+                self._extract_from_word(file_path)
+            else:
+                self.log(f"Unsupported file type: {file_ext}")
+
+        except Exception as e:
+            self.log(f"Error processing file: {e}")
+
+        return {
+            'pay_scales': self.pay_scales,
+            'allowances': self.allowances,
+            'grades': self.grades,
+        }
+
+    def _extract_from_excel(self, file_path: Path):
+        """Extract pay scales from Excel file."""
         try:
             xl = pd.ExcelFile(file_path)
 
@@ -130,13 +168,185 @@ class PayScaleExtractor:
                 self._extract_from_sheet(df, sheet_name)
 
         except Exception as e:
-            self.log(f"Error processing file: {e}")
+            self.log(f"Error reading Excel: {e}")
 
-        return {
-            'pay_scales': self.pay_scales,
-            'allowances': self.allowances,
-            'grades': self.grades,
-        }
+    def _extract_from_pdf(self, file_path: Path):
+        """Extract pay scales from PDF file."""
+        if not PDF_SUPPORT:
+            self.log("PDF support not available (install pdfplumber)")
+            return
+
+        try:
+            with pdfplumber.open(file_path) as pdf:
+                # First, try to extract tables
+                for page_num, page in enumerate(pdf.pages):
+                    tables = page.extract_tables()
+                    for t_idx, table in enumerate(tables):
+                        if table and len(table) > 1:
+                            try:
+                                headers = table[0]
+                                data = table[1:]
+                                df = pd.DataFrame(data, columns=headers)
+                                if len(df) > 0:
+                                    sheet_name = f"PDF_Page{page_num+1}_Table{t_idx+1}"
+                                    self.log(f"  Analyzing table: {sheet_name}")
+                                    self._extract_from_sheet(df, sheet_name)
+                            except Exception:
+                                continue
+
+                # Also extract text-based pay scales
+                all_text = []
+                for page in pdf.pages:
+                    text = page.extract_text()
+                    if text:
+                        all_text.append(text)
+
+                if all_text:
+                    full_text = '\n'.join(all_text)
+                    self._extract_from_text(full_text, "PDF_Text")
+
+        except Exception as e:
+            self.log(f"Error reading PDF: {e}")
+
+    def _extract_from_word(self, file_path: Path):
+        """Extract pay scales from Word document."""
+        if not DOCX_SUPPORT:
+            self.log("Word support not available (install python-docx)")
+            return
+
+        try:
+            doc = DocxDocument(str(file_path))
+
+            # Extract from tables
+            for t_idx, table in enumerate(doc.tables):
+                if len(table.rows) < 2:
+                    continue
+
+                data = []
+                for row in table.rows:
+                    row_data = [cell.text.strip() for cell in row.cells]
+                    data.append(row_data)
+
+                if data:
+                    headers = data[0]
+                    table_data = data[1:]
+                    df = pd.DataFrame(table_data, columns=headers)
+                    if len(df) > 0:
+                        sheet_name = f"Word_Table_{t_idx+1}"
+                        self.log(f"  Analyzing table: {sheet_name}")
+                        self._extract_from_sheet(df, sheet_name)
+
+            # Also extract text-based pay scales from paragraphs
+            all_text = []
+            for para in doc.paragraphs:
+                text = para.text.strip()
+                if text:
+                    all_text.append(text)
+
+            if all_text:
+                full_text = '\n'.join(all_text)
+                self._extract_from_text(full_text, "Word_Text")
+
+        except Exception as e:
+            self.log(f"Error reading Word document: {e}")
+
+    def _extract_from_text(self, text: str, source_name: str):
+        """
+        Extract pay scale data from plain text.
+
+        Handles formats like:
+        - "M1 £30,000" or "M1: £30,000"
+        - "Point 1 - £25,000"
+        - "Leadership L1 £45,000"
+        - "UPS1: £40,000"
+        """
+        self.log(f"  Extracting from text: {source_name}")
+
+        # Patterns to match pay scale points with values
+        patterns = [
+            # M1 £30,000 or M1: £30,000
+            r'([MULP](?:PS|QT)?[0-9]+)\s*[:=-]?\s*[£$]?\s*([0-9,]+(?:\.[0-9]{2})?)',
+            # L01 £45,000 or Leadership 1 £45,000
+            r'(L[0-9]+|Leadership\s*[0-9]+)\s*[:=-]?\s*[£$]?\s*([0-9,]+(?:\.[0-9]{2})?)',
+            # SCP1 £25,000 or Point 1 £25,000
+            r'(SCP[0-9]+|Point\s*[0-9]+)\s*[:=-]?\s*[£$]?\s*([0-9,]+(?:\.[0-9]{2})?)',
+            # TLR1 £5,000 or TLR1A £3,000
+            r'(TLR[0-9][ABC]?)\s*[:=-]?\s*[£$]?\s*([0-9,]+(?:\.[0-9]{2})?)',
+            # SEN1 £2,000
+            r'(SEN[0-9]?)\s*[:=-]?\s*[£$]?\s*([0-9,]+(?:\.[0-9]{2})?)',
+            # TMPS1 or UPS1 format
+            r'((?:TMPS|UPS|MPS)[0-9]+)\s*[:=-]?\s*[£$]?\s*([0-9,]+(?:\.[0-9]{2})?)',
+        ]
+
+        teaching_main = []
+        teaching_upper = []
+        leadership = []
+        support = []
+        lead_practitioner = []
+        unqualified = []
+        tlr_points = []
+        sen_points = []
+
+        for line in text.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+
+            for pattern in patterns:
+                matches = re.findall(pattern, line, re.IGNORECASE)
+                for match in matches:
+                    point_code = match[0].strip().upper()
+                    value_str = match[1].replace(',', '')
+
+                    try:
+                        rate = float(value_str)
+                        # Only include reasonable salary values
+                        if rate < 1000:
+                            continue
+
+                        # Categorize the point
+                        if point_code.startswith('TLR'):
+                            code = self._normalize_tlr_code(point_code)
+                            tlr_points.append(AllowancePoint(code=code, title=code, amount=rate, original_code=point_code))
+                        elif point_code.startswith('SEN'):
+                            code = self._normalize_sen_code(point_code)
+                            sen_points.append(AllowancePoint(code=code, title=code, amount=rate, original_code=point_code))
+                        elif point_code.startswith(('M', 'TMPS', 'MPS')) and not point_code.startswith('MPS'):
+                            code = self._normalize_main_point(point_code)
+                            num = self._extract_point_number(point_code)
+                            if num <= 6:
+                                teaching_main.append(PayScalePoint(code=code, title=code, number=num, rate=rate, date_from='2025-09-01', original_code=point_code))
+                        elif point_code.startswith(('U', 'UPS')) and not point_code.startswith('UQT'):
+                            code = self._normalize_upper_point(point_code)
+                            num = self._extract_point_number(point_code)
+                            if num <= 3:
+                                teaching_upper.append(PayScalePoint(code=code, title=code, number=num, rate=rate, date_from='2025-09-01', original_code=point_code))
+                        elif point_code.startswith('L') or 'LEADERSHIP' in point_code:
+                            code = self._normalize_leadership_point(point_code)
+                            num = self._extract_point_number(point_code)
+                            leadership.append(PayScalePoint(code=code, title=code, number=num, rate=rate, date_from='2025-09-01', original_code=point_code))
+                        elif point_code.startswith('LP'):
+                            num = self._extract_point_number(point_code)
+                            lead_practitioner.append(PayScalePoint(code=f"LP{num}", title=f"LP{num}", number=num, rate=rate, date_from='2025-09-01', original_code=point_code))
+                        elif point_code.startswith('UQT'):
+                            code = self._normalize_uqt_point(point_code)
+                            num = self._extract_point_number(point_code)
+                            unqualified.append(PayScalePoint(code=code, title=code, number=num, rate=rate, date_from='2025-09-01', original_code=point_code))
+                        elif point_code.startswith(('SCP', 'POINT')):
+                            num = self._extract_point_number(point_code)
+                            support.append(PayScalePoint(code=str(num), title=f"Point {num}", number=num, rate=rate, date_from='2025-04-01', original_code=point_code))
+
+                    except ValueError:
+                        continue
+
+        # Add extracted scales
+        self._add_pay_scale('MAIN', 'Teachers Main Pay Scale', 'teaching', teaching_main + teaching_upper)
+        self._add_pay_scale('LS', 'Leadership Pay Scale', 'leadership', leadership)
+        self._add_pay_scale('LP', 'Lead Practitioner', 'lead_practitioner', lead_practitioner)
+        self._add_pay_scale('UQT', 'Unqualified Teacher Scale', 'unqualified', unqualified)
+        self._add_pay_scale('MAT_SUP', 'MAT Support Scale', 'support', support)
+        self._add_allowance('TLR', 'Teaching and Learning Responsibility', tlr_points)
+        self._add_allowance('SEN', 'Special Educational Needs', sen_points)
 
     def extract_from_dataframe(self, df: pd.DataFrame, sheet_name: str = "Unknown") -> Dict[str, Any]:
         """Extract from a dataframe directly."""
@@ -921,31 +1131,36 @@ class PayScaleExtractor:
 
 def extract_payscales_from_folder(folder_path: Path) -> Dict[str, Any]:
     """
-    Extract all pay scales and allowances from a folder of Excel files.
+    Extract all pay scales and allowances from a folder of files.
+
+    Supports: Excel (.xlsx, .xlsm, .xls), PDF, Word (.docx)
 
     Args:
-        folder_path: Path to folder containing xlsx files
+        folder_path: Path to folder containing pay scale files
 
     Returns:
         Dict with 'pay_scales', 'allowances', 'grades', 'logs'
 
     Raises:
         FileNotFoundError: If folder does not exist
-        ValueError: If no xlsx files found in folder
+        ValueError: If no supported files found in folder
     """
     folder_path = Path(folder_path)
 
     if not folder_path.exists():
         raise FileNotFoundError(f"Folder not found: {folder_path}")
 
-    xlsx_files = [f for f in folder_path.glob('*.xlsx') if not f.name.startswith('~$')]
+    # Collect all supported file types
+    supported_files = []
+    for ext in ['*.xlsx', '*.xlsm', '*.xls', '*.pdf', '*.docx', '*.doc']:
+        supported_files.extend([f for f in folder_path.glob(ext) if not f.name.startswith('~$')])
 
-    if not xlsx_files:
-        raise ValueError(f"No xlsx files found in folder: {folder_path}")
+    if not supported_files:
+        raise ValueError(f"No supported files (xlsx, pdf, docx) found in folder: {folder_path}")
 
     extractor = PayScaleExtractor()
 
-    for f in xlsx_files:
+    for f in supported_files:
         extractor.extract_from_file(f)
 
     result = {
@@ -984,12 +1199,15 @@ if __name__ == '__main__':
         print("Usage: python payscale_extractor.py [folder_path]")
         sys.exit(1)
 
-    xlsx_files = list(folder.glob('*.xlsx'))
-    if not xlsx_files:
-        print(f"ERROR: No xlsx files found in folder: {folder}")
+    supported_files = []
+    for ext in ['*.xlsx', '*.xlsm', '*.xls', '*.pdf', '*.docx', '*.doc']:
+        supported_files.extend([f for f in folder.glob(ext) if not f.name.startswith('~$')])
+
+    if not supported_files:
+        print(f"ERROR: No supported files (xlsx, pdf, docx) found in folder: {folder}")
         sys.exit(1)
 
-    print(f"Found {len(xlsx_files)} xlsx files")
+    print(f"Found {len(supported_files)} supported files")
 
     try:
         result = extract_payscales_from_folder(folder)
