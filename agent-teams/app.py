@@ -1681,108 +1681,72 @@ def render_validate_and_map(team_id: str):
                 # NOTE: All columns now require user review - no auto-accepted columns
                 # Matched columns are included in the review section below
 
-        # Collect and deduplicate columns needing review across all files
-        # Include ALL columns (matched + review) so user can verify/change any mapping
-        all_review = {}  # source_column -> (mapping, file_keys)
-        all_unmapped = {}  # source_column -> (mapping, file_keys)
+        # Show columns PER FILE so user knows where each column comes from
+        st.markdown("### Map Columns")
+        st.caption("Review each column and confirm or change the mapping. Columns are grouped by file.")
 
         for file_key, result in results.items():
-            # Include BOTH matched and review columns - user should verify all mappings
-            for m in result.matched_columns + result.review_columns:
-                if m.source_column and m.source_column.strip():
-                    if m.source_column not in all_review:
-                        all_review[m.source_column] = (m, [file_key])
-                    else:
-                        all_review[m.source_column][1].append(file_key)
-            for m in result.unmapped_columns:
-                if m.source_column and m.source_column.strip():
-                    if m.source_column not in all_unmapped:
-                        all_unmapped[m.source_column] = (m, [file_key])
-                    else:
-                        all_unmapped[m.source_column][1].append(file_key)
+            # Get all columns for this file (matched + review + unmapped)
+            all_columns = result.matched_columns + result.review_columns + result.unmapped_columns
+            all_columns = [m for m in all_columns if m.source_column and m.source_column.strip()]
 
-        # Show ALL columns for mapping
-        if all_review:
-            st.markdown(f"### Map Columns ({len(all_review)} found)")
-            st.caption("Review each column and confirm or change the mapping.")
-            for source_col, (mapping, file_keys) in all_review.items():
-                col1, col2, col3, col4 = st.columns([3, 3, 2, 2])
-                mapping_key = f"review_{source_col}"
-                with col1:
-                    st.text(source_col)
-                with col2:
-                    fuzzy_options = [mapping.mapped_to or ""] + [alt[0] for alt in mapping.alternatives]
-                    fuzzy_options = [opt for opt in fuzzy_options if opt]
-                    all_fields = get_field_options_for_strand(team_id)
-                    standard_options = [f for f in all_fields if f not in fuzzy_options]
-                    options = fuzzy_options.copy()
-                    if standard_options:
-                        options.append("── All Fields ──")
-                        options.extend(standard_options)
-                    options.append("-- Type custom --")
-                    options.append("-- Ignore this column --")
-                    options.append("-- Keep original --")
+            if not all_columns:
+                continue
 
-                    selected = st.selectbox("Map to", options, key=f"map_{mapping_key}", label_visibility="collapsed")
+            # Show file/sheet as expander
+            file_label = file_key.replace(":", " / ")
+            with st.expander(f"**{file_label}** ({len(all_columns)} columns)", expanded=True):
+                for mapping in all_columns:
+                    source_col = mapping.source_column
+                    # Use file_key in mapping_key to keep columns separate per file
+                    safe_file_key = file_key.replace(":", "_").replace(" ", "_")
+                    mapping_key = f"{safe_file_key}_{source_col}"
 
-                    if selected == "-- Type custom --":
-                        custom_value = st.text_input("Custom", key=f"custom_{mapping_key}", placeholder="Type column name...", label_visibility="collapsed")
-                        if custom_value.strip():
-                            st.session_state.custom_mappings[mapping_key] = custom_value.strip()
-                    elif selected == "-- Ignore this column --":
-                        st.session_state.custom_mappings[mapping_key] = "__IGNORE__"
-                    elif selected == "-- Keep original --":
-                        st.session_state.custom_mappings[mapping_key] = source_col
-                    elif selected != "── All Fields ──" and selected:
-                        st.session_state.custom_mappings[mapping_key] = selected
-                with col3:
-                    # Color-coded confidence indicator
-                    conf = mapping.confidence
-                    if conf >= 0.95:
-                        st.caption(f":green[{conf:.0%}] (high)")
-                    elif conf >= 0.8:
-                        st.caption(f":orange[{conf:.0%}] (medium)")
-                    else:
-                        st.caption(f":red[{conf:.0%}] (low)")
-                with col4:
-                    if mapping.sample_values:
-                        st.caption(f"e.g., {str(mapping.sample_values[0])[:20]}")
+                    col1, col2, col3, col4 = st.columns([3, 3, 2, 2])
+                    with col1:
+                        st.text(source_col)
+                    with col2:
+                        # Build options list
+                        fuzzy_options = []
+                        if mapping.mapped_to:
+                            fuzzy_options.append(mapping.mapped_to)
+                        fuzzy_options += [alt[0] for alt in mapping.alternatives if alt[0] not in fuzzy_options]
 
-        # Show consolidated unmapped columns (deduplicated)
-        if all_unmapped:
-            st.markdown("**Unmapped Columns (needs manual mapping)**")
-            for source_col, (mapping, file_keys) in all_unmapped.items():
-                col1, col2, col3 = st.columns([3, 4, 3])
-                mapping_key = f"unmap_{source_col}"
-                with col1:
-                    st.text(source_col)
-                with col2:
-                    suggestions = [alt[0] for alt in mapping.alternatives] if mapping.alternatives else []
-                    all_fields = get_field_options_for_strand(team_id)
-                    standard_options = [f for f in all_fields if f not in suggestions]
-                    options = suggestions.copy()
-                    if standard_options:
-                        options.append("── All Fields ──")
-                        options.extend(standard_options)
-                    options.append("-- Type custom --")
-                    options.append("-- Ignore this column --")
-                    options.append("-- Keep original --")
+                        all_fields = get_field_options_for_strand(team_id)
+                        standard_options = [f for f in all_fields if f not in fuzzy_options]
 
-                    selected = st.selectbox("Map to", options, key=f"select_{mapping_key}", label_visibility="collapsed", index=0)
+                        options = fuzzy_options.copy()
+                        if standard_options:
+                            options.append("── All Fields ──")
+                            options.extend(standard_options)
+                        options.append("-- Type custom --")
+                        options.append("-- Ignore this column --")
+                        options.append("-- Keep original --")
 
-                    if selected == "-- Type custom --":
-                        custom_value = st.text_input("Custom", key=f"custom_{mapping_key}", placeholder="Type column name...", label_visibility="collapsed")
-                        if custom_value.strip():
-                            st.session_state.custom_mappings[mapping_key] = custom_value.strip()
-                    elif selected == "-- Ignore this column --":
-                        st.session_state.custom_mappings[mapping_key] = "__IGNORE__"
-                    elif selected == "-- Keep original --":
-                        st.session_state.custom_mappings[mapping_key] = source_col
-                    elif selected != "── All Fields ──" and selected:
-                        st.session_state.custom_mappings[mapping_key] = selected
-                with col3:
-                    if mapping.sample_values:
-                        st.caption(f"e.g., {str(mapping.sample_values[0])[:20]}")
+                        selected = st.selectbox("Map to", options, key=f"map_{mapping_key}", label_visibility="collapsed")
+
+                        if selected == "-- Type custom --":
+                            custom_value = st.text_input("Custom", key=f"custom_{mapping_key}", placeholder="Type column name...", label_visibility="collapsed")
+                            if custom_value.strip():
+                                st.session_state.custom_mappings[mapping_key] = custom_value.strip()
+                        elif selected == "-- Ignore this column --":
+                            st.session_state.custom_mappings[mapping_key] = "__IGNORE__"
+                        elif selected == "-- Keep original --":
+                            st.session_state.custom_mappings[mapping_key] = source_col
+                        elif selected and selected != "── All Fields ──":
+                            st.session_state.custom_mappings[mapping_key] = selected
+                    with col3:
+                        # Color-coded confidence indicator
+                        conf = mapping.confidence
+                        if conf >= 0.95:
+                            st.caption(f":green[{conf:.0%}]")
+                        elif conf >= 0.8:
+                            st.caption(f":orange[{conf:.0%}]")
+                        else:
+                            st.caption(f":red[{conf:.0%}]")
+                    with col4:
+                        if mapping.sample_values:
+                            st.caption(f"e.g., {str(mapping.sample_values[0])[:20]}")
 
         # Step 3: Confirm & Proceed
         st.markdown("### Step 3: Confirm & Proceed")
@@ -1790,35 +1754,35 @@ def render_validate_and_map(team_id: str):
         col1, col2, col3 = st.columns(3)
         with col1:
             if st.button("Confirm Mappings", type="primary", use_container_width=True):
-                # Collect all final mappings using deduplicated keys
+                # Collect all final mappings using per-file keys
                 all_mappings = {}
                 custom_maps = st.session_state.get("custom_mappings", {})
 
                 for file_key, result in results.items():
                     file_mappings = {}
+                    safe_file_key = file_key.replace(":", "_").replace(" ", "_")
+
                     for mapping in result.column_mappings:
                         source_col = mapping.source_column
-                        # Check deduplicated keys first (review_ and unmap_ prefixes)
-                        review_key = f"review_{source_col}"
-                        unmap_key = f"unmap_{source_col}"
+                        if not source_col or not source_col.strip():
+                            continue
 
-                        # Check for user selection in custom_maps
-                        if review_key in custom_maps and custom_maps[review_key] != "__IGNORE__":
-                            file_mappings[source_col] = custom_maps[review_key]
-                        elif unmap_key in custom_maps and custom_maps[unmap_key] != "__IGNORE__":
-                            file_mappings[source_col] = custom_maps[unmap_key]
-                        elif mapping.user_override and mapping.user_override != "__IGNORE__":
-                            # User explicitly overrode this mapping
-                            file_mappings[source_col] = mapping.user_override
+                        # Per-file mapping key
+                        mapping_key = f"{safe_file_key}_{source_col}"
+
+                        # Check custom_maps first (user typed custom value)
+                        if mapping_key in custom_maps and custom_maps[mapping_key] != "__IGNORE__":
+                            file_mappings[source_col] = custom_maps[mapping_key]
                         else:
-                            # Check selectbox state directly for review columns
-                            selectbox_key = f"map_{review_key}"
+                            # Check selectbox state
+                            selectbox_key = f"map_{mapping_key}"
                             selectbox_value = st.session_state.get(selectbox_key)
-                            if selectbox_value and selectbox_value not in ["── All Fields ──", "-- Type custom --", "-- Ignore this column --", "-- Keep original --"]:
-                                file_mappings[source_col] = selectbox_value
-                            elif selectbox_value == "-- Keep original --":
-                                file_mappings[source_col] = source_col
-                            elif mapping.mapped_to and mapping.status == 'review':
+                            if selectbox_value and selectbox_value not in ["── All Fields ──", "-- Type custom --", "-- Ignore this column --"]:
+                                if selectbox_value == "-- Keep original --":
+                                    file_mappings[source_col] = source_col
+                                else:
+                                    file_mappings[source_col] = selectbox_value
+                            elif mapping.mapped_to:
                                 # Use suggested mapping if user didn't change it
                                 file_mappings[source_col] = mapping.mapped_to
 
@@ -1832,10 +1796,8 @@ def render_validate_and_map(team_id: str):
             # Save to Memory button - learns from user corrections
             learner = st.session_state.get("column_learner")
             custom_maps = st.session_state.get("custom_mappings", {})
-            has_corrections = any(
-                k.startswith("review_") or k.startswith("unmap_")
-                for k in custom_maps.keys()
-            )
+            # Check if user made any custom mappings
+            has_corrections = len(custom_maps) > 0
 
             if st.button("Save to Memory", use_container_width=True, disabled=not has_corrections,
                         help="Save your column mappings so future files use them automatically"):
