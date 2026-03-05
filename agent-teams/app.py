@@ -1773,55 +1773,72 @@ def render_validate_and_map(team_id: str):
                     else:
                         seen_keys[base_key] = 0
                     occurrence = seen_keys[base_key]
-                    # Hash with occurrence number for uniqueness
                     key_hash = hashlib.md5(f"{base_key}_{occurrence}".encode()).hexdigest()[:10]
                     mapping_key = f"m_{key_hash}"
 
-                    col1, col2, col3, col4 = st.columns([3, 3, 2, 2])
-                    with col1:
-                        st.text(source_col)
-                    with col2:
-                        # Build options list
-                        fuzzy_options = []
-                        if mapping.mapped_to:
-                            fuzzy_options.append(mapping.mapped_to)
-                        fuzzy_options += [alt[0] for alt in mapping.alternatives if alt[0] not in fuzzy_options]
+                    # Status badge
+                    status = mapping.status
+                    if status in ['matched', 'review'] and mapping.mapped_to:
+                        status_badge = ":green[Suggested]"
+                    elif status == 'unmapped' or not mapping.mapped_to:
+                        status_badge = ":red[Unmapped]"
+                    elif status == 'corrected':
+                        status_badge = ":blue[Corrected]"
+                    elif status == 'ignored':
+                        status_badge = ":gray[Ignored]"
+                    else:
+                        status_badge = ""
 
-                        all_fields = get_field_options_for_strand(team_id)
-                        standard_options = [f for f in all_fields if f not in fuzzy_options]
+                    # Confidence badge
+                    conf = mapping.confidence
+                    if conf >= 0.95:
+                        conf_badge = f":green[{conf:.0%}]"
+                    elif conf >= 0.8:
+                        conf_badge = f":orange[{conf:.0%}]"
+                    else:
+                        conf_badge = f":red[{conf:.0%}]"
 
-                        options = fuzzy_options.copy()
-                        if standard_options:
-                            options.append("── All Fields ──")
-                            options.extend(standard_options)
-                        options.append("-- Type custom --")
-                        options.append("-- Ignore this column --")
-                        options.append("-- Keep original --")
+                    # Sample data
+                    sample_text = ""
+                    if mapping.sample_values:
+                        sample_text = f"e.g., {str(mapping.sample_values[0])[:20]}"
 
-                        selected = st.selectbox("Map to", options, key=f"map_{mapping_key}", label_visibility="collapsed")
+                    # Row 1: Column name with status and confidence
+                    st.markdown(f"**{source_col}** {status_badge} {conf_badge}")
+                    if sample_text:
+                        st.caption(sample_text)
 
-                        if selected == "-- Type custom --":
-                            custom_value = st.text_input("Custom", key=f"custom_{mapping_key}", placeholder="Type column name...", label_visibility="collapsed")
-                            if custom_value.strip():
-                                st.session_state.custom_mappings[mapping_key] = custom_value.strip()
-                        elif selected == "-- Ignore this column --":
-                            st.session_state.custom_mappings[mapping_key] = "__IGNORE__"
-                        elif selected == "-- Keep original --":
-                            st.session_state.custom_mappings[mapping_key] = source_col
-                        elif selected and selected != "── All Fields ──":
-                            st.session_state.custom_mappings[mapping_key] = selected
-                    with col3:
-                        # Color-coded confidence indicator
-                        conf = mapping.confidence
-                        if conf >= 0.95:
-                            st.caption(f":green[{conf:.0%}]")
-                        elif conf >= 0.8:
-                            st.caption(f":orange[{conf:.0%}]")
-                        else:
-                            st.caption(f":red[{conf:.0%}]")
-                    with col4:
-                        if mapping.sample_values:
-                            st.caption(f"e.g., {str(mapping.sample_values[0])[:20]}")
+                    # Row 2: Dropdown for mapping
+                    fuzzy_options = []
+                    if mapping.mapped_to:
+                        fuzzy_options.append(mapping.mapped_to)
+                    fuzzy_options += [alt[0] for alt in mapping.alternatives if alt[0] not in fuzzy_options]
+
+                    all_fields = get_field_options_for_strand(team_id)
+                    standard_options = [f for f in all_fields if f not in fuzzy_options]
+
+                    options = fuzzy_options.copy()
+                    if standard_options:
+                        options.append("── All Fields ──")
+                        options.extend(standard_options)
+                    options.append("-- Type custom --")
+                    options.append("-- Ignore this column --")
+                    options.append("-- Keep original --")
+
+                    selected = st.selectbox("Map to", options, key=f"map_{mapping_key}", label_visibility="collapsed")
+
+                    if selected == "-- Type custom --":
+                        custom_value = st.text_input("Custom", key=f"custom_{mapping_key}", placeholder="Type column name...", label_visibility="collapsed")
+                        if custom_value.strip():
+                            st.session_state.custom_mappings[mapping_key] = custom_value.strip()
+                    elif selected == "-- Ignore this column --":
+                        st.session_state.custom_mappings[mapping_key] = "__IGNORE__"
+                    elif selected == "-- Keep original --":
+                        st.session_state.custom_mappings[mapping_key] = source_col
+                    elif selected and selected != "── All Fields ──":
+                        st.session_state.custom_mappings[mapping_key] = selected
+
+                    st.markdown("---")
 
         # Step 3: Confirm & Proceed
         st.markdown("### Step 3: Confirm & Proceed")
