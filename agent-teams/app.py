@@ -1682,11 +1682,13 @@ def render_validate_and_map(team_id: str):
                 # Matched columns are included in the review section below
 
         # Collect and deduplicate columns needing review across all files
+        # Include ALL columns (matched + review) so user can verify/change any mapping
         all_review = {}  # source_column -> (mapping, file_keys)
         all_unmapped = {}  # source_column -> (mapping, file_keys)
 
         for file_key, result in results.items():
-            for m in result.review_columns:
+            # Include BOTH matched and review columns - user should verify all mappings
+            for m in result.matched_columns + result.review_columns:
                 if m.source_column and m.source_column.strip():
                     if m.source_column not in all_review:
                         all_review[m.source_column] = (m, [file_key])
@@ -1699,11 +1701,10 @@ def render_validate_and_map(team_id: str):
                     else:
                         all_unmapped[m.source_column][1].append(file_key)
 
-        # Show consolidated review columns (deduplicated)
-        # All columns with suggested mappings require user confirmation
+        # Show ALL columns for mapping
         if all_review:
-            st.markdown("**Review Column Mappings** *(confirm or change each mapping)*")
-            st.caption("All mappings require your confirmation. Use the dropdown to change any mapping regardless of confidence score.")
+            st.markdown(f"### Map Columns ({len(all_review)} found)")
+            st.caption("Review each column and confirm or change the mapping.")
             for source_col, (mapping, file_keys) in all_review.items():
                 col1, col2, col3, col4 = st.columns([3, 3, 2, 2])
                 mapping_key = f"review_{source_col}"
