@@ -245,6 +245,57 @@ TEAMS = {
 # SESSION STATE
 # =============================================================================
 
+# Create unique session ID for multi-user isolation
+import uuid
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())[:8]
+
+# Session-specific directories for multi-user support
+def get_session_data_dir():
+    """Get session-specific data directory."""
+    base = get_data_directory()
+    session_dir = base / f"session_{st.session_state.session_id}"
+    session_dir.mkdir(parents=True, exist_ok=True)
+    for strand in ["S1", "S2", "S3"]:
+        (session_dir / strand).mkdir(parents=True, exist_ok=True)
+    return session_dir
+
+def get_session_output_dir():
+    """Get session-specific output directory."""
+    base = get_reports_directory()
+    session_dir = base / f"session_{st.session_state.session_id}"
+    session_dir.mkdir(parents=True, exist_ok=True)
+    return session_dir
+
+def cleanup_old_sessions(max_age_hours: int = 24):
+    """Remove session folders older than max_age_hours."""
+    import time
+    cutoff = time.time() - (max_age_hours * 3600)
+
+    # Clean up data sessions
+    data_base = get_data_directory()
+    for session_dir in data_base.glob("session_*"):
+        try:
+            if session_dir.stat().st_mtime < cutoff:
+                shutil.rmtree(session_dir)
+        except Exception:
+            pass
+
+    # Clean up report sessions
+    reports_base = get_reports_directory()
+    for session_dir in reports_base.glob("session_*"):
+        try:
+            if session_dir.stat().st_mtime < cutoff:
+                shutil.rmtree(session_dir)
+        except Exception:
+            pass
+
+# Run cleanup on startup (don't block)
+try:
+    cleanup_old_sessions(24)
+except Exception:
+    pass
+
 if "processing_status" not in st.session_state:
     st.session_state.processing_status = {}
 if "auto_process" not in st.session_state:
@@ -336,8 +387,8 @@ def get_field_options_for_strand(strand: str) -> list:
 # =============================================================================
 
 def get_customer_files(team_id: str) -> list:
-    """Get list of customer data files for a team."""
-    team_dir = CUSTOMER_DATA_DIR / team_id
+    """Get list of customer data files for a team (session-specific)."""
+    team_dir = get_session_data_dir() / team_id
     files = []
     if team_dir.exists():
         for ext in ["*.xlsx", "*.xlsm", "*.xls", "*.csv", "*.pdf", "*.docx", "*.doc", "*.png", "*.jpg", "*.jpeg"]:
@@ -346,15 +397,10 @@ def get_customer_files(team_id: str) -> list:
 
 
 def get_recent_reports(team_id: str, limit: int = 5) -> list:
-    """Get recent report files for a team."""
-    # Look for both old format and new specialist agent format
-    reports = list(REPORTS_DIR.glob(f"{team_id}_*.xlsx"))
-    reports += list(REPORTS_DIR.glob(f"{team_id}_complete_template_*.xlsx"))
-    # Also check output folder
-    output_dir = BASE_DIR / "output"
-    if output_dir.exists():
-        reports += list(output_dir.glob(f"{team_id}_*.xlsx"))
-        reports += list(output_dir.glob(f"{team_id}_complete_template_*.xlsx"))
+    """Get recent report files for a team (session-specific)."""
+    session_output = get_session_output_dir()
+    reports = list(session_output.glob(f"{team_id}_*.xlsx"))
+    reports += list(session_output.glob(f"{team_id}_complete_template_*.xlsx"))
     # Remove duplicates and sort
     reports = list(set(reports))
     reports.sort(key=lambda f: f.stat().st_mtime, reverse=True)
@@ -371,8 +417,8 @@ def run_team_processing(team_id: str, column_mappings: dict = None) -> dict:
     Returns:
         Processing result dictionary
     """
-    customer_dir = CUSTOMER_DATA_DIR / team_id
-    output_dir = REPORTS_DIR
+    customer_dir = get_session_data_dir() / team_id
+    output_dir = get_session_output_dir()
 
     # Get validated mappings from session state if not provided
     if column_mappings is None:
@@ -602,7 +648,7 @@ def _load_projects() -> list:
 
 
 def _get_project_dir(project: str, strand_id: str) -> Path:
-    return CUSTOMER_DATA_DIR / project / strand_id
+    return get_session_data_dir() / project / strand_id
 
 
 def _get_uploaded_sheet_names(project: str, strand_id: str) -> set:
@@ -716,7 +762,9 @@ def render_sidebar():
         st.title("IMP Agent Teams")
         st.markdown("---")
 
-        st.caption(f"Data folder: {CUSTOMER_DATA_DIR}")
+        # Show session info for multi-user awareness
+        st.caption(f"Session: {st.session_state.session_id}")
+        st.caption(f"Data folder: {get_session_data_dir()}")
         st.markdown("---")
 
         # Team selection
@@ -821,7 +869,7 @@ def render_sidebar():
                     try:
                         files_removed = 0
                         if remove_scope == "Current team only":
-                            team_dir = CUSTOMER_DATA_DIR / st.session_state.selected_team
+                            team_dir = get_session_data_dir() / st.session_state.selected_team
                             if team_dir.exists():
                                 for f in team_dir.rglob("*"):
                                     if f.is_file() and not f.name.startswith("~$"):
@@ -829,7 +877,7 @@ def render_sidebar():
                                         files_removed += 1
                         else:
                             for strand in ["S1", "S2", "S3"]:
-                                strand_dir = CUSTOMER_DATA_DIR / strand
+                                strand_dir = get_session_data_dir() / strand
                                 if strand_dir.exists():
                                     for f in strand_dir.rglob("*"):
                                         if f.is_file() and not f.name.startswith("~$"):
@@ -1005,7 +1053,7 @@ def render_data_upload(team_id: str):
     if st.session_state.auto_process:
         st.success("⚡ Auto-processing is **ON** - Files will be processed immediately after upload")
 
-    upload_dir = CUSTOMER_DATA_DIR / team_id
+    upload_dir = get_session_data_dir() / team_id
     if team_id != "S3":
         st.caption(f"Upload to: {upload_dir}")
 
@@ -1060,7 +1108,7 @@ def render_customer_files(team_id: str):
     st.subheader("📁 Customer Data Files")
 
     files = get_customer_files(team_id)
-    base_path = CUSTOMER_DATA_DIR / team_id
+    base_path = get_session_data_dir() / team_id
 
     st.caption(f"Data folder: {base_path}")
 
@@ -1903,7 +1951,7 @@ def render_s3_code_mapping(team_id: str):
             try:
                 from teams.s3_code_mapper import run_code_mapping
 
-                customer_dir = CUSTOMER_DATA_DIR / team_id
+                customer_dir = get_session_data_dir() / team_id
                 column_mappings = st.session_state.column_mappings.get(team_id, {})
 
                 result = run_code_mapping(
