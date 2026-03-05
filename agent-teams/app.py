@@ -955,53 +955,8 @@ def render_data_upload(team_id: str):
     """Render the data upload section."""
     st.subheader("📤 Upload Customer Data")
 
-    # S2 Template Mode - Upload pre-populated template first
-    if team_id == "S2":
-        st.markdown("### 📋 Step 1: Upload Template (Required)")
-        st.info("""
-        **S2 Workflow:**
-        1. **Upload Template** → Contains reference data (Pay Scales, Staff Roles, Pensions)
-        2. **Upload Raw Data** → Your customer staff/payroll files
-        3. **Map Columns** → Match customer columns to template fields (in 'Validate & Map' tab)
-        4. **Run S2** → Process staff data into template format
-        """)
-
-        with st.container():
-            template_file = st.file_uploader(
-                "Upload S2 Template Workbook",
-                type=["xlsx", "xlsm"],
-                key="s2_template_upload",
-                help="Upload the pre-populated S2 template workbook. Customer data will be written into this template."
-            )
-
-            if template_file:
-                # Save template to templates directory
-                template_dir = TEMPLATES_DIR / "S2"
-                template_dir.mkdir(parents=True, exist_ok=True)
-                template_path = template_dir / template_file.name
-
-                with open(template_path, "wb") as f:
-                    f.write(template_file.getbuffer())
-
-                st.session_state["s2_template_path"] = template_path
-                st.success(f"✅ Template uploaded: {template_file.name}")
-                st.info("🔧 **Template Mode ENABLED** - Customer data will be written into this template")
-
-            # Show current template status
-            current_template = st.session_state.get("s2_template_path")
-            if current_template and Path(current_template).exists():
-                st.success(f"📋 Active Template: {Path(current_template).name}")
-                if st.button("Clear Template (use Raw Data mode)", key="clear_s2_template"):
-                    st.session_state["s2_template_path"] = None
-                    st.rerun()
-            else:
-                st.caption("No template selected - using Raw Data mode")
-
-        st.markdown("---")
-        st.markdown("### 📁 Step 2: Upload Raw Customer Data")
-
     # S3 Template Mode - Upload pre-populated template first
-    elif team_id == "S3":
+    if team_id == "S3":
         st.markdown("### 📋 Step 1: Upload Template (Required)")
         st.info("""
         **S3 Workflow:**
@@ -1051,7 +1006,7 @@ def render_data_upload(team_id: str):
         st.success("⚡ Auto-processing is **ON** - Files will be processed immediately after upload")
 
     upload_dir = CUSTOMER_DATA_DIR / team_id
-    if team_id not in ["S2", "S3"]:
+    if team_id != "S3":
         st.caption(f"Upload to: {upload_dir}")
 
     # Use type=None to accept all files (Streamlit has MIME type issues with .docx on Windows)
