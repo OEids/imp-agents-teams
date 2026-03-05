@@ -702,13 +702,7 @@ def _render_lc_documents(locations: list, customers: list, key_prefix: str = "lc
 def render_sidebar():
     """Render the sidebar navigation."""
     with st.sidebar:
-        # IMP Logo
-        st.image("app brand/imp_logo_final.png", width=180)
-        st.markdown(f"""
-        <p style="color: {IMP_COLORS['purple']}; font-size: 0.9em; margin-top: -10px;">
-        Behind Ambitious MAT Finance Teams
-        </p>
-        """, unsafe_allow_html=True)
+        st.title("IMP Agent Teams")
         st.markdown("---")
 
         st.caption(f"Data folder: {CUSTOMER_DATA_DIR}")
