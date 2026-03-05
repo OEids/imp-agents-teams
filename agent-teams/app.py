@@ -1700,47 +1700,41 @@ def render_validate_and_map(team_id: str):
                 # NOTE: All columns now require user review - no auto-accepted columns
                 # Matched columns are included in the review section below
 
-        # Show columns PER FILE so user knows where each column comes from
+        # Show columns PER FILE - deduplicate so each source column appears once
         st.markdown("### Map Columns")
-        st.caption("Review each column and confirm or change the mapping. Columns are grouped by file.")
+        st.caption("Review each column and confirm or change the mapping.")
 
-        # Track seen keys to handle duplicates
-        seen_keys = {}
-
+        # Group by file name and deduplicate columns
+        file_columns = {}  # file_name -> {source_col: mapping}
         for file_key, result in results.items():
-            # Get all columns for this file (matched + review + unmapped)
-            all_columns = result.matched_columns + result.review_columns + result.unmapped_columns
-            all_columns = [m for m in all_columns if m.source_column and m.source_column.strip()]
+            file_name = file_key.split(":")[0] if ":" in file_key else file_key
+            if file_name not in file_columns:
+                file_columns[file_name] = {}
 
-            if not all_columns:
+            all_cols = result.matched_columns + result.review_columns + result.unmapped_columns
+            for m in all_cols:
+                if m.source_column and m.source_column.strip():
+                    # Keep first occurrence only
+                    if m.source_column not in file_columns[file_name]:
+                        file_columns[file_name][m.source_column] = m
+
+        for file_name, columns in file_columns.items():
+            if not columns:
                 continue
 
-            # Show file/sheet as expander - simple two column table
-            file_label = file_key.replace(":", " / ")
-            with st.expander(f"**{file_label}** ({len(all_columns)} columns)", expanded=True):
-                # Table header
+            with st.expander(f"**{file_name}** ({len(columns)} columns)", expanded=True):
                 c1, c2 = st.columns([1, 1])
                 c1.markdown("**Source Column**")
                 c2.markdown("**Map To**")
 
-                for col_idx, mapping in enumerate(all_columns):
-                    source_col = mapping.source_column
-                    base_key = f"{team_id}_{file_key}_{source_col}"
-                    if base_key in seen_keys:
-                        seen_keys[base_key] += 1
-                    else:
-                        seen_keys[base_key] = 0
-                    occurrence = seen_keys[base_key]
-                    key_hash = hashlib.md5(f"{base_key}_{occurrence}".encode()).hexdigest()[:10]
+                for source_col, mapping in columns.items():
+                    key_hash = hashlib.md5(f"{team_id}_{file_name}_{source_col}".encode()).hexdigest()[:10]
                     mapping_key = f"m_{key_hash}"
 
                     c1, c2 = st.columns([1, 1])
-
                     with c1:
                         st.text(source_col)
-
                     with c2:
-                        # Build dropdown options
                         options = []
                         if mapping.mapped_to:
                             options.append(mapping.mapped_to)
@@ -1750,12 +1744,10 @@ def render_validate_and_map(team_id: str):
                         for f in all_fields:
                             if f not in options:
                                 options.append(f)
-
                         options.append("-- Ignore --")
                         options.append("-- Keep original --")
 
                         selected = st.selectbox("x", options, key=f"map_{mapping_key}", label_visibility="collapsed")
-
                         if selected == "-- Ignore --":
                             st.session_state.custom_mappings[mapping_key] = "__IGNORE__"
                         elif selected == "-- Keep original --":
@@ -1769,48 +1761,47 @@ def render_validate_and_map(team_id: str):
         col1, col2, col3 = st.columns(3)
         with col1:
             if st.button("Confirm Mappings", type="primary", use_container_width=True):
-                # Collect all final mappings - regenerate keys the same way as UI
+                # Collect mappings - same deduplication as UI
                 all_mappings = {}
                 custom_maps = st.session_state.get("custom_mappings", {})
-                seen_keys_confirm = {}
 
+                # Group and deduplicate same as UI
+                file_columns_confirm = {}
                 for file_key, result in results.items():
-                    file_mappings = {}
+                    file_name = file_key.split(":")[0] if ":" in file_key else file_key
+                    if file_name not in file_columns_confirm:
+                        file_columns_confirm[file_name] = {}
                     all_cols = result.matched_columns + result.review_columns + result.unmapped_columns
-                    all_cols = [m for m in all_cols if m.source_column and m.source_column.strip()]
+                    for m in all_cols:
+                        if m.source_column and m.source_column.strip():
+                            if m.source_column not in file_columns_confirm[file_name]:
+                                file_columns_confirm[file_name][m.source_column] = m
 
-                    for mapping in all_cols:
-                        source_col = mapping.source_column
-                        if not source_col or not source_col.strip():
-                            continue
-
-                        # Same key generation as UI
-                        base_key = f"{team_id}_{file_key}_{source_col}"
-                        if base_key in seen_keys_confirm:
-                            seen_keys_confirm[base_key] += 1
-                        else:
-                            seen_keys_confirm[base_key] = 0
-                        occurrence = seen_keys_confirm[base_key]
-                        key_hash = hashlib.md5(f"{base_key}_{occurrence}".encode()).hexdigest()[:10]
+                # Build mappings
+                for file_name, columns in file_columns_confirm.items():
+                    file_mappings = {}
+                    for source_col, mapping in columns.items():
+                        key_hash = hashlib.md5(f"{team_id}_{file_name}_{source_col}".encode()).hexdigest()[:10]
                         mapping_key = f"m_{key_hash}"
 
-                        # Check custom_maps first (user typed custom value)
                         if mapping_key in custom_maps and custom_maps[mapping_key] != "__IGNORE__":
                             file_mappings[source_col] = custom_maps[mapping_key]
                         else:
-                            # Check selectbox state
                             selectbox_key = f"map_{mapping_key}"
                             selectbox_value = st.session_state.get(selectbox_key)
-                            if selectbox_value and selectbox_value not in ["── All Fields ──", "-- Type custom --", "-- Ignore this column --"]:
+                            if selectbox_value and selectbox_value != "-- Ignore --":
                                 if selectbox_value == "-- Keep original --":
                                     file_mappings[source_col] = source_col
                                 else:
                                     file_mappings[source_col] = selectbox_value
                             elif mapping.mapped_to:
-                                # Use suggested mapping if user didn't change it
                                 file_mappings[source_col] = mapping.mapped_to
 
-                    all_mappings[file_key] = file_mappings
+                    # Apply to all file_keys with this file_name
+                    for file_key in results.keys():
+                        fk_name = file_key.split(":")[0] if ":" in file_key else file_key
+                        if fk_name == file_name:
+                            all_mappings[file_key] = file_mappings
 
                 st.session_state.column_mappings[team_id] = all_mappings
                 st.session_state.mapping_validated[team_id] = True
