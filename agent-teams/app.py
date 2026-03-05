@@ -20,6 +20,7 @@ import streamlit as st
 import pandas as pd
 from pathlib import Path
 import json
+import hashlib
 from datetime import datetime
 import shutil
 import time
@@ -1698,9 +1699,9 @@ def render_validate_and_map(team_id: str):
             with st.expander(f"**{file_label}** ({len(all_columns)} columns)", expanded=True):
                 for mapping in all_columns:
                     source_col = mapping.source_column
-                    # Use file_key in mapping_key to keep columns separate per file
-                    safe_file_key = file_key.replace(":", "_").replace(" ", "_")
-                    mapping_key = f"{safe_file_key}_{source_col}"
+                    # Use hash of file_key + source_col for unique, consistent keys
+                    key_hash = hashlib.md5(f"{file_key}:{source_col}".encode()).hexdigest()[:8]
+                    mapping_key = f"m_{key_hash}"
 
                     col1, col2, col3, col4 = st.columns([3, 3, 2, 2])
                     with col1:
@@ -1754,21 +1755,21 @@ def render_validate_and_map(team_id: str):
         col1, col2, col3 = st.columns(3)
         with col1:
             if st.button("Confirm Mappings", type="primary", use_container_width=True):
-                # Collect all final mappings using per-file keys
+                # Collect all final mappings using hash-based keys
                 all_mappings = {}
                 custom_maps = st.session_state.get("custom_mappings", {})
 
                 for file_key, result in results.items():
                     file_mappings = {}
-                    safe_file_key = file_key.replace(":", "_").replace(" ", "_")
 
                     for mapping in result.column_mappings:
                         source_col = mapping.source_column
                         if not source_col or not source_col.strip():
                             continue
 
-                        # Per-file mapping key
-                        mapping_key = f"{safe_file_key}_{source_col}"
+                        # Same hash as used in UI
+                        key_hash = hashlib.md5(f"{file_key}:{source_col}".encode()).hexdigest()[:8]
+                        mapping_key = f"m_{key_hash}"
 
                         # Check custom_maps first (user typed custom value)
                         if mapping_key in custom_maps and custom_maps[mapping_key] != "__IGNORE__":
