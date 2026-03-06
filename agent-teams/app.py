@@ -514,6 +514,58 @@ def run_team_processing(team_id: str, column_mappings: dict = None) -> dict:
                     result["issues"] = []
                 result["issues"].append(f"Census merge warning: {e}")
 
+        # Merge funding data if available and confirmed
+        funding_result = st.session_state.get("s3_funding_result")
+        funding_confirmed = st.session_state.get("s3_funding_confirmed", False)
+        if funding_result and funding_result.get("success") and funding_confirmed and result.get("output_file"):
+            try:
+                from openpyxl import load_workbook
+                output_file = Path(result["output_file"])
+
+                if output_file.exists():
+                    funding_df = funding_result.get("funding_updates")
+                    if funding_df is not None and len(funding_df) > 0:
+                        wb = load_workbook(str(output_file))
+
+                        if "Funding" in wb.sheetnames:
+                            ws = wb["Funding"]
+
+                            # Find column indices for SchoolCode, Description, YearValue
+                            # Typically: AA=SchoolCode (27), AG=Description (33), AM=YearValue (39)
+                            SCHOOL_CODE_COL = 27  # Column AA
+                            DESCRIPTION_COL = 33  # Column AG
+                            YEAR_VALUE_COL = 39   # Column AM
+
+                            # Build lookup from funding_df
+                            funding_lookup = {}
+                            for _, row in funding_df.iterrows():
+                                key = (row['SchoolCode'], row['Description'])
+                                funding_lookup[key] = row['YearValue']
+
+                            # Update matching rows in Funding sheet
+                            updates_made = 0
+                            for row_idx in range(2, ws.max_row + 1):
+                                school_code = ws.cell(row=row_idx, column=SCHOOL_CODE_COL).value
+                                description = ws.cell(row=row_idx, column=DESCRIPTION_COL).value
+
+                                if school_code and description:
+                                    key = (str(school_code).strip(), str(description).strip())
+                                    if key in funding_lookup:
+                                        ws.cell(row=row_idx, column=YEAR_VALUE_COL).value = funding_lookup[key]
+                                        updates_made += 1
+
+                            wb.save(str(output_file))
+
+                            # Update result summary
+                            if "summary" not in result:
+                                result["summary"] = {}
+                            result["summary"]["funding_values_updated"] = updates_made
+
+            except Exception as e:
+                if "issues" not in result:
+                    result["issues"] = []
+                result["issues"].append(f"Funding merge warning: {e}")
+
         return {
             "success": result.get("success", False),
             "summary": result.get("summary", {}),
@@ -1175,6 +1227,43 @@ def render_data_upload(team_id: str):
         st.markdown("---")
         st.markdown("### 📁 Step 3: Upload Raw Customer Data")
 
+        # Note: Raw data upload follows below
+
+        st.markdown("---")
+        st.markdown("### 💰 Step 4: Upload GAG Funding Statements (Optional)")
+        st.info("Upload Pre-16 and/or Post-16 GAG funding statement PDFs to extract funding values for the Funding tab.")
+
+        funding_files = st.file_uploader(
+            "Upload GAG Funding PDFs",
+            type=["pdf"],
+            accept_multiple_files=True,
+            key="s3_funding_upload",
+            help="GAG funding statements from DfE. Supports Pre-16 and Post-16 allocation statements."
+        )
+
+        if funding_files:
+            # Save funding files to a funding subfolder
+            funding_dir = get_session_data_dir() / team_id / "funding"
+            funding_dir.mkdir(parents=True, exist_ok=True)
+
+            for funding_file in funding_files:
+                funding_path = funding_dir / funding_file.name
+                with open(funding_path, "wb") as f:
+                    f.write(funding_file.getbuffer())
+                st.success(f"✅ Funding file uploaded: {funding_file.name}")
+
+            st.session_state["s3_funding_folder"] = funding_dir
+
+        # Show funding processing status
+        funding_folder = st.session_state.get("s3_funding_folder")
+        if funding_folder and Path(funding_folder).exists():
+            funding_count = len(list(Path(funding_folder).glob("*.pdf")))
+            if funding_count > 0:
+                st.success(f"💰 {funding_count} funding PDF(s) ready for processing")
+                st.caption("Process funding statements in the 'Validate & Map' tab after confirming code mappings.")
+
+        st.markdown("---")
+
     # Show auto-processing status
     if st.session_state.auto_process:
         st.success("⚡ Auto-processing is **ON** - Files will be processed immediately after upload")
@@ -1459,7 +1548,20 @@ def render_processing(team_id: str):
                 audit_score = summary.get("audit_score", 0)
                 cols2[1].metric("Audit Score", f"{audit_score:.1f}%")
                 cols2[2].metric("Audit Passed", "YES" if summary.get("audit_passed", False) else "NO")
-                cols2[3].empty()  # Placeholder
+
+                # Census/Funding metrics
+                census_rows = summary.get("census_rows_added", 0)
+                funding_updates = summary.get("funding_values_updated", 0)
+                if census_rows > 0 or funding_updates > 0:
+                    cols2[3].metric("Census + Funding", f"{census_rows} + {funding_updates}")
+                else:
+                    cols2[3].empty()
+
+                # Show census/funding merge status
+                if census_rows > 0:
+                    st.success(f"📊 Census data merged: {census_rows} pupil records added to Pupils sheet")
+                if funding_updates > 0:
+                    st.success(f"💰 Funding data merged: {funding_updates} values updated in Funding tab")
 
                 # Show audit status
                 if summary.get("audit_passed", False):
@@ -2222,6 +2324,149 @@ def render_s3_code_mapping(team_id: str):
         # Show confirmed status
         if st.session_state.get("s3_code_mappings"):
             st.success("✅ Code mappings are confirmed. Ready to process!")
+
+    # Show funding step after code mappings are confirmed
+    if st.session_state.get("s3_code_mappings"):
+        st.markdown("---")
+        render_s3_funding_mapping(team_id)
+
+
+def render_s3_funding_mapping(team_id: str):
+    """Render the S3 funding statement mapping section."""
+    st.markdown("### Step 4: Funding Statements (Optional)")
+
+    funding_folder = st.session_state.get("s3_funding_folder")
+
+    if not funding_folder or not Path(funding_folder).exists():
+        st.info("💰 **No funding PDFs uploaded** - Upload GAG funding statement PDFs in the 'Upload & Files' tab to enable funding extraction.")
+        return
+
+    funding_count = len(list(Path(funding_folder).glob("*.pdf")))
+    if funding_count == 0:
+        st.info("💰 **No funding PDFs found** - Upload GAG funding statement PDFs to enable funding extraction.")
+        return
+
+    st.markdown(f"**{funding_count} funding PDF(s) ready to process**")
+    st.markdown("""
+    This step extracts funding values from GAG statements:
+    - **Pre-16 GAG** - Basic entitlement, IDACI, FSM, Lump Sum, etc.
+    - **Post-16 (16-19)** - Core programme funding, premiums, student support
+    """)
+
+    # Process funding button
+    if st.button("🔄 Process Funding Statements", type="primary", key="process_funding"):
+        with st.spinner("Processing funding statements..."):
+            try:
+                from teams.s3_funding_processor import run_funding_processor
+
+                # Get school codes from template if available
+                school_codes_df = None
+                template_path = st.session_state.get("s3_template_path")
+                if template_path and Path(template_path).exists():
+                    try:
+                        school_codes_df = pd.read_excel(template_path, sheet_name="Schools")
+                    except Exception:
+                        pass
+
+                result = run_funding_processor(
+                    funding_folder=Path(funding_folder),
+                    school_codes_df=school_codes_df
+                )
+
+                st.session_state["s3_funding_result"] = result
+
+                if result.get("success"):
+                    summary = result.get("summary", {})
+                    st.success(f"✅ Funding processed: {summary.get('funding_rows', 0)} values extracted from {summary.get('pre16_schools', 0)} Pre-16 + {summary.get('post16_schools', 0)} Post-16 schools")
+                    if summary.get("failed_count", 0) > 0:
+                        st.warning(f"⚠️ {summary['failed_count']} file(s) could not be processed")
+                else:
+                    st.error("Funding processing failed")
+            except Exception as e:
+                st.error(f"Error processing funding: {e}")
+
+    # Show funding results
+    result = st.session_state.get("s3_funding_result")
+    if result and result.get("success"):
+        summary = result.get("summary", {})
+
+        # Summary metrics
+        cols = st.columns(4)
+        cols[0].metric("Pre-16 Schools", summary.get("pre16_schools", 0))
+        cols[1].metric("Post-16 Schools", summary.get("post16_schools", 0))
+        cols[2].metric("Funding Rows", summary.get("funding_rows", 0))
+        cols[3].metric("Validation", f"{summary.get('validation_passed', 0)}/{summary.get('validation_passed', 0) + summary.get('validation_failed', 0)}")
+
+        # Validation results
+        validation_results = result.get("validation_results", [])
+        if validation_results:
+            st.markdown("#### Validation Results")
+            pass_count = sum(1 for v in validation_results if v['Status'] == 'PASS')
+            fail_count = sum(1 for v in validation_results if v['Status'] == 'FAIL')
+
+            if fail_count == 0:
+                st.success(f"✅ All {pass_count} schools validated successfully!")
+            else:
+                st.warning(f"⚠️ {pass_count} passed, {fail_count} failed validation")
+
+            with st.expander("View Validation Details", expanded=fail_count > 0):
+                val_df = pd.DataFrame(validation_results)
+                if len(val_df) > 0:
+                    # Style the dataframe
+                    def highlight_status(row):
+                        if row['Status'] == 'FAIL':
+                            return ['background-color: #ffcccc'] * len(row)
+                        return ['background-color: #ccffcc'] * len(row)
+
+                    st.dataframe(
+                        val_df.style.apply(highlight_status, axis=1),
+                        hide_index=True
+                    )
+
+        # Funding data preview
+        funding_df = result.get("funding_updates")
+        if funding_df is not None and len(funding_df) > 0:
+            st.markdown("#### Extracted Funding Data")
+
+            # Group by school for display
+            schools = funding_df['SchoolCode'].unique()
+            for school_code in schools:
+                school_data = funding_df[funding_df['SchoolCode'] == school_code]
+                pre16_count = len(school_data[school_data['StatementType'] == 'Pre-16'])
+                post16_count = len(school_data[school_data['StatementType'] == 'Post-16'])
+                total_value = school_data['YearValue'].sum()
+
+                with st.expander(f"📊 {school_code} - {len(school_data)} values (£{total_value:,.2f})", expanded=False):
+                    st.caption(f"Pre-16: {pre16_count} values | Post-16: {post16_count} values")
+                    display_df = school_data[['Description', 'YearValue', 'StatementType', 'Source']].copy()
+                    display_df['YearValue'] = display_df['YearValue'].apply(lambda x: f"£{x:,.2f}")
+                    st.dataframe(display_df, hide_index=True, use_container_width=True)
+
+        # Unextractable files
+        unextractable = result.get("unextractable", [])
+        if unextractable:
+            with st.expander(f"⚠️ Failed Files ({len(unextractable)})", expanded=False):
+                fail_df = pd.DataFrame(unextractable)
+                st.dataframe(fail_df, hide_index=True)
+
+        # Confirm button
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ Confirm Funding Data", type="primary", key="confirm_funding"):
+                st.session_state["s3_funding_confirmed"] = True
+                st.success("✅ Funding data confirmed! Ready to process.")
+
+        with col2:
+            if st.button("🔄 Re-process Funding", key="clear_funding"):
+                if "s3_funding_result" in st.session_state:
+                    del st.session_state["s3_funding_result"]
+                if "s3_funding_confirmed" in st.session_state:
+                    del st.session_state["s3_funding_confirmed"]
+                st.rerun()
+
+        # Show confirmed status
+        if st.session_state.get("s3_funding_confirmed"):
+            st.success("✅ Funding data is confirmed. It will be merged when you run S3 processing.")
 
 
 # =============================================================================
