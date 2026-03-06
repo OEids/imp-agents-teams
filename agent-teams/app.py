@@ -1203,7 +1203,7 @@ def render_data_upload(team_id: str):
                             template_path = st.session_state.get("s3_template_path")
                             if template_path and Path(template_path).exists():
                                 try:
-                                    school_codes_df = pd.read_excel(template_path, sheet_name="Schools")
+                                    school_codes_df = pd.read_excel(template_path, sheet_name="Schools", header=1)
                                 except Exception:
                                     pass
 
@@ -2377,7 +2377,7 @@ def render_s3_funding_mapping(team_id: str):
                 template_path = st.session_state.get("s3_template_path")
                 if template_path and Path(template_path).exists():
                     try:
-                        school_codes_df = pd.read_excel(template_path, sheet_name="Schools")
+                        school_codes_df = pd.read_excel(template_path, sheet_name="Schools", header=1)
                     except Exception:
                         pass
 
