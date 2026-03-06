@@ -145,6 +145,42 @@ class CensusProcessor:
 
         return None
 
+    def match_school_from_filename(self, filename: str) -> Optional[str]:
+        """
+        Try to match school code directly from filename.
+        E.g., "BPS Autumn Census.pdf" -> matches SchoolCode "BPS"
+        """
+        if self.school_codes_df is None:
+            return None
+
+        # Extract potential school code from start of filename
+        # Common patterns: "BPS_Census.pdf", "BPS Autumn Census.pdf", "BPS-Census.pdf"
+        filename_clean = Path(filename).stem.upper()
+
+        # Get all valid school codes from template
+        valid_codes = set()
+        for _, row in self.school_codes_df.iterrows():
+            code = str(row.get('SchoolCode', '')).upper().strip()
+            if code and code not in ['DEFAULT', 'CENTRAL', 'NAN', '']:
+                valid_codes.add(code)
+
+        # Check if filename starts with a school code
+        for code in valid_codes:
+            # Match at start of filename followed by separator or space
+            if filename_clean.startswith(code + '_') or \
+               filename_clean.startswith(code + ' ') or \
+               filename_clean.startswith(code + '-') or \
+               filename_clean == code:
+                return code
+
+        # Also check if the code appears as a distinct word in the filename
+        filename_parts = re.split(r'[_\s\-]+', filename_clean)
+        for part in filename_parts:
+            if part in valid_codes:
+                return part
+
+        return None
+
     def extract_census_type_from_content(self, content: str) -> tuple:
         """Extract census type and year from document content."""
         match = re.search(r'School census collection:\s*(autumn|spring)\s*(\d{4})', content, re.IGNORECASE)
@@ -256,6 +292,11 @@ class CensusProcessor:
 
         school_name = self.extract_school_name(content)
         school_code = self.match_school(school_name)
+
+        # Fallback: try to match school code from filename (e.g., "BPS_Census.pdf" -> "BPS")
+        if school_code is None:
+            school_code = self.match_school_from_filename(filepath.name)
+
         census_type, year = self.extract_census_type_from_content(content)
 
         if not census_type:
@@ -304,6 +345,11 @@ class CensusProcessor:
 
         school_name = self.extract_school_name(content)
         school_code = self.match_school(school_name)
+
+        # Fallback: try to match school code from filename (e.g., "BPS_Census.pdf" -> "BPS")
+        if school_code is None:
+            school_code = self.match_school_from_filename(filepath.name)
+
         census_type, year = self.extract_census_type_from_content(content)
 
         if not census_type:
