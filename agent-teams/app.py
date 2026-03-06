@@ -1219,6 +1219,13 @@ def render_data_upload(team_id: str):
                                 st.success(f"✅ Census processed: {summary.get('pupils_rows', 0)} pupil records created")
                                 if summary.get("failed_count", 0) > 0:
                                     st.warning(f"⚠️ {summary['failed_count']} file(s) could not be processed")
+                                    # Show why files failed
+                                    unextractable = result.get("unextractable", [])
+                                    if unextractable:
+                                        with st.expander("View Failed Files & Reasons", expanded=True):
+                                            fail_df = pd.DataFrame(unextractable)
+                                            st.dataframe(fail_df, hide_index=True, use_container_width=True)
+                                            st.caption("**Common fixes:** Ensure template is uploaded with Schools tab, and school names in census match the Title column.")
                             else:
                                 st.error("Census processing failed")
                         except Exception as e:
