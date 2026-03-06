@@ -264,6 +264,15 @@ class CensusProcessor:
         table3_data = self.extract_table3_data(content)
         table5_data = self.extract_table5_data(content) if census_type == 'Oct' else {}
 
+        # Build specific error reason if failed
+        reason = None
+        if school_code is None and census_type is None:
+            reason = f"School not matched ('{school_name}') and census type not detected"
+        elif school_code is None:
+            reason = f"School not matched: '{school_name}' not found in template Schools tab"
+        elif census_type is None:
+            reason = "Census type not detected (Autumn/Spring)"
+
         return {
             'school_name': school_name,
             'school_code': school_code,
@@ -271,7 +280,8 @@ class CensusProcessor:
             'year': year,
             'year_groups': table3_data,
             'table5': table5_data,
-            'success': school_code is not None and census_type is not None
+            'success': school_code is not None and census_type is not None,
+            'reason': reason
         }
 
     def process_pdf_file(self, filepath: Path) -> dict:
@@ -313,6 +323,15 @@ class CensusProcessor:
                 'year': year
             }
 
+        # Build specific error reason if failed
+        reason = None
+        if school_code is None and census_type is None:
+            reason = f"School not matched ('{school_name}') and census type not detected"
+        elif school_code is None:
+            reason = f"School not matched: '{school_name}' not found in template Schools tab"
+        elif census_type is None:
+            reason = "Census type not detected (Autumn/Spring)"
+
         return {
             'school_name': school_name,
             'school_code': school_code,
@@ -320,7 +339,8 @@ class CensusProcessor:
             'year': year,
             'year_groups': table3_data,
             'table5': table5_data,
-            'success': school_code is not None and census_type is not None
+            'success': school_code is not None and census_type is not None,
+            'reason': reason
         }
 
     def process_census_file(self, filepath: Path):

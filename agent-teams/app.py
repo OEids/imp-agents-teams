@@ -1217,19 +1217,25 @@ def render_data_upload(team_id: str):
                             if result.get("success"):
                                 summary = result.get("summary", {})
                                 st.success(f"✅ Census processed: {summary.get('pupils_rows', 0)} pupil records created")
-                                if summary.get("failed_count", 0) > 0:
-                                    st.warning(f"⚠️ {summary['failed_count']} file(s) could not be processed")
-                                    # Show why files failed
-                                    unextractable = result.get("unextractable", [])
-                                    if unextractable:
-                                        with st.expander("View Failed Files & Reasons", expanded=True):
-                                            fail_df = pd.DataFrame(unextractable)
-                                            st.dataframe(fail_df, hide_index=True, use_container_width=True)
-                                            st.caption("**Common fixes:** Ensure template is uploaded with Schools tab, and school names in census match the Title column.")
                             else:
                                 st.error("Census processing failed")
                         except Exception as e:
                             st.error(f"Error processing census: {e}")
+
+                # Show census results (persists after button click)
+                census_result = st.session_state.get("s3_census_result")
+                if census_result:
+                    summary = census_result.get("summary", {})
+                    if summary.get("failed_count", 0) > 0:
+                        st.warning(f"⚠️ {summary['failed_count']} file(s) could not be processed")
+                        unextractable = census_result.get("unextractable", [])
+                        if unextractable:
+                            with st.expander("🔍 View Failed Files & Reasons", expanded=True):
+                                fail_df = pd.DataFrame(unextractable)
+                                st.dataframe(fail_df, hide_index=True, use_container_width=True)
+                                st.caption("**Common fixes:** Ensure template is uploaded with Schools tab, and school names in census match the Title column.")
+                    elif summary.get("pupils_rows", 0) > 0:
+                        st.success(f"✅ {summary.get('pupils_rows', 0)} pupil records ready to merge")
 
         st.markdown("---")
         st.markdown("### 📁 Step 3: Upload Raw Customer Data")
