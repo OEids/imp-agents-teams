@@ -489,13 +489,14 @@ def run_team_processing(team_id: str, column_mappings: dict = None) -> dict:
 
         # Add manual entries to pupils DataFrame
         if manual_entries:
-            from teams.s3_census_processor import CensusProcessor
+            from teams.s3_census_processor import CensusProcessor, get_current_academic_year
             processor = CensusProcessor()
+            default_year = get_current_academic_year()
 
             for entry in manual_entries:
                 school_code = entry.get('school_code')
                 census_type = entry.get('census_type', 'Oct')
-                year = entry.get('year', '24')
+                year = entry.get('year', default_year)
                 year_groups = entry.get('year_groups', {})
 
                 # Add to processor data structures
@@ -506,7 +507,7 @@ def run_team_processing(team_id: str, column_mappings: dict = None) -> dict:
                     processor.spring_data[col_key] = year_groups
 
             # Create pupils sheet from manual entries
-            financial_year = f"20{year}/{int(year)+1:02d}" if year else "2024/25"
+            financial_year = f"20{year}/{int(year)+1:02d}" if year else f"20{default_year}/{int(default_year)+1:02d}"
             manual_pupils_df = processor.create_pupils_sheet(financial_year)
 
             if manual_pupils_df is not None and len(manual_pupils_df) > 0:
@@ -1289,6 +1290,10 @@ def render_data_upload(team_id: str):
                         st.markdown("#### 📝 Manual Entry for Failed PDFs")
                         st.info("PDF census files can be difficult to extract automatically. Enter pupil numbers manually below.")
 
+                        # Get current academic year for default
+                        from teams.s3_census_processor import get_current_academic_year
+                        default_year = get_current_academic_year()
+
                         # Get school codes from template for dropdown
                         template_path = st.session_state.get("s3_template_path")
                         school_options = []
@@ -1327,7 +1332,7 @@ def render_data_upload(team_id: str):
                                     )
 
                                 with col2:
-                                    year = st.text_input("Year (e.g., 24)", value="24", key=f"manual_year_{i}")
+                                    year = st.text_input(f"Year (e.g., {default_year})", value=default_year, key=f"manual_year_{i}")
 
                                 st.markdown("**Pupil Numbers by Year Group:**")
                                 year_cols = st.columns(7)

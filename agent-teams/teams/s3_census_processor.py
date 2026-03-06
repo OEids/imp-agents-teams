@@ -24,8 +24,24 @@ import re
 import os
 from pathlib import Path
 from typing import Optional, Dict, List, Any
+from datetime import datetime
 import warnings
 warnings.filterwarnings('ignore')
+
+
+def get_current_academic_year() -> str:
+    """
+    Get current academic year as 2-digit string.
+    Academic year runs Sep-Aug, so:
+    - Sep 2024 to Aug 2025 = "24"
+    - Sep 2025 to Aug 2026 = "25"
+    """
+    now = datetime.now()
+    # If we're in Sep-Dec, use current year; if Jan-Aug, use previous year
+    if now.month >= 9:
+        return str(now.year)[-2:]
+    else:
+        return str(now.year - 1)[-2:]
 
 # Optional imports
 try:
@@ -958,9 +974,9 @@ class CensusProcessor:
                 census_year = parts[-1]  # Last 2 digits of year
             else:
                 school_code = col_key
-                census_year = "24"
+                census_year = get_current_academic_year()  # Dynamic default
 
-            # Derive financial year from census year (Oct 24 = 2024/25)
+            # Derive financial year from census year (e.g., Oct 24 = 2024/25)
             year_code = financial_year or f"20{census_year}/{int(census_year)+1:02d}"
 
             # Add row for each year group
@@ -1001,9 +1017,9 @@ class CensusProcessor:
                 census_year = parts[-1]
             else:
                 school_code = col_key
-                census_year = "24"
+                census_year = get_current_academic_year()  # Dynamic default
 
-            # Spring census year code (Spring 24 = 2023/24)
+            # Spring census year code (e.g., Spring 25 = 2024/25)
             prev_year = int(census_year) - 1
             year_code = financial_year or f"20{prev_year:02d}/{census_year}"
 
