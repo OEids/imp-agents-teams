@@ -478,36 +478,69 @@ def run_team_processing(team_id: str, column_mappings: dict = None) -> dict:
             code_mappings=code_mappings
         )
 
-        # Merge census data if available
+        # Merge census data if available (both auto-extracted and manual entries)
         census_result = st.session_state.get("s3_census_result")
-        if census_result and census_result.get("success") and result.get("output_file"):
+        manual_entries = st.session_state.get("manual_entries", [])
+
+        # Build combined pupils DataFrame
+        pupils_df = None
+        if census_result and census_result.get("success"):
+            pupils_df = census_result.get("pupils_sheet")
+
+        # Add manual entries to pupils DataFrame
+        if manual_entries:
+            from teams.s3_census_processor import CensusProcessor
+            processor = CensusProcessor()
+
+            for entry in manual_entries:
+                school_code = entry.get('school_code')
+                census_type = entry.get('census_type', 'Oct')
+                year = entry.get('year', '24')
+                year_groups = entry.get('year_groups', {})
+
+                # Add to processor data structures
+                col_key = f"{school_code} {census_type} {year}"
+                if census_type == 'Oct':
+                    processor.october_data[col_key] = year_groups
+                else:
+                    processor.spring_data[col_key] = year_groups
+
+            # Create pupils sheet from manual entries
+            financial_year = f"20{year}/{int(year)+1:02d}" if year else "2024/25"
+            manual_pupils_df = processor.create_pupils_sheet(financial_year)
+
+            if manual_pupils_df is not None and len(manual_pupils_df) > 0:
+                if pupils_df is not None and len(pupils_df) > 0:
+                    pupils_df = pd.concat([pupils_df, manual_pupils_df], ignore_index=True)
+                else:
+                    pupils_df = manual_pupils_df
+
+        if pupils_df is not None and len(pupils_df) > 0 and result.get("output_file"):
             try:
                 from openpyxl import load_workbook
                 output_file = Path(result["output_file"])
 
                 if output_file.exists():
-                    pupils_df = census_result.get("pupils_sheet")
-                    if pupils_df is not None and len(pupils_df) > 0:
-                        # Append census data to Pupils sheet
-                        wb = load_workbook(str(output_file))
+                    # Append census data to Pupils sheet
+                    wb = load_workbook(str(output_file))
 
-                        if "Pupils" in wb.sheetnames:
-                            ws = wb["Pupils"]
-                            # Find the last row with data
-                            last_row = ws.max_row + 1
+                    if "Pupils" in wb.sheetnames:
+                        ws = wb["Pupils"]
+                        # Find the last row with data
+                        last_row = ws.max_row + 1
 
-                            # Append census rows
-                            for _, row in pupils_df.iterrows():
-                                for col_idx, col_name in enumerate(pupils_df.columns, 1):
-                                    ws.cell(row=last_row, column=col_idx, value=row[col_name])
-                                last_row += 1
+                        # Append census rows
+                        for _, row in pupils_df.iterrows():
+                            for col_idx, col_name in enumerate(pupils_df.columns, 1):
+                                ws.cell(row=last_row, column=col_idx, value=row[col_name])
+                            last_row += 1
 
-                            wb.save(str(output_file))
+                        wb.save(str(output_file))
 
-                            # Update result summary
-                            if "summary" not in result:
-                                result["summary"] = {}
-                            result["summary"]["census_rows_added"] = len(pupils_df)
+                        # Update result summary
+                        if "summary" not in result:
+                            result["summary"] = {}
+                        result["summary"]["census_rows_added"] = len(pupils_df)
 
             except Exception as e:
                 if "issues" not in result:
@@ -1236,6 +1269,98 @@ def render_data_upload(team_id: str):
                                 st.caption("**Common fixes:** Ensure template is uploaded with Schools tab, and school names in census match the Title column.")
                     elif summary.get("pupils_rows", 0) > 0:
                         st.success(f"✅ {summary.get('pupils_rows', 0)} pupil records ready to merge")
+
+                    # Manual entry option for failed PDFs
+                    unextractable = census_result.get("unextractable", [])
+                    pdf_failures = [f for f in unextractable if f.get('Document Name', '').lower().endswith('.pdf')]
+                    if pdf_failures:
+                        st.markdown("---")
+                        st.markdown("#### 📝 Manual Entry for Failed PDFs")
+                        st.info("PDF census files can be difficult to extract automatically. Enter pupil numbers manually below.")
+
+                        # Get school codes from template for dropdown
+                        template_path = st.session_state.get("s3_template_path")
+                        school_options = []
+                        if template_path and Path(template_path).exists():
+                            try:
+                                schools_df = pd.read_excel(template_path, sheet_name="Schools", header=1)
+                                for _, row in schools_df.iterrows():
+                                    code = str(row.get('SchoolCode', '')).strip()
+                                    title = str(row.get('Title', '')).strip()
+                                    if code and code not in ['DEFAULT', 'CENTRAL', 'nan', '']:
+                                        school_options.append(f"{code} - {title}")
+                            except Exception:
+                                pass
+
+                        for i, failed_file in enumerate(pdf_failures):
+                            doc_name = failed_file.get('Document Name', f'File {i+1}')
+                            with st.expander(f"📄 {doc_name}", expanded=False):
+                                col1, col2 = st.columns(2)
+
+                                with col1:
+                                    if school_options:
+                                        school = st.selectbox(
+                                            "School",
+                                            options=school_options,
+                                            key=f"manual_school_{i}",
+                                            help="Select the school this census is for"
+                                        )
+                                        school_code = school.split(" - ")[0] if school else None
+                                    else:
+                                        school_code = st.text_input("School Code", key=f"manual_school_{i}")
+
+                                    census_type = st.selectbox(
+                                        "Census Type",
+                                        options=["Oct", "Spring"],
+                                        key=f"manual_census_type_{i}"
+                                    )
+
+                                with col2:
+                                    year = st.text_input("Year (e.g., 24)", value="24", key=f"manual_year_{i}")
+
+                                st.markdown("**Pupil Numbers by Year Group:**")
+                                year_cols = st.columns(7)
+                                manual_data = {}
+
+                                year_groups = ['R', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13']
+                                for j, yg in enumerate(year_groups):
+                                    with year_cols[j % 7]:
+                                        val = st.number_input(
+                                            f"Yr {yg}" if yg != 'R' else "Rec",
+                                            min_value=0,
+                                            max_value=500,
+                                            value=0,
+                                            key=f"manual_yg_{i}_{yg}"
+                                        )
+                                        if val > 0:
+                                            manual_data[yg] = val
+
+                                # Add N1, N2 for nursery
+                                n_cols = st.columns(4)
+                                with n_cols[0]:
+                                    n1 = st.number_input("N1", min_value=0, max_value=200, value=0, key=f"manual_n1_{i}")
+                                    if n1 > 0:
+                                        manual_data['N1'] = n1
+                                with n_cols[1]:
+                                    n2 = st.number_input("N2", min_value=0, max_value=200, value=0, key=f"manual_n2_{i}")
+                                    if n2 > 0:
+                                        manual_data['N2'] = n2
+
+                                if st.button(f"💾 Save Manual Entry", key=f"save_manual_{i}"):
+                                    if school_code and manual_data:
+                                        # Add to census result
+                                        if 'manual_entries' not in st.session_state:
+                                            st.session_state['manual_entries'] = []
+                                        st.session_state['manual_entries'].append({
+                                            'school_code': school_code,
+                                            'census_type': census_type,
+                                            'year': year,
+                                            'year_groups': manual_data,
+                                            'source': doc_name
+                                        })
+                                        st.success(f"✅ Saved: {sum(manual_data.values())} pupils for {school_code}")
+                                    else:
+                                        st.warning("Please select a school and enter at least one pupil count")
 
         st.markdown("---")
         st.markdown("### 📁 Step 3: Upload Raw Customer Data")

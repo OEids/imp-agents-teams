@@ -43,10 +43,11 @@ except ImportError:
 # OCR support for scanned PDFs
 OCR_AVAILABLE = False
 POPPLER_PATH = None
+NUMPY_AVAILABLE = False
 try:
     import pytesseract
     from pdf2image import convert_from_path
-    from PIL import Image
+    from PIL import Image, ImageFilter, ImageOps
 
     # Set tesseract path - check common locations
     tesseract_paths = [
@@ -70,8 +71,48 @@ try:
         if ppath.exists() and (ppath / "pdftoppm.exe").exists():
             POPPLER_PATH = str(ppath)
             break
+
+    # Try to import numpy for advanced image processing
+    try:
+        import numpy as np
+        NUMPY_AVAILABLE = True
+    except ImportError:
+        pass
+
 except ImportError:
     pass
+
+
+def preprocess_image_for_ocr(image):
+    """
+    Preprocess image to improve OCR accuracy.
+    - Convert to grayscale
+    - Apply contrast enhancement
+    - Apply sharpening
+    - Convert to binary (threshold)
+    """
+    # Convert to grayscale
+    if image.mode != 'L':
+        gray = image.convert('L')
+    else:
+        gray = image
+
+    # Enhance contrast
+    gray = ImageOps.autocontrast(gray, cutoff=2)
+
+    # Apply slight sharpening
+    gray = gray.filter(ImageFilter.SHARPEN)
+
+    # Apply binary threshold using numpy if available
+    if NUMPY_AVAILABLE:
+        import numpy as np
+        img_array = np.array(gray)
+        # Adaptive threshold - use mean of local area
+        threshold = 140
+        img_array = ((img_array > threshold) * 255).astype(np.uint8)
+        gray = Image.fromarray(img_array)
+
+    return gray
 
 
 class CensusProcessor:
@@ -431,9 +472,9 @@ class CensusProcessor:
         try:
             # Convert PDF pages to images (use poppler_path if available)
             if POPPLER_PATH:
-                images = convert_from_path(str(filepath), dpi=200, poppler_path=POPPLER_PATH)
+                images = convert_from_path(str(filepath), dpi=300, poppler_path=POPPLER_PATH)
             else:
-                images = convert_from_path(str(filepath), dpi=200)
+                images = convert_from_path(str(filepath), dpi=300)
 
             text = ""
             for i, image in enumerate(images):
@@ -447,6 +488,281 @@ class CensusProcessor:
             self.log(f"OCR error: {e}")
             return ""
 
+    def extract_table_with_ocr(self, filepath: Path) -> dict:
+        """
+        Extract Table 3 data from scanned PDF using OCR with positional data.
+        Uses word positions to reconstruct table structure.
+        """
+        if not OCR_AVAILABLE:
+            return {}
+
+        data = {yg: 0 for yg in self.YEAR_GROUPS}
+
+        try:
+            # Convert PDF pages to images at higher DPI for better OCR
+            if POPPLER_PATH:
+                images = convert_from_path(str(filepath), dpi=300, poppler_path=POPPLER_PATH)
+            else:
+                images = convert_from_path(str(filepath), dpi=300)
+
+            for page_num, image in enumerate(images):
+                # Preprocess image for better OCR
+                processed_image = preprocess_image_for_ocr(image)
+
+                # Use OCR config optimized for sparse text with numbers
+                # PSM 6 = Assume uniform block of text
+                # PSM 11 = Sparse text. Find as much text as possible in no particular order
+                ocr_config = '--psm 6 -c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz '
+
+                # Get OCR data with bounding boxes using preprocessed image
+                ocr_data = pytesseract.image_to_data(processed_image, output_type=pytesseract.Output.DICT, config=ocr_config)
+
+                # Build list of words with positions
+                words = []
+                for i in range(len(ocr_data['text'])):
+                    text = ocr_data['text'][i].strip()
+                    conf = int(ocr_data['conf'][i])
+                    if text and conf > 20:  # Lower threshold to catch more text
+                        words.append({
+                            'text': text,
+                            'x': ocr_data['left'][i],
+                            'y': ocr_data['top'][i],
+                            'w': ocr_data['width'][i],
+                            'h': ocr_data['height'][i],
+                            'conf': conf
+                        })
+
+                # Calculate dynamic y_tolerance based on typical row height
+                if words:
+                    avg_height = sum(w['h'] for w in words) / len(words)
+                    y_tolerance = max(15, avg_height * 0.5)  # At least 15px or half row height
+                else:
+                    y_tolerance = 15
+
+                # Group words into rows (same y position within tolerance)
+                rows = []
+
+                for word in sorted(words, key=lambda w: w['y']):
+                    added_to_row = False
+                    for row in rows:
+                        # Check if word is on same row (similar y position)
+                        avg_y = sum(w['y'] for w in row) / len(row)
+                        if abs(word['y'] - avg_y) < y_tolerance:
+                            row.append(word)
+                            added_to_row = True
+                            break
+                    if not added_to_row:
+                        rows.append([word])
+
+                # Sort words within each row by x position (left to right)
+                for row in rows:
+                    row.sort(key=lambda w: w['x'])
+
+                # Now look for year group patterns in rows
+                for row in rows:
+                    row_text = ' '.join(w['text'] for w in row)
+                    row_text_upper = row_text.upper()
+
+                    # Extract numbers from row
+                    numbers = re.findall(r'\b(\d{1,4})\b', row_text)
+                    if len(numbers) < 1:
+                        continue
+
+                    # Check for year group indicators
+                    year_group = None
+
+                    # Check Reception
+                    if 'RECEPTION' in row_text_upper or row_text_upper.strip().startswith('R '):
+                        year_group = 'R'
+                    # Check for "Year X" pattern
+                    elif 'YEAR' in row_text_upper:
+                        year_match = re.search(r'YEAR\s*(\d{1,2})', row_text_upper)
+                        if year_match:
+                            yg_num = year_match.group(1)
+                            if yg_num in ['1','2','3','4','5','6','7','8','9','10','11','12','13','14']:
+                                year_group = yg_num
+                    # Check N1, N2, E1, E2
+                    elif re.match(r'^[NE][12]\b', row_text_upper.strip()):
+                        match = re.match(r'^([NE][12])\b', row_text_upper.strip())
+                        if match:
+                            year_group = match.group(1).upper()
+                    # Check standalone number at start (e.g., "7  45  23  22")
+                    else:
+                        # First word might be year group number
+                        first_word = row[0]['text'].strip() if row else ''
+                        if first_word.isdigit() and first_word in ['1','2','3','4','5','6','7','8','9','10','11','12','13','14']:
+                            year_group = first_word
+                            # Remove first number from numbers list since it's the year group
+                            if numbers and numbers[0] == first_word:
+                                numbers = numbers[1:]
+
+                    if year_group and year_group in data and numbers:
+                        # Get the pupil count - typically the first or second number is total
+                        # In census Table 3: YearGroup | Total | C | M
+                        # We want the Total (first number after year group)
+                        try:
+                            # Use first number as total pupil count
+                            total = int(numbers[0])
+                            if total > 0 and total < 2000:  # Sanity check
+                                data[year_group] = total
+                                self.log(f"  OCR extracted: Year {year_group} = {total}")
+                        except (ValueError, IndexError):
+                            pass
+
+            # If primary method didn't extract much, try fallback
+            total_extracted = sum(data.values())
+            if total_extracted == 0:
+                self.log("  Primary OCR extraction found nothing, trying fallback method...")
+                data = self._ocr_fallback_extraction(filepath)
+
+            return data
+
+        except Exception as e:
+            self.log(f"OCR table extraction error: {e}")
+            return {}
+
+    def _ocr_fallback_extraction(self, filepath: Path) -> dict:
+        """
+        Fallback OCR extraction using plain text with flexible pattern matching.
+        Also looks for table-based data in the census format.
+        """
+        data = {yg: 0 for yg in self.YEAR_GROUPS}
+
+        try:
+            if POPPLER_PATH:
+                images = convert_from_path(str(filepath), dpi=300, poppler_path=POPPLER_PATH)
+            else:
+                images = convert_from_path(str(filepath), dpi=300)
+
+            for page_num, image in enumerate(images):
+                # Preprocess and get plain text
+                processed = preprocess_image_for_ocr(image)
+                # Use PSM 6 = Assume uniform block of text
+                text = pytesseract.image_to_string(processed, config='--psm 6')
+
+                lines = text.split('\n')
+
+                for line in lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+
+                    # Check Reception patterns
+                    if re.search(r'recep', line, re.IGNORECASE):
+                        nums = re.findall(r'\b(\d{1,3})\b', line)
+                        for n in nums:
+                            val = int(n)
+                            if 5 < val < 150:  # Reasonable class size
+                                data['R'] = val
+                                self.log(f"  Page {page_num+1}: Reception = {val}")
+                                break
+
+                    # Check Year X patterns  (e.g. "Year 1", "Y1", etc)
+                    year_match = re.search(r'(?:year|y)\s*(\d{1,2})\b', line, re.IGNORECASE)
+                    if year_match:
+                        yg = year_match.group(1)
+                        if yg in data:
+                            # Find numbers after the year group mention
+                            rest = line[year_match.end():]
+                            nums = re.findall(r'\b(\d{1,3})\b', rest)
+                            for n in nums:
+                                val = int(n)
+                                if 5 < val < 150:
+                                    data[yg] = val
+                                    self.log(f"  Page {page_num+1}: Year {yg} = {val}")
+                                    break
+
+                    # Check N1/N2 patterns
+                    n_match = re.search(r'\b(n[12])\b', line, re.IGNORECASE)
+                    if n_match:
+                        yg = n_match.group(1).upper()
+                        if yg in data:
+                            rest = line[n_match.end():]
+                            nums = re.findall(r'\b(\d{1,3})\b', rest)
+                            for n in nums:
+                                val = int(n)
+                                if 1 < val < 100:
+                                    data[yg] = val
+                                    self.log(f"  Page {page_num+1}: {yg} = {val}")
+                                    break
+
+                # Also try extracting from Table 2 format which shows age-based data
+                # In autumn census: Age 4 = Reception, Age 5 = Year 1, etc.
+                # This can be useful if Table 3 is not clear
+                self._extract_from_age_table(text, data)
+
+            return data
+        except Exception as e:
+            self.log(f"Fallback OCR error: {e}")
+            return data
+
+    def _extract_from_age_table(self, text: str, data: dict):
+        """
+        Extract pupil numbers from Table 2 (age-based data).
+        In autumn census: Age 4 (as at 31 Aug) = Reception pupils, etc.
+        """
+        # Look for patterns like: age | date_range | number
+        # Example: 5 01/09/2018 - 31/08/2019 30
+        lines = text.split('\n')
+
+        # Age to year group mapping (for autumn census, age as at 31 Aug)
+        # Age 4 = Reception, Age 5 = Year 1, Age 6 = Year 2, etc.
+        age_to_yg = {
+            '4': 'R', '5': '1', '6': '2', '7': '3', '8': '4',
+            '9': '5', '10': '6', '11': '7', '12': '8', '13': '9',
+            '14': '10', '15': '11', '16': '12', '17': '13', '18': '14'
+        }
+
+        for line in lines:
+            # Pattern: starts with age number, has date range, ends with pupil count(s)
+            # Example: "[7 01/09/2016 - 31/08/2017] 30 / NO"
+            match = re.search(r'\b(\d{1,2})\s+\d{2}/\d{2}/\d{4}.*?(\d{1,3})\b', line)
+            if match:
+                age = match.group(1)
+                count = int(match.group(2))
+                if age in age_to_yg and 1 <= count <= 200:
+                    yg = age_to_yg[age]
+                    if data.get(yg, 0) == 0:  # Don't overwrite if already found
+                        data[yg] = count
+                        self.log(f"  Age table: Age {age} -> Year {yg} = {count}")
+
+    def extract_school_name_from_ocr(self, filepath: Path) -> Optional[str]:
+        """Extract school name from scanned PDF using OCR."""
+        if not OCR_AVAILABLE:
+            return None
+
+        try:
+            # Convert just first page at high DPI
+            if POPPLER_PATH:
+                images = convert_from_path(str(filepath), dpi=300, first_page=1, last_page=1, poppler_path=POPPLER_PATH)
+            else:
+                images = convert_from_path(str(filepath), dpi=300, first_page=1, last_page=1)
+
+            if images:
+                # Preprocess for better OCR
+                processed = preprocess_image_for_ocr(images[0])
+                text = pytesseract.image_to_string(processed)
+
+                # Look for "Summary for:" pattern
+                match = re.search(r'Summary for[:\s]+([A-Za-z\s]+?)(?:Local|LA|$)', text, re.IGNORECASE)
+                if match:
+                    return match.group(1).strip()
+
+                # Try alternative patterns
+                match = re.search(r'School[:\s]+([A-Za-z\s]+?)(?:Primary|Academy|$)', text, re.IGNORECASE)
+                if match:
+                    return match.group(1).strip()
+
+                # Look for school name in header area (common census format)
+                match = re.search(r'(?:census|collection)[:\s]+.+?(?:for|from)[:\s]+([A-Za-z\s]+?)(?:\n|$)', text, re.IGNORECASE)
+                if match:
+                    return match.group(1).strip()
+
+            return None
+        except Exception as e:
+            self.log(f"OCR school name extraction error: {e}")
+            return None
+
     def process_pdf_file(self, filepath: Path) -> dict:
         """Process a PDF census file."""
         if not PDF_AVAILABLE:
@@ -454,6 +770,7 @@ class CensusProcessor:
 
         content = ""
         use_ocr = False
+        table3_data = {yg: 0 for yg in self.YEAR_GROUPS}
 
         # First try pdfplumber (for text-based PDFs)
         try:
@@ -468,11 +785,17 @@ class CensusProcessor:
         # If no text extracted, try OCR (for scanned PDFs)
         if len(content.strip()) < 100:
             if OCR_AVAILABLE:
-                self.log(f"  No text found, trying OCR...")
-                content = self.extract_text_with_ocr(filepath)
+                self.log(f"  No text found, trying OCR with table extraction...")
                 use_ocr = True
-                if len(content.strip()) < 100:
-                    return {'success': False, 'reason': 'OCR could not extract text from scanned PDF'}
+
+                # Use improved table extraction for scanned PDFs
+                table3_data = self.extract_table_with_ocr(filepath)
+
+                # Also get text content for school name and census type
+                content = self.extract_text_with_ocr(filepath)
+
+                if len(content.strip()) < 50 and sum(table3_data.values()) == 0:
+                    return {'success': False, 'reason': 'OCR could not extract data from scanned PDF'}
             else:
                 return {'success': False, 'reason': 'Scanned PDF - OCR not available (install pytesseract)'}
 
@@ -483,19 +806,30 @@ class CensusProcessor:
         if school_code is None:
             school_code = self.match_school_from_filename(filepath.name)
 
+        # Try OCR-specific school name extraction if still no match
+        if school_code is None and use_ocr:
+            ocr_school_name = self.extract_school_name_from_ocr(filepath)
+            if ocr_school_name:
+                school_code = self.match_school(ocr_school_name)
+                if school_code:
+                    school_name = ocr_school_name
+
         census_type, year = self.extract_census_type_from_content(content)
 
         if not census_type:
             census_type, year = self.extract_census_type_from_filename(str(filepath))
 
-        table3_data = self.extract_table3_data(content)
+        # For non-OCR PDFs, extract table data from text content
+        if not use_ocr:
+            table3_data = self.extract_table3_data(content)
+
         table5_data = self.extract_table5_data(content) if census_type == 'Oct' else {}
 
         total = sum(table3_data.values())
         if total == 0:
             return {
                 'success': False,
-                'reason': 'No pupil data extracted from PDF',
+                'reason': 'No pupil data extracted from PDF (table extraction failed)',
                 'school_name': school_name,
                 'school_code': school_code,
                 'census_type': census_type,
