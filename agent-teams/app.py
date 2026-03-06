@@ -526,13 +526,24 @@ def run_team_processing(team_id: str, column_mappings: dict = None) -> dict:
 
                     if "Pupils" in wb.sheetnames:
                         ws = wb["Pupils"]
+
+                        # Find column indices from header row (row 1)
+                        # Pupils sheet has validation columns (1-24) then data columns (25-38)
+                        column_map = {}
+                        for col_idx in range(1, ws.max_column + 1):
+                            header = ws.cell(row=1, column=col_idx).value
+                            if header:
+                                column_map[str(header).strip()] = col_idx
+
                         # Find the last row with data
                         last_row = ws.max_row + 1
 
-                        # Append census rows
+                        # Append census rows - write to correct columns
                         for _, row in pupils_df.iterrows():
-                            for col_idx, col_name in enumerate(pupils_df.columns, 1):
-                                ws.cell(row=last_row, column=col_idx, value=row[col_name])
+                            for col_name in pupils_df.columns:
+                                if col_name in column_map:
+                                    col_idx = column_map[col_name]
+                                    ws.cell(row=last_row, column=col_idx, value=row[col_name])
                             last_row += 1
 
                         wb.save(str(output_file))
