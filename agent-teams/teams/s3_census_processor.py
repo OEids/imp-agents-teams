@@ -65,9 +65,10 @@ try:
     from pdf2image import convert_from_path
     from PIL import Image, ImageFilter, ImageOps
 
-    # Set tesseract path - check common locations
+    # Set tesseract path - check common locations (including explicit absolute paths)
     tesseract_paths = [
-        Path(__file__).parent.parent / "tesseract.exe",  # agent-teams folder
+        Path(__file__).parent.parent / "tesseract.exe",  # agent-teams folder (relative)
+        Path(r"C:\claude\agent-teams\tesseract.exe"),  # agent-teams folder (absolute)
         Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe"),
         Path(r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe"),
     ]
@@ -80,6 +81,7 @@ try:
     # Set poppler path for pdf2image
     poppler_paths = [
         Path(__file__).parent.parent / "poppler" / "poppler-24.08.0" / "Library" / "bin",
+        Path(r"C:\claude\agent-teams\poppler\poppler-24.08.0\Library\bin"),  # absolute
         Path(__file__).parent.parent / "poppler" / "bin",
         Path(r"C:\Program Files\poppler\bin"),
     ]
@@ -97,6 +99,48 @@ try:
 
 except ImportError:
     pass
+
+
+def ensure_ocr_available():
+    """
+    Runtime check/setup for OCR availability.
+    Call this before using OCR to ensure paths are set correctly.
+    Returns True if OCR is available.
+    """
+    global OCR_AVAILABLE, POPPLER_PATH
+
+    if OCR_AVAILABLE:
+        return True
+
+    try:
+        import pytesseract
+        from pdf2image import convert_from_path
+
+        # Check tesseract paths
+        tesseract_paths = [
+            Path(r"C:\claude\agent-teams\tesseract.exe"),
+            Path(__file__).parent.parent / "tesseract.exe",
+            Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe"),
+        ]
+        for tpath in tesseract_paths:
+            if tpath.exists():
+                pytesseract.pytesseract.tesseract_cmd = str(tpath)
+                OCR_AVAILABLE = True
+                break
+
+        # Check poppler paths
+        poppler_paths = [
+            Path(r"C:\claude\agent-teams\poppler\poppler-24.08.0\Library\bin"),
+            Path(__file__).parent.parent / "poppler" / "poppler-24.08.0" / "Library" / "bin",
+        ]
+        for ppath in poppler_paths:
+            if ppath.exists() and (ppath / "pdftoppm.exe").exists():
+                POPPLER_PATH = str(ppath)
+                break
+
+        return OCR_AVAILABLE
+    except ImportError:
+        return False
 
 
 def preprocess_image_for_ocr(image):
@@ -800,6 +844,9 @@ class CensusProcessor:
 
         # If no text extracted, try OCR (for scanned PDFs)
         if len(content.strip()) < 100:
+            # Ensure OCR is set up (runtime check)
+            ensure_ocr_available()
+
             if OCR_AVAILABLE:
                 self.log(f"  No text found, trying OCR with table extraction...")
                 use_ocr = True
