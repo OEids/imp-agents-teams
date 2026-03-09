@@ -48,6 +48,35 @@ FUNDING_PUBLICATIONS = {
     }
 }
 
+# =============================================================================
+# GOV.UK Grant Allocation Download URLs
+# Updated annually - check GOV.UK for latest URLs
+# =============================================================================
+GOVUK_GRANT_DOWNLOADS = {
+    "pupil_premium_2024_25": {
+        "name": "Pupil Premium 2024-25",
+        "url": "https://assets.publishing.service.gov.uk/media/67ceca4edc8c730647fd13d0/Pupil-premium_2024-to-2025_published-_Mar_25.ods",
+        "format": "ods",
+        "description": "Pupil Premium allocations Q4 March 2025",
+        "year": "2024-25"
+    },
+    "school_capital_2025_26": {
+        "name": "School Capital (DFC) 2025-26",
+        "url": "https://assets.publishing.service.gov.uk/media/682afa7a96a230471ac7e767/School_capital_funding_allocations_for_2025_to_2026.xlsx",
+        "format": "xlsx",
+        "description": "DFC and School Condition Allocations 2025-26",
+        "year": "2025-26"
+    },
+    "pupil_premium_2025_26": {
+        "name": "Pupil Premium 2025-26",
+        # URL will be updated when published - typically June each year
+        "url": None,
+        "format": "ods",
+        "description": "Pupil Premium allocations 2025-26 (not yet published)",
+        "year": "2025-26"
+    }
+}
+
 
 class DfEFundingAPI:
     """Client for DfE Explore Education Statistics API."""
@@ -339,6 +368,214 @@ def lookup_school_funding(urn: str, funding_df: pd.DataFrame = None) -> Dict[str
 
     # Convert to dict
     return school_data.iloc[0].to_dict()
+
+
+# ============================================================================
+# GOV.UK Grant Allocation Downloads
+# ============================================================================
+
+def download_grant_allocation(
+    grant_key: str,
+    cache_dir: Path = None,
+    force_refresh: bool = False
+) -> Dict[str, Any]:
+    """
+    Download a grant allocation file from GOV.UK.
+
+    Args:
+        grant_key: Key from GOVUK_GRANT_DOWNLOADS (e.g., "pupil_premium_2024_25")
+        cache_dir: Directory to cache downloads
+        force_refresh: Force re-download even if cached
+
+    Returns:
+        Dict with: success, data (DataFrame), source, error
+    """
+    result = {
+        "success": False,
+        "data": pd.DataFrame(),
+        "source": None,
+        "error": None
+    }
+
+    if grant_key not in GOVUK_GRANT_DOWNLOADS:
+        result["error"] = f"Unknown grant key: {grant_key}"
+        return result
+
+    grant_info = GOVUK_GRANT_DOWNLOADS[grant_key]
+
+    if not grant_info.get("url"):
+        result["error"] = f"{grant_info['name']} URL not available yet"
+        return result
+
+    if cache_dir is None:
+        cache_dir = Path.home() / ".cache" / "dfe_grants"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    # Cache filename
+    ext = grant_info.get("format", "xlsx")
+    cache_file = cache_dir / f"{grant_key}.{ext}"
+
+    # Check cache (valid for 30 days - allocations don't change often)
+    if cache_file.exists() and not force_refresh:
+        age_days = (datetime.now().timestamp() - cache_file.stat().st_mtime) / (24 * 60 * 60)
+        if age_days < 30:
+            print(f"Using cached {grant_info['name']} ({age_days:.1f} days old)")
+            try:
+                if ext == "ods":
+                    df = pd.read_excel(cache_file, engine="odf")
+                else:
+                    df = pd.read_excel(cache_file)
+                result["data"] = df
+                result["success"] = True
+                result["source"] = f"cache ({cache_file.name})"
+                return result
+            except Exception as e:
+                print(f"Cache read failed, re-downloading: {e}")
+
+    # Download from GOV.UK
+    print(f"Downloading {grant_info['name']} from GOV.UK...")
+    url = grant_info["url"]
+
+    try:
+        response = requests.get(url, timeout=120)
+        response.raise_for_status()
+
+        # Save to cache
+        with open(cache_file, "wb") as f:
+            f.write(response.content)
+
+        # Read the file
+        if ext == "ods":
+            df = pd.read_excel(cache_file, engine="odf")
+        else:
+            df = pd.read_excel(cache_file)
+
+        print(f"Downloaded {len(df)} rows from {grant_info['name']}")
+
+        result["data"] = df
+        result["success"] = True
+        result["source"] = url
+        return result
+
+    except requests.exceptions.RequestException as e:
+        result["error"] = f"Download failed: {e}"
+        return result
+    except Exception as e:
+        result["error"] = f"Error reading file: {e}"
+        return result
+
+
+def download_all_available_grants(
+    cache_dir: Path = None,
+    force_refresh: bool = False
+) -> Dict[str, Any]:
+    """
+    Download all available grant allocation files.
+
+    Returns:
+        Dict with grant key -> download result
+    """
+    results = {}
+
+    for grant_key, grant_info in GOVUK_GRANT_DOWNLOADS.items():
+        if grant_info.get("url"):  # Only download if URL is available
+            print(f"\nFetching {grant_info['name']}...")
+            results[grant_key] = download_grant_allocation(
+                grant_key, cache_dir, force_refresh
+            )
+
+    return results
+
+
+def get_available_grants() -> List[Dict[str, str]]:
+    """
+    Get list of available grant downloads with metadata.
+
+    Returns:
+        List of dicts with: key, name, year, description, available
+    """
+    grants = []
+    for key, info in GOVUK_GRANT_DOWNLOADS.items():
+        grants.append({
+            "key": key,
+            "name": info["name"],
+            "year": info.get("year", ""),
+            "description": info.get("description", ""),
+            "available": info.get("url") is not None
+        })
+    return grants
+
+
+def fetch_and_process_grants(
+    workbook_path: Path,
+    grant_keys: List[str] = None,
+    cache_dir: Path = None
+) -> Dict[str, Any]:
+    """
+    Fetch grant data from GOV.UK and match to schools in workbook.
+
+    Args:
+        workbook_path: Path to S3 workbook
+        grant_keys: List of grant keys to fetch (None = all available)
+        cache_dir: Cache directory
+
+    Returns:
+        Dict with: success, grant_results, schools_matched, errors
+    """
+    result = {
+        "success": False,
+        "grant_results": [],
+        "schools_matched": 0,
+        "grants_downloaded": [],
+        "errors": [],
+        "log": []
+    }
+
+    try:
+        # Get URN to SchoolCode mapping
+        result["log"].append("Loading schools from workbook...")
+        urn_mapping = get_urn_to_school_mapping(workbook_path)
+
+        if not urn_mapping:
+            result["errors"].append("No URN to SchoolCode mapping found")
+            return result
+
+        result["log"].append(f"Found {len(urn_mapping)} schools with URNs")
+
+        # Determine which grants to download
+        if grant_keys is None:
+            grant_keys = [k for k, v in GOVUK_GRANT_DOWNLOADS.items() if v.get("url")]
+
+        # Download and process each grant
+        all_grant_results = []
+
+        for grant_key in grant_keys:
+            result["log"].append(f"Fetching {grant_key}...")
+
+            download_result = download_grant_allocation(grant_key, cache_dir)
+
+            if not download_result["success"]:
+                result["errors"].append(f"{grant_key}: {download_result['error']}")
+                continue
+
+            result["grants_downloaded"].append(grant_key)
+            df = download_result["data"]
+
+            # Process grant allocations
+            grant_results = process_grant_allocations(df, urn_mapping)
+            all_grant_results.extend(grant_results)
+
+            result["log"].append(f"  Found {len(grant_results)} values from {grant_key}")
+
+        result["grant_results"] = all_grant_results
+        result["schools_matched"] = len(set(g["school_code"] for g in all_grant_results))
+        result["success"] = len(all_grant_results) > 0
+
+        return result
+
+    except Exception as e:
+        result["errors"].append(str(e))
+        return result
 
 
 # ============================================================================

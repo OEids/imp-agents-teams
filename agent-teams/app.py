@@ -1572,20 +1572,72 @@ This enriches your data with official DfE school details: type, phase, LA, trust
         else:
             st.caption("No URNs found in template. Upload a template with URN column in Schools sheet.")
 
-        # Funding file upload section
+        # Funding data section
         st.markdown("---")
-        st.markdown("#### 💷 Upload Funding Data Files")
-        st.caption("""
-Download funding data from:
-- [School Funding Statistics](https://explore-education-statistics.service.gov.uk/find-statistics/school-funding-statistics)
-- [Pupil Premium Allocations](https://www.gov.uk/government/publications/pupil-premium-allocations-and-conditions-of-grant)
-""")
+        st.markdown("#### 💷 Grant Allocation Data")
+
+        # Auto-fetch option
+        st.markdown("**Option 1: Auto-fetch from GOV.UK** (Recommended)")
+        if urns_found:
+            # Show available grants
+            try:
+                from teams.dfe_funding_api import get_available_grants
+                available_grants = get_available_grants()
+                available_names = [g["name"] for g in available_grants if g["available"]]
+                st.caption(f"Available: {', '.join(available_names)}")
+            except:
+                pass
+
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                if st.button("🌐 Fetch Grant Data from GOV.UK", key="fetch_govuk_grants"):
+                    with st.spinner("Downloading grant allocations from GOV.UK..."):
+                        try:
+                            from teams.dfe_funding_api import fetch_and_process_grants
+
+                            result = fetch_and_process_grants(Path(template_path))
+
+                            if result["success"]:
+                                st.session_state["s3_grant_results"] = result["grant_results"]
+                                st.success(f"✅ Fetched {len(result['grant_results'])} values for {result['schools_matched']} schools")
+                                st.caption(f"Sources: {', '.join(result['grants_downloaded'])}")
+                            else:
+                                if result["errors"]:
+                                    st.error(f"Errors: {result['errors']}")
+                                else:
+                                    st.warning("No grant data matched to your schools")
+
+                            # Show log
+                            if result.get("log"):
+                                with st.expander("📋 Download Log"):
+                                    for log_entry in result["log"]:
+                                        st.text(log_entry)
+
+                        except Exception as e:
+                            st.error(f"Error fetching grants: {e}")
+
+            with col2:
+                if st.button("🔄 Clear Grant Cache", key="clear_grant_cache"):
+                    cache_dir = Path.home() / ".cache" / "dfe_grants"
+                    if cache_dir.exists():
+                        import shutil
+                        shutil.rmtree(cache_dir)
+                        st.success("Cache cleared - will download fresh data")
+                    else:
+                        st.info("No cache to clear")
+        else:
+            st.caption("Upload a template with URNs first to enable auto-fetch")
+
+        # Manual upload option
+        st.markdown("---")
+        st.markdown("**Option 2: Manual Upload**")
+        st.caption("Upload additional grant files not available via auto-fetch")
 
         funding_data_file = st.file_uploader(
             "Upload Funding Data File (CSV or Excel)",
-            type=["csv", "xlsx", "xls"],
+            type=["csv", "xlsx", "xls", "ods"],
             key="s3_funding_data_upload",
-            help="Upload school-level funding data from GOV.UK. Must contain URN column."
+            help="Upload school-level funding data. Must contain URN column."
         )
 
         if funding_data_file:

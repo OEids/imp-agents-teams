@@ -6,3 +6,4 @@ watchdog>=3.0.0
 xlrd>=2.0.1
 pdfplumber>=0.10.0
 azure-ai-formrecognizer>=3.3.0
+odfpy>=1.4.0
