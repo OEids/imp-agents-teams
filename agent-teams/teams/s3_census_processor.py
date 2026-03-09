@@ -402,16 +402,27 @@ def extract_census_table_cv2(filepath: Path, log_func=None) -> dict:
             if log_func:
                 log_func(f"  CV2 processing page {page_num + 1}...")
 
-            # First try structured table extraction
-            page_data = extract_table_structure_cv2(image, log_func)
-
-            # Merge page data (don't overwrite existing values)
+            # Try table-line-removal approach (best for scanned tables)
+            page_data = _extract_with_line_removal(image, log_func)
             for yg, count in page_data.items():
-                if yg in data and count > 0:
-                    if data[yg] == 0:
+                if yg in data and count > 0 and data[yg] == 0:
+                    data[yg] = count
+
+            # If that didn't work well, try structured table extraction
+            if sum(data.values()) < 20:
+                page_data = extract_table_structure_cv2(image, log_func)
+                for yg, count in page_data.items():
+                    if yg in data and count > 0 and data[yg] == 0:
                         data[yg] = count
 
-            # If structured extraction didn't find much, try region-based OCR
+            # If still not much, try row detection approach
+            if sum(data.values()) < 10:
+                row_data = _extract_table3_by_row_detection(image, log_func)
+                for yg, count in row_data.items():
+                    if yg in data and count > 0 and data[yg] == 0:
+                        data[yg] = count
+
+            # Finally try region-based OCR
             if sum(data.values()) < 10:
                 region_data = _extract_by_year_regions(image, log_func)
                 for yg, count in region_data.items():
@@ -423,6 +434,82 @@ def extract_census_table_cv2(filepath: Path, log_func=None) -> dict:
     except Exception as e:
         if log_func:
             log_func(f"  CV2 extraction error: {e}")
+        return {}
+
+
+def _extract_with_line_removal(image, log_func=None) -> dict:
+    """
+    Extract data by removing table lines first, then doing OCR.
+    Table lines often confuse OCR, so removing them improves accuracy.
+    """
+    if not CV2_AVAILABLE or not NUMPY_AVAILABLE:
+        return {}
+
+    import numpy as np
+    import cv2
+
+    data = {}
+
+    try:
+        # Convert PIL image to OpenCV format
+        img_array = np.array(image.convert('RGB'))
+        gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+
+        # Binary threshold
+        _, binary = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)
+
+        # Detect and remove horizontal lines
+        horizontal_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (80, 1))
+        horizontal_lines = cv2.morphologyEx(binary, cv2.MORPH_OPEN, horizontal_kernel, iterations=2)
+
+        # Detect and remove vertical lines
+        vertical_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 80))
+        vertical_lines = cv2.morphologyEx(binary, cv2.MORPH_OPEN, vertical_kernel, iterations=2)
+
+        # Combine lines
+        lines = cv2.add(horizontal_lines, vertical_lines)
+
+        # Dilate lines slightly to ensure complete removal
+        lines = cv2.dilate(lines, np.ones((2, 2), np.uint8), iterations=1)
+
+        # Remove lines from binary image (XOR)
+        cleaned = cv2.bitwise_xor(binary, lines)
+
+        # Invert back to white background
+        cleaned = cv2.bitwise_not(cleaned)
+
+        # Convert back to PIL for OCR
+        cleaned_pil = Image.fromarray(cleaned)
+
+        # Apply additional preprocessing
+        cleaned_pil = ImageOps.autocontrast(cleaned_pil, cutoff=2)
+
+        # OCR with specific config for sparse text
+        # PSM 4 = Assume a single column of text of variable sizes
+        text = pytesseract.image_to_string(cleaned_pil, config='--psm 4')
+
+        if log_func:
+            # Log a snippet of OCR result for debugging
+            lines_sample = [l.strip() for l in text.split('\n') if l.strip()][:5]
+            log_func(f"    Line removal OCR sample: {lines_sample}")
+
+        # Parse the OCR text for year group data
+        for line in text.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+
+            yg, count = _parse_census_row(line)
+            if yg and count and yg not in data:
+                data[yg] = count
+                if log_func:
+                    log_func(f"    Line removal: Year {yg} = {count}")
+
+        return data
+
+    except Exception as e:
+        if log_func:
+            log_func(f"    Line removal error: {e}")
         return {}
 
 
@@ -497,6 +584,183 @@ def _extract_by_year_regions(image, log_func=None):
     except Exception as e:
         if log_func:
             log_func(f"  Region extraction error: {e}")
+        return {}
+
+
+def _extract_table3_by_row_detection(image, log_func=None) -> dict:
+    """
+    Extract Table 3 data by detecting table rows and OCR'ing each row.
+    Uses the known year group order in census Table 3.
+
+    Census Table 3 structure:
+    - Year groups are listed in order: Reception, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14
+    - First numeric column after year group label is typically the total
+    """
+    if not CV2_AVAILABLE or not NUMPY_AVAILABLE or not OCR_AVAILABLE:
+        return {}
+
+    import numpy as np
+    import cv2
+
+    data = {}
+
+    try:
+        # Convert PIL to CV2
+        img_array = np.array(image.convert('RGB'))
+        gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+        img_height, img_width = gray.shape
+
+        # Use Otsu's threshold for better binarization
+        _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+        # First, try to find "Table 3" text to locate the table
+        # OCR the whole image to find Table 3 position
+        full_text = pytesseract.image_to_string(image, config='--psm 3')
+
+        # Look for Table 3 in the text and find approximate position
+        table3_found = 'table 3' in full_text.lower()
+
+        if not table3_found:
+            if log_func:
+                log_func("    Table 3 not found in page")
+            return {}
+
+        # Get OCR data with positions to find Table 3 location
+        ocr_data = pytesseract.image_to_data(image, output_type=pytesseract.Output.DICT)
+
+        table3_y = None
+        for i in range(len(ocr_data['text'])):
+            if 'table' in str(ocr_data['text'][i]).lower():
+                # Check if next word contains '3' (could be "3" or "3:" etc)
+                for j in range(i+1, min(i+3, len(ocr_data['text']))):
+                    next_text = str(ocr_data['text'][j]).strip()
+                    if next_text.startswith('3'):
+                        table3_y = ocr_data['top'][i]
+                        break
+                if table3_y:
+                    break
+
+        if table3_y is None:
+            if log_func:
+                log_func("    Could not locate Table 3 position")
+            return {}
+
+        if log_func:
+            log_func(f"    Table 3 found at y={table3_y}")
+
+        # Try template-based extraction for DfE census PDFs
+        # DfE census Table 3 has a consistent layout:
+        # - Table header row
+        # - Column headers row
+        # - Data rows for each year group
+        # Row height is typically ~50-60 pixels at 300 DPI
+        ROW_HEIGHT = 55
+        HEADER_ROWS = 3  # Skip table title + column headers
+
+        table_start_y = table3_y + (ROW_HEIGHT * HEADER_ROWS)
+
+        # Expected year groups
+        expected_ygs = ['R', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']
+
+        # Extract data for each expected year group row
+        for idx, yg in enumerate(expected_ygs):
+            row_y = table_start_y + (idx * ROW_HEIGHT)
+            if row_y + ROW_HEIGHT > img_height:
+                break
+
+            # Crop the row region
+            row_img = image.crop((0, row_y, img_width, row_y + ROW_HEIGHT))
+
+            # OCR with single line mode and digit-friendly config
+            row_text = pytesseract.image_to_string(row_img, config='--psm 7')
+            row_text = row_text.strip()
+
+            if not row_text:
+                continue
+
+            # Extract all numbers from the row
+            numbers = re.findall(r'\b(\d{1,4})\b', row_text)
+
+            # The first reasonable-sized number is likely the total count
+            for n in numbers:
+                val = int(n)
+                if 5 <= val <= 400:  # Reasonable class size
+                    data[yg] = val
+                    if log_func:
+                        log_func(f"    Template row {idx}: Year {yg} = {val}")
+                    break
+
+        # If template approach didn't work well, try line detection fallback
+        if sum(data.values()) < 20:
+            if log_func:
+                log_func("    Template extraction yielded little data, trying line detection...")
+
+            # Crop to Table 3 region
+            table_start_y = table3_y + 50
+            table_end_y = min(table_start_y + 1000, img_height)
+            table_region = image.crop((0, table_start_y, img_width, table_end_y))
+
+            # Convert to CV2 for line detection
+            table_array = np.array(table_region.convert('RGB'))
+            table_gray = cv2.cvtColor(table_array, cv2.COLOR_RGB2GRAY)
+
+            # Detect horizontal lines (table row separators)
+            _, table_binary = cv2.threshold(table_gray, 180, 255, cv2.THRESH_BINARY_INV)
+            h_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (img_width // 3, 1))
+            h_lines = cv2.morphologyEx(table_binary, cv2.MORPH_OPEN, h_kernel)
+
+            # Find horizontal line positions
+            line_positions = []
+            for y in range(h_lines.shape[0]):
+                if np.sum(h_lines[y, :]) > img_width * 30:  # Line detected
+                    if not line_positions or y - line_positions[-1] > 15:
+                        line_positions.append(y)
+
+            if log_func:
+                log_func(f"    Found {len(line_positions)} row separators")
+
+            if len(line_positions) >= 5:
+                yg_index = 0
+                for i in range(len(line_positions) - 1):
+                    if yg_index >= len(expected_ygs):
+                        break
+
+                    y_start = line_positions[i] + 2
+                    y_end = line_positions[i + 1] - 2
+
+                    if y_end - y_start < 15:
+                        continue
+
+                    row_img = table_region.crop((0, y_start, img_width, y_end))
+                    row_text = pytesseract.image_to_string(row_img, config='--psm 7')
+                    row_text = row_text.strip()
+
+                    if not row_text:
+                        continue
+
+                    numbers = re.findall(r'\b(\d{1,4})\b', row_text)
+
+                    # Skip header-like rows
+                    if 'total' in row_text.lower() and 'number' in row_text.lower():
+                        continue
+
+                    if len(numbers) >= 1:
+                        yg = expected_ygs[yg_index]
+                        if yg not in data or data[yg] == 0:
+                            for n in numbers:
+                                val = int(n)
+                                if 5 <= val <= 400:
+                                    data[yg] = val
+                                    if log_func:
+                                        log_func(f"    Line row {i}: Year {yg} = {val}")
+                                    yg_index += 1
+                                    break
+
+        return data
+
+    except Exception as e:
+        if log_func:
+            log_func(f"    Row detection error: {e}")
         return {}
 
 
@@ -1234,12 +1498,20 @@ class CensusProcessor:
         if total == 0:
             return {
                 'success': False,
-                'reason': 'No pupil data extracted from PDF (table extraction failed)',
+                'reason': 'No pupil data extracted - scanned PDF table extraction failed. Recommend using HTML export from DfE census system.',
                 'school_name': school_name,
                 'school_code': school_code,
                 'census_type': census_type,
-                'year': year
+                'year': year,
+                'year_groups': table3_data,
+                'table5': {},
+                'pdf_type': 'scanned' if use_ocr else 'text',
+                'extraction_note': 'Complex table layouts in scanned PDFs are difficult to OCR. HTML exports from DfE census system work reliably.'
             }
+
+        # Check if we got at least some data
+        if total < 20:
+            self.log(f"  Warning: Only {total} pupils extracted - data may be incomplete")
 
         # Build specific error reason if failed
         reason = None

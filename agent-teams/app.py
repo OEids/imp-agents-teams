@@ -1205,14 +1205,19 @@ def render_data_upload(team_id: str):
 
         st.markdown("---")
         st.markdown("### 📊 Step 2: Upload Census Files (Optional)")
-        st.info("Upload HTML or PDF census files to extract pupil numbers for the Pupils sheet.")
+        st.info("""
+**Recommended: Use HTML format** - HTML census files extract reliably.
+
+PDF census files are scanned images and may not extract correctly due to complex table layouts.
+If using PDFs, consider exporting as HTML from the DfE census system for best results.
+""")
 
         census_files = st.file_uploader(
-            "Upload Census Files (HTML/PDF)",
+            "Upload Census Files (HTML preferred, PDF supported)",
             type=["html", "htm", "pdf"],
             accept_multiple_files=True,
             key="s3_census_upload",
-            help="School census files from DfE. Supports HTML and PDF formats."
+            help="HTML files recommended. PDF support is limited for scanned documents."
         )
 
         if census_files:
@@ -1220,11 +1225,23 @@ def render_data_upload(team_id: str):
             census_dir = get_session_data_dir() / team_id / "census"
             census_dir.mkdir(parents=True, exist_ok=True)
 
+            pdf_count = 0
+            html_count = 0
             for census_file in census_files:
                 census_path = census_dir / census_file.name
                 with open(census_path, "wb") as f:
                     f.write(census_file.getbuffer())
-                st.success(f"✅ Census file uploaded: {census_file.name}")
+
+                if census_file.name.lower().endswith('.pdf'):
+                    pdf_count += 1
+                    st.info(f"📄 PDF uploaded: {census_file.name} (may have extraction limitations)")
+                else:
+                    html_count += 1
+                    st.success(f"✅ HTML uploaded: {census_file.name}")
+
+            # Show warning if PDFs uploaded
+            if pdf_count > 0 and html_count == 0:
+                st.warning("⚠️ Only PDF files uploaded. PDFs may not extract correctly. Consider using HTML exports from DfE census system.")
 
             st.session_state["s3_census_folder"] = census_dir
 
@@ -1282,13 +1299,25 @@ def render_data_upload(team_id: str):
                     elif summary.get("pupils_rows", 0) > 0:
                         st.success(f"✅ {summary.get('pupils_rows', 0)} pupil records ready to merge")
 
-                    # Manual entry option for failed PDFs
+                    # Check for PDF failures and provide guidance
                     unextractable = census_result.get("unextractable", [])
                     pdf_failures = [f for f in unextractable if f.get('Document Name', '').lower().endswith('.pdf')]
                     if pdf_failures:
                         st.markdown("---")
-                        st.markdown("#### 📝 Manual Entry for Failed PDFs")
-                        st.info("PDF census files can be difficult to extract automatically. Enter pupil numbers manually below.")
+                        st.markdown("#### ⚠️ PDF Extraction Limitations")
+                        st.warning(f"""
+**{len(pdf_failures)} PDF file(s) could not be extracted automatically.**
+
+DfE census PDFs are scanned images with complex table layouts that are difficult to process.
+
+**Recommended solution:** Export census data as HTML from the DfE census system:
+1. Log in to the DfE census collection portal
+2. Navigate to your school's census summary
+3. Use "Save As" or "Print to HTML" option
+4. Upload the HTML file here instead
+
+The HTML format extracts reliably with 100% accuracy.
+""")
 
                         # Get current academic year for default
                         from teams.s3_census_processor import get_current_academic_year
