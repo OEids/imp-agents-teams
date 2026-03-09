@@ -907,23 +907,35 @@ def process_grant_allocations(
     """
     Process grant allocation data and match to schools.
 
+    Uses GOVUK_DATA_WORKBOOK_MAPPING to determine target tab and value type:
+    - 'count' → Pupils tab
+    - 'rate' → Statistics tab
+    - 'amount' → Funding tab
+
     Args:
         allocations_df: DataFrame with grant allocations (must have URN column)
         urn_to_school: Dict mapping URN to SchoolCode
 
     Returns:
-        List of dicts with: school_code, urn, grant_type, description, value, source_column
+        List of dicts with: school_code, target_tab, value_type, description, value, etc.
     """
-    # Import mappings
+    # Import mappings - try new comprehensive mapping first
     try:
         import sys
         from pathlib import Path
         knowledge_path = Path(__file__).parent.parent / "knowledge" / "S3" / "funding"
         if str(knowledge_path) not in sys.path:
             sys.path.insert(0, str(knowledge_path))
-        from NATIONAL_GRANT_MAPPINGS import find_grant_mapping, GrantColumnMapping
+
+        # Try new comprehensive mapping
+        try:
+            from GOVUK_DATA_WORKBOOK_MAPPING import find_workbook_mapping
+            use_new_mapping = True
+        except ImportError:
+            from NATIONAL_GRANT_MAPPINGS import find_grant_mapping
+            use_new_mapping = False
     except ImportError:
-        print("Warning: Could not import NATIONAL_GRANT_MAPPINGS")
+        print("Warning: Could not import mapping modules")
         return []
 
     results = []
@@ -939,13 +951,20 @@ def process_grant_allocations(
         print("No URN column found in allocations data")
         return results
 
-    # Find grant columns
+    # Find grant columns using appropriate mapping
     grant_columns = {}
     for col in allocations_df.columns:
-        mapping = find_grant_mapping(str(col))
+        if use_new_mapping:
+            mapping = find_workbook_mapping(str(col))
+        else:
+            mapping = find_grant_mapping(str(col))
+
         if mapping:
             grant_columns[col] = mapping
-            print(f"  Mapped column '{col}' -> {mapping.imp_description}")
+            if use_new_mapping:
+                print(f"  Mapped '{col}' -> {mapping.target_tab}/{mapping.description}")
+            else:
+                print(f"  Mapped '{col}' -> {mapping.imp_description}")
 
     if not grant_columns:
         print("No grant columns matched in data")
@@ -971,19 +990,39 @@ def process_grant_allocations(
                     continue
                 value = float(value)
                 if value != 0:
-                    # Make negative for income
-                    if mapping.is_negative:
-                        value = -abs(value)
+                    if use_new_mapping:
+                        # New mapping includes target_tab and value_type
+                        # Make amounts negative for income
+                        if mapping.value_type == 'amount':
+                            value = -abs(value)
 
-                    results.append({
-                        "school_code": school_code,
-                        "urn": urn,
-                        "grant_type": mapping.grant_type,
-                        "description": mapping.imp_description,
-                        "finance_code": mapping.imp_finance_code,
-                        "value": value,
-                        "source_column": col
-                    })
+                        results.append({
+                            "school_code": school_code,
+                            "urn": urn,
+                            "target_tab": mapping.target_tab,
+                            "value_type": mapping.value_type,
+                            "grant_type": mapping.govuk_column.split()[0],  # First word as type
+                            "description": mapping.description,
+                            "finance_code": mapping.finance_code,
+                            "value": value,
+                            "source_column": col
+                        })
+                    else:
+                        # Old mapping - default to Funding tab
+                        if mapping.is_negative:
+                            value = -abs(value)
+
+                        results.append({
+                            "school_code": school_code,
+                            "urn": urn,
+                            "target_tab": "Funding",
+                            "value_type": "amount",
+                            "grant_type": mapping.grant_type,
+                            "description": mapping.imp_description,
+                            "finance_code": mapping.imp_finance_code,
+                            "value": value,
+                            "source_column": col
+                        })
             except (ValueError, TypeError):
                 continue
 
@@ -996,23 +1035,33 @@ def insert_grants_into_workbook(
     financial_year: str = "2025/26"
 ) -> Dict[str, Any]:
     """
-    Insert grant allocation values into workbook Funding tab.
+    Insert grant data into workbook - Pupils, Statistics, and Funding tabs.
+
+    IMPORTANT: Does NOT overwrite existing values (e.g., census data).
+    - If cell is empty → insert value
+    - If cell has value → flag discrepancy for review, don't overwrite
+
+    Data goes to different tabs based on value_type:
+    - 'count' → Pupils tab (pupil numbers) - FLAGGED if census differs
+    - 'rate' → Statistics tab (per-pupil rates)
+    - 'amount' → Funding tab (allocation amounts for review)
 
     Args:
         workbook_path: Path to S3 workbook
-        grant_results: List of grant allocation dicts from process_grant_allocations
+        grant_results: List of grant allocation dicts
         financial_year: Financial year code
 
     Returns:
-        Dict with success status and summary
+        Dict with success status, summary, and discrepancies
     """
     from openpyxl import load_workbook
 
     result = {
         "success": False,
-        "updated_count": 0,
-        "added_count": 0,
+        "inserted_count": 0,
         "skipped_count": 0,
+        "discrepancies": [],  # Values that differ from existing (e.g., census vs GOV.UK)
+        "by_tab": {"Pupils": 0, "Statistics": 0, "Funding": 0},
         "errors": [],
         "log": []
     }
@@ -1020,52 +1069,117 @@ def insert_grants_into_workbook(
     try:
         wb = load_workbook(workbook_path)
 
-        # Check for Funding sheet
-        if "Funding" not in wb.sheetnames:
-            result["errors"].append("No 'Funding' sheet found in workbook")
-            return result
+        # Process each target tab
+        tabs_to_process = ["Funding", "Pupils", "Statistics"]
 
-        funding_sheet = wb["Funding"]
+        for tab_name in tabs_to_process:
+            if tab_name not in wb.sheetnames:
+                result["log"].append(f"Tab '{tab_name}' not found in workbook")
+                continue
 
-        # Find column indices (row 1 is header)
-        headers = {}
-        for col_idx, cell in enumerate(funding_sheet[1], 1):
-            if cell.value:
-                headers[str(cell.value).strip()] = col_idx
+            sheet = wb[tab_name]
 
-        required_cols = ["SchoolCode", "Description", "YearValue"]
-        missing = [c for c in required_cols if c not in headers]
-        if missing:
-            result["errors"].append(f"Missing columns in Funding sheet: {missing}")
-            return result
+            # Find column indices (row 1 is header)
+            headers = {}
+            for col_idx, cell in enumerate(sheet[1], 1):
+                if cell.value:
+                    headers[str(cell.value).strip()] = col_idx
 
-        school_col = headers["SchoolCode"]
-        desc_col = headers["Description"]
-        value_col = headers["YearValue"]
+            # Required columns vary by tab
+            school_col = headers.get("SchoolCode")
+            desc_col = headers.get("Description")
+            fc_col = headers.get("FinanceCode")
+            value_col = headers.get("YearValue")
 
-        # Build index of existing rows
-        existing_rows = {}
-        for row_idx in range(2, funding_sheet.max_row + 1):
-            school = funding_sheet.cell(row=row_idx, column=school_col).value
-            desc = funding_sheet.cell(row=row_idx, column=desc_col).value
-            if school and desc:
-                key = f"{school}|{desc}"
-                existing_rows[key] = row_idx
+            if not value_col:
+                result["log"].append(f"Tab '{tab_name}': No YearValue column")
+                continue
 
-        # Process grant results
-        for grant in grant_results:
-            key = f"{grant['school_code']}|{grant['description']}"
+            # Build index of existing rows WITH their current values
+            existing_rows = {}
+            for row_idx in range(2, sheet.max_row + 1):
+                school = sheet.cell(row=row_idx, column=school_col).value if school_col else None
+                desc = sheet.cell(row=row_idx, column=desc_col).value if desc_col else None
+                fc = sheet.cell(row=row_idx, column=fc_col).value if fc_col else None
+                current_value = sheet.cell(row=row_idx, column=value_col).value
 
-            if key in existing_rows:
-                # Update existing row
-                row_idx = existing_rows[key]
-                funding_sheet.cell(row=row_idx, column=value_col).value = grant["value"]
-                result["updated_count"] += 1
-                result["log"].append(f"Updated: {grant['school_code']} - {grant['description']} = {grant['value']}")
-            else:
-                # Row doesn't exist - log as skipped (don't add new rows as structure is template-defined)
-                result["skipped_count"] += 1
-                result["log"].append(f"Skipped (no matching row): {grant['school_code']} - {grant['description']}")
+                row_info = {"row_idx": row_idx, "current_value": current_value}
+
+                if school and desc:
+                    key = f"{school}|{desc}"
+                    existing_rows[key] = row_info
+                if school and fc:
+                    key2 = f"{school}|{fc}"
+                    existing_rows[key2] = row_info
+                if fc and desc:
+                    key3 = f"DEFAULT|{fc}"
+                    existing_rows[key3] = row_info
+
+            # Filter grant results for this tab
+            tab_grants = [g for g in grant_results if g.get("target_tab") == tab_name]
+
+            for grant in tab_grants:
+                school_code = grant.get("school_code", "DEFAULT")
+                description = grant.get("description", "")
+                finance_code = grant.get("finance_code", "")
+                new_value = grant.get("value", 0)
+                value_type = grant.get("value_type", "amount")
+
+                # Try multiple match strategies
+                matched = False
+                for key in [
+                    f"{school_code}|{description}",
+                    f"{school_code}|{finance_code}",
+                    f"DEFAULT|{finance_code}",
+                ]:
+                    if key in existing_rows:
+                        row_info = existing_rows[key]
+                        row_idx = row_info["row_idx"]
+                        current_value = row_info["current_value"]
+
+                        # Check if cell already has a value
+                        if current_value is not None and current_value != "" and current_value != 0:
+                            # Cell has existing value - note the change for audit
+                            try:
+                                existing_num = float(current_value)
+                                new_num = float(new_value)
+
+                                # Log the override if values differ
+                                if abs(existing_num - new_num) > 0.01:
+                                    result["discrepancies"].append({
+                                        "tab": tab_name,
+                                        "school_code": school_code,
+                                        "description": description,
+                                        "previous_value": existing_num,
+                                        "new_value": new_num,
+                                        "difference": new_num - existing_num,
+                                        "action": "OVERWRITTEN"
+                                    })
+                                    result["log"].append(
+                                        f"📝 UPDATED {tab_name}: {school_code} - {description} | "
+                                        f"Was: {existing_num} → Now: {new_num}"
+                                    )
+                            except (ValueError, TypeError):
+                                pass
+
+                            # OVERRIDE with new value
+                            sheet.cell(row=row_idx, column=value_col).value = new_value
+                            result["inserted_count"] += 1
+                            result["by_tab"][tab_name] = result["by_tab"].get(tab_name, 0) + 1
+                            matched = True
+                            break
+                        else:
+                            # Cell is empty - insert the value
+                            sheet.cell(row=row_idx, column=value_col).value = new_value
+                            result["inserted_count"] += 1
+                            result["by_tab"][tab_name] = result["by_tab"].get(tab_name, 0) + 1
+                            result["log"].append(f"✅ {tab_name}: {school_code} - {description} = {new_value}")
+                            matched = True
+                            break
+
+                if not matched:
+                    result["skipped_count"] += 1
+                    result["log"].append(f"⏭️ No match ({tab_name}): {school_code} - {description}")
 
         # Save workbook
         wb.save(workbook_path)

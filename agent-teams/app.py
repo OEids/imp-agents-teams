@@ -1615,11 +1615,11 @@ This enriches your data with official DfE school details: type, phase, LA, trust
                             st.error(f"Error fetching grants: {e}")
 
             with col2:
-                # Import to Funding Tab button
+                # Import to Workbook button
                 grant_results = st.session_state.get("s3_grant_results")
                 if grant_results and template_path:
-                    if st.button("📥 Import to Funding Tab", key="import_grants"):
-                        with st.spinner("Inserting values into Funding tab..."):
+                    if st.button("📥 Import to Workbook", key="import_grants"):
+                        with st.spinner("Inserting values into workbook..."):
                             try:
                                 from teams.dfe_funding_api import insert_grants_into_workbook
 
@@ -1628,10 +1628,32 @@ This enriches your data with official DfE school details: type, phase, LA, trust
                                     grant_results
                                 )
 
+                                st.session_state["s3_import_result"] = result
+
                                 if result["success"]:
-                                    st.success(f"✅ Updated {result['updated_count']} values in Funding tab")
+                                    # Show summary by tab
+                                    by_tab = result.get("by_tab", {})
+                                    tab_summary = ", ".join([f"{k}: {v}" for k, v in by_tab.items() if v > 0])
+                                    st.success(f"✅ Inserted {result['inserted_count']} values ({tab_summary})")
+
                                     if result["skipped_count"] > 0:
-                                        st.info(f"ℹ️ Skipped {result['skipped_count']} values (no matching row in Funding tab)")
+                                        st.info(f"ℹ️ Skipped {result['skipped_count']} (no matching row)")
+
+                                    # Show audit log for overwritten values
+                                    if result.get("discrepancies"):
+                                        st.warning(f"📝 {len(result['discrepancies'])} values were overwritten")
+                                        with st.expander("View Audit Log (Overwritten Values)"):
+                                            audit_df = pd.DataFrame(result["discrepancies"])
+                                            st.dataframe(audit_df, hide_index=True, use_container_width=True)
+
+                                            # Download audit log
+                                            csv = audit_df.to_csv(index=False)
+                                            st.download_button(
+                                                "📥 Download Audit Log",
+                                                data=csv,
+                                                file_name="grant_import_audit.csv",
+                                                mime="text/csv"
+                                            )
                                 else:
                                     st.error(f"Import failed: {result['errors']}")
                             except Exception as e:
@@ -1655,13 +1677,23 @@ This enriches your data with official DfE school details: type, phase, LA, trust
             with st.expander("💰 Matched Grant Allocations", expanded=True):
                 # Convert to DataFrame for display
                 grants_df = pd.DataFrame(grant_results)
-                # Reorder columns for clarity
-                display_cols = ["school_code", "description", "value", "grant_type", "source_column"]
+                # Reorder columns for clarity - include target_tab
+                display_cols = ["school_code", "target_tab", "description", "value", "value_type", "source_column"]
                 display_df = grants_df[[c for c in display_cols if c in grants_df.columns]]
                 st.dataframe(display_df, hide_index=True, use_container_width=True)
 
+                # Summary by target tab
+                st.markdown("**Summary by Target Tab:**")
+                if "target_tab" in grants_df.columns:
+                    tab_summary = grants_df.groupby("target_tab").agg({
+                        "value": ["count", "sum"],
+                        "school_code": "nunique"
+                    }).round(2)
+                    tab_summary.columns = ["Values", "Total £", "Schools"]
+                    st.dataframe(tab_summary, use_container_width=True)
+
                 # Summary by grant type
-                st.markdown("**Summary by Grant Type:**")
+                st.markdown("**Summary by Data Type:**")
                 summary = grants_df.groupby("grant_type").agg({
                     "value": ["count", "sum"],
                     "school_code": "nunique"
