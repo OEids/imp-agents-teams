@@ -5,16 +5,30 @@ Defines where data from GOV.UK grant allocation files should be inserted
 into the S3 workbook.
 
 DATA FLOW:
-1. GOV.UK files contain: Pupil counts, Rates, Allocations (calculated)
+1. GOV.UK files contain: Pupil counts, Rates, Allocations
 2. Workbook needs:
-   - Pupils tab: Eligible pupil counts (for calculations)
-   - Statistics tab: Per-pupil rates (for calculations)
-   - Funding tab: Allocation values (for review/audit)
-   - Income tab: Calculated values (auto-calculated from pupils × rates)
+   - Pupils tab: Eligible pupil counts (PP, UIFSM)
+   - Statistics tab: Per-pupil rates
+   - Funding tab: ONLY GAG entered values (NOT calculated ones)
 
-CRITICAL: The Income tab values are CALCULATED from Pupils × Rates.
-We should import pupil counts and rates, NOT the final allocation amounts,
-unless the allocation is for review purposes in the Funding tab.
+CRITICAL - FUNDING TAB RULES:
+- Most Funding values are CALCULATED automatically (DFC, AWPU, Totals)
+- Only GAG "entered" values should be inserted:
+  - Deprivation (IDACI bands, FSM, FSM6)
+  - Prior Attainment, EAL, Mobility
+  - London Fringe, PFI, Split Sites, Sparsity
+  - Minimum per pupil, MFG, Funding statement adjustment
+  - Post-16 GAG lines
+
+DO NOT INSERT into Funding tab:
+- DFC amounts (calculated from rates × pupils)
+- AWPU amounts (calculated from rates × pupils)
+- Total lines (DFE_TOTAL, DFE_POST16_TOTAL)
+- Pupil Premium amounts (calculated)
+- PE Grant amounts (calculated)
+- UIFSM amounts (calculated)
+
+These are all calculated from Pupils × Rates automatically.
 """
 
 from dataclasses import dataclass
@@ -49,7 +63,8 @@ GOV.UK Pupil Premium allocation files contain:
 We need to import:
 1. Pupil counts → Pupils tab
 2. Rates → Statistics tab (usually national rates, same for all schools)
-3. Allocation → Funding tab (for review)
+
+DO NOT import allocation amounts - they are CALCULATED in the workbook.
 """
 
 @dataclass
@@ -131,32 +146,8 @@ PUPIL_PREMIUM_MAPPINGS = [
         description="Pupil Premium SER Rate",
         value_type="rate"
     ),
-
-    # Allocations → Funding tab (for review)
-    PupilPremiumMapping(
-        govuk_column="Total pupil premium allocation",
-        govuk_patterns=["total allocation", "pp allocation", "total pp"],
-        target_tab="Funding",
-        finance_code="FUNDING_PUPPREM_TOTAL",
-        description="Pupil Premium Total Allocation",
-        value_type="amount"
-    ),
-    PupilPremiumMapping(
-        govuk_column="Primary allocation",
-        govuk_patterns=["primary allocation"],
-        target_tab="Funding",
-        finance_code="FUNDING_PUPPREM_PRI",
-        description="Pupil Premium Income Primary",
-        value_type="amount"
-    ),
-    PupilPremiumMapping(
-        govuk_column="Secondary allocation",
-        govuk_patterns=["secondary allocation"],
-        target_tab="Funding",
-        finance_code="FUNDING_PUPPREM_SEC",
-        description="Pupil Premium Income Secondary",
-        value_type="amount"
-    ),
+    # NOTE: PP allocation amounts are NOT imported - they are CALCULATED
+    # from pupil counts × rates in the workbook
 ]
 
 
@@ -206,16 +197,7 @@ UIFSM_MAPPINGS = [
         description="UIFSM Per Pupil Per Annum(Provisional)",
         value_type="rate"
     ),
-
-    # Allocation → Funding tab
-    PupilPremiumMapping(
-        govuk_column="UIFSM allocation",
-        govuk_patterns=["uifsm allocation", "uifsm total"],
-        target_tab="Funding",
-        finance_code="UIFSM_ANNUAL",
-        description="UIFSM Annual Allocation",
-        value_type="amount"
-    ),
+    # NOTE: UIFSM allocation amounts are NOT imported - they are CALCULATED
 ]
 
 
@@ -223,10 +205,7 @@ UIFSM_MAPPINGS = [
 # DFC (DEVOLVED FORMULA CAPITAL) MAPPING
 # =============================================================================
 """
-DFC files contain:
-- Core lump sum (same for all schools)
-- Per-pupil amount by phase
-- Total allocation
+DFC files contain rates only - allocations are CALCULATED in workbook.
 """
 
 DFC_MAPPINGS = [
@@ -271,16 +250,7 @@ DFC_MAPPINGS = [
         description="DFC Nursery Pupil",
         value_type="rate"
     ),
-
-    # Allocation → Funding tab
-    PupilPremiumMapping(
-        govuk_column="DFC allocation",
-        govuk_patterns=["dfc allocation", "dfc total", "devolved formula capital"],
-        target_tab="Funding",
-        finance_code="DFC",
-        description="DFC Core Amount",
-        value_type="amount"
-    ),
+    # NOTE: DFC allocation amounts are NOT imported - they are CALCULATED
 ]
 
 
@@ -306,16 +276,7 @@ PE_SPORT_MAPPINGS = [
         description="PE Grant Per Pupil Rate",
         value_type="rate"
     ),
-
-    # Allocation → Funding tab
-    PupilPremiumMapping(
-        govuk_column="PE and sport premium allocation",
-        govuk_patterns=["pe allocation", "pe sport", "pe grant total"],
-        target_tab="Funding",
-        finance_code="PE_GRANT",
-        description="PE Grant Core",
-        value_type="amount"
-    ),
+    # NOTE: PE allocation amounts are NOT imported - they are CALCULATED
 ]
 
 
