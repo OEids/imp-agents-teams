@@ -1832,6 +1832,50 @@ class CensusProcessor:
         }
 
 
+def check_cloud_ocr_available() -> Dict[str, bool]:
+    """
+    Check if cloud OCR services are available for enhanced PDF extraction.
+    Cloud services (Azure Document Intelligence, AWS Textract) provide much better
+    extraction for complex scanned documents like DfE census PDFs.
+    """
+    available = {
+        'azure_document_intelligence': False,
+        'aws_textract': False,
+        'google_document_ai': False,
+    }
+
+    # Check Azure Document Intelligence
+    try:
+        from azure.ai.formrecognizer import DocumentAnalysisClient
+        from azure.core.credentials import AzureKeyCredential
+        import os
+        if os.getenv('AZURE_FORM_RECOGNIZER_ENDPOINT') and os.getenv('AZURE_FORM_RECOGNIZER_KEY'):
+            available['azure_document_intelligence'] = True
+    except ImportError:
+        pass
+
+    # Check AWS Textract
+    try:
+        import boto3
+        # Check if credentials are configured
+        session = boto3.Session()
+        if session.get_credentials():
+            available['aws_textract'] = True
+    except (ImportError, Exception):
+        pass
+
+    # Check Google Document AI
+    try:
+        from google.cloud import documentai
+        import os
+        if os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
+            available['google_document_ai'] = True
+    except ImportError:
+        pass
+
+    return available
+
+
 def run_census_processor(
     census_folder: Path,
     school_codes_df: pd.DataFrame = None,
