@@ -1501,6 +1501,137 @@ The HTML format extracts reliably with 100% accuracy.
                 st.caption("Process funding statements in the 'Validate & Map' tab after confirming code mappings.")
 
         st.markdown("---")
+        st.markdown("### 🏫 Step 5: DfE School Data Lookup (Optional)")
+        st.info("""
+**Fetch school information from GIAS** (Get Information About Schools) using URNs from your workbook.
+
+This enriches your data with official DfE school details: type, phase, LA, trust, pupil numbers.
+""")
+
+        # Check if template has URNs
+        template_path = st.session_state.get("s3_template_path")
+        urns_found = []
+        if template_path and Path(template_path).exists():
+            try:
+                from teams.dfe_funding_api import get_urns_from_workbook
+                urns_found = get_urns_from_workbook(Path(template_path))
+            except Exception:
+                pass
+
+        if urns_found:
+            st.success(f"✅ Found {len(urns_found)} URNs in template")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🔍 Fetch School Info from GIAS", key="fetch_gias"):
+                    with st.spinner("Downloading GIAS data and looking up schools..."):
+                        try:
+                            from teams.dfe_funding_api import download_gias_data, lookup_school_by_urn
+
+                            gias_df = download_gias_data()
+                            if gias_df.empty:
+                                st.error("Failed to download GIAS data")
+                            else:
+                                schools_info = []
+                                for urn in urns_found:
+                                    info = lookup_school_by_urn(urn, gias_df)
+                                    if "error" not in info:
+                                        schools_info.append(info)
+
+                                if schools_info:
+                                    st.session_state["s3_gias_data"] = pd.DataFrame(schools_info)
+                                    st.success(f"✅ Retrieved info for {len(schools_info)} schools")
+                                else:
+                                    st.warning("No schools found in GIAS for the provided URNs")
+                        except Exception as e:
+                            st.error(f"Error fetching GIAS data: {e}")
+
+            with col2:
+                if st.button("🔄 Clear GIAS Cache", key="clear_gias"):
+                    cache_file = Path.home() / ".cache" / "dfe_data" / "gias_schools.csv"
+                    if cache_file.exists():
+                        cache_file.unlink()
+                        st.success("Cache cleared")
+                    else:
+                        st.info("No cache to clear")
+
+            # Show GIAS results if available
+            gias_data = st.session_state.get("s3_gias_data")
+            if gias_data is not None and not gias_data.empty:
+                with st.expander("📋 School Information from GIAS", expanded=True):
+                    st.dataframe(gias_data, hide_index=True, use_container_width=True)
+
+                    # Download button
+                    csv = gias_data.to_csv(index=False)
+                    st.download_button(
+                        "📥 Download School Info CSV",
+                        data=csv,
+                        file_name="school_info_gias.csv",
+                        mime="text/csv"
+                    )
+        else:
+            st.caption("No URNs found in template. Upload a template with URN column in Schools sheet.")
+
+        # Funding file upload section
+        st.markdown("---")
+        st.markdown("#### 💷 Upload Funding Data Files")
+        st.caption("""
+Download funding data from:
+- [School Funding Statistics](https://explore-education-statistics.service.gov.uk/find-statistics/school-funding-statistics)
+- [Pupil Premium Allocations](https://www.gov.uk/government/publications/pupil-premium-allocations-and-conditions-of-grant)
+""")
+
+        funding_data_file = st.file_uploader(
+            "Upload Funding Data File (CSV or Excel)",
+            type=["csv", "xlsx", "xls"],
+            key="s3_funding_data_upload",
+            help="Upload school-level funding data from GOV.UK. Must contain URN column."
+        )
+
+        if funding_data_file:
+            funding_data_dir = get_session_data_dir() / team_id / "funding_data"
+            funding_data_dir.mkdir(parents=True, exist_ok=True)
+            funding_data_path = funding_data_dir / funding_data_file.name
+            with open(funding_data_path, "wb") as f:
+                f.write(funding_data_file.getbuffer())
+            st.session_state["s3_funding_data_file"] = funding_data_path
+            st.success(f"✅ Uploaded: {funding_data_file.name}")
+
+        # Match funding to schools
+        funding_data_path = st.session_state.get("s3_funding_data_file")
+        if funding_data_path and Path(funding_data_path).exists() and urns_found:
+            if st.button("🔗 Match Funding to Schools", key="match_funding"):
+                with st.spinner("Matching funding data to schools..."):
+                    try:
+                        from teams.dfe_funding_api import load_funding_file, match_funding_to_schools
+
+                        funding_df = load_funding_file(Path(funding_data_path))
+                        matched = match_funding_to_schools(urns_found, funding_df)
+
+                        if not matched.empty and "error" not in matched.columns:
+                            st.session_state["s3_matched_funding"] = matched
+                            st.success(f"✅ Matched funding for {len(matched)} schools")
+                        else:
+                            st.warning("Could not match funding data. Ensure file contains URN column.")
+                    except Exception as e:
+                        st.error(f"Error matching funding: {e}")
+
+        # Show matched funding
+        matched_funding = st.session_state.get("s3_matched_funding")
+        if matched_funding is not None and not matched_funding.empty:
+            with st.expander("💰 Matched Funding Data", expanded=True):
+                st.dataframe(matched_funding, hide_index=True, use_container_width=True)
+
+                csv = matched_funding.to_csv(index=False)
+                st.download_button(
+                    "📥 Download Matched Funding CSV",
+                    data=csv,
+                    file_name="matched_funding.csv",
+                    mime="text/csv",
+                    key="download_matched_funding"
+                )
+
+        st.markdown("---")
 
     # Show auto-processing status
     if st.session_state.auto_process:
