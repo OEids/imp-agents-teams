@@ -1099,10 +1099,65 @@ def render_sidebar():
                 else:
                     st.warning("Directory does not exist")
 
+        st.markdown("---")
+
+        # Azure Document Intelligence Configuration (for PDF census extraction)
+        st.subheader("☁️ Azure Document AI")
+        st.caption("For PDF census extraction")
+
+        # Check if already configured
+        azure_endpoint = os.environ.get('AZURE_FORM_RECOGNIZER_ENDPOINT', '')
+        azure_key = os.environ.get('AZURE_FORM_RECOGNIZER_KEY', '')
+
+        if azure_endpoint and azure_key:
+            st.success("✅ Azure configured")
+            if st.button("Clear Azure Config", width="stretch"):
+                # Clear from environment
+                os.environ.pop('AZURE_FORM_RECOGNIZER_ENDPOINT', None)
+                os.environ.pop('AZURE_FORM_RECOGNIZER_KEY', None)
+                # Clear from config file
+                config = load_user_config()
+                config.pop('azure_endpoint', None)
+                config.pop('azure_key', None)
+                save_user_config(config)
+                st.success("Azure config cleared")
+                st.rerun()
+        else:
+            with st.expander("Configure Azure Document AI"):
+                st.caption("Get free API key: [Azure Portal](https://portal.azure.com/#create/Microsoft.CognitiveServicesFormRecognizer)")
+
+                new_endpoint = st.text_input(
+                    "Azure Endpoint",
+                    placeholder="https://your-resource.cognitiveservices.azure.com/",
+                    key="azure_endpoint_input"
+                )
+                new_key = st.text_input(
+                    "API Key",
+                    type="password",
+                    key="azure_key_input"
+                )
+
+                if st.button("Save Azure Config", width="stretch"):
+                    if new_endpoint and new_key:
+                        # Save to environment for immediate use
+                        os.environ['AZURE_FORM_RECOGNIZER_ENDPOINT'] = new_endpoint
+                        os.environ['AZURE_FORM_RECOGNIZER_KEY'] = new_key
+                        # Save to config for persistence
+                        config = load_user_config()
+                        config['azure_endpoint'] = new_endpoint
+                        config['azure_key'] = new_key
+                        save_user_config(config)
+                        st.success("Azure config saved!")
+                        st.rerun()
+                    else:
+                        st.warning("Enter both endpoint and key")
+
         # Show current config
         with st.expander("View Config"):
             config = load_user_config()
-            st.json(config)
+            # Hide sensitive keys
+            display_config = {k: ('***' if 'key' in k.lower() else v) for k, v in config.items()}
+            st.json(display_config)
 
         # Intelligence Module Settings
         if INFERENCE_AVAILABLE:
@@ -2658,6 +2713,12 @@ def render_s3_funding_mapping(team_id: str):
 
 def main():
     """Main application entry point."""
+    # Restore Azure credentials from saved config
+    config = load_user_config()
+    if config.get('azure_endpoint') and config.get('azure_key'):
+        os.environ['AZURE_FORM_RECOGNIZER_ENDPOINT'] = config['azure_endpoint']
+        os.environ['AZURE_FORM_RECOGNIZER_KEY'] = config['azure_key']
+
     render_sidebar()
 
     team_id = st.session_state.selected_team

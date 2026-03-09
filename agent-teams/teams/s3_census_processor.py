@@ -1436,6 +1436,7 @@ class CensusProcessor:
 
         content = ""
         use_ocr = False
+        use_azure = False
         table3_data = {yg: 0 for yg in self.YEAR_GROUPS}
 
         # First try pdfplumber (for text-based PDFs)
@@ -1448,25 +1449,37 @@ class CensusProcessor:
         except Exception as e:
             return {'success': False, 'reason': f'PDF read error: {str(e)}'}
 
-        # If no text extracted, try OCR (for scanned PDFs)
+        # If no text extracted, try cloud/OCR (for scanned PDFs)
         if len(content.strip()) < 100:
-            # Ensure OCR is set up (runtime check)
-            ensure_ocr_available()
+            # Try Azure Document Intelligence first (best quality)
+            import os
+            if os.getenv('AZURE_FORM_RECOGNIZER_ENDPOINT') and os.getenv('AZURE_FORM_RECOGNIZER_KEY'):
+                self.log(f"  Scanned PDF detected, trying Azure Document Intelligence...")
+                azure_data = extract_census_with_azure(filepath, log_func=self.log)
+                if sum(azure_data.values()) > 0:
+                    table3_data = azure_data
+                    use_azure = True
+                    # Still need to get text content for school name
+                    content = self.extract_text_with_ocr(filepath) if OCR_AVAILABLE else ""
 
-            if OCR_AVAILABLE:
-                self.log(f"  No text found, trying OCR with table extraction...")
-                use_ocr = True
+            # Fall back to local OCR if Azure didn't work
+            if not use_azure:
+                ensure_ocr_available()
 
-                # Use improved table extraction for scanned PDFs
-                table3_data = self.extract_table_with_ocr(filepath)
+                if OCR_AVAILABLE:
+                    self.log(f"  No text found, trying local OCR with table extraction...")
+                    use_ocr = True
 
-                # Also get text content for school name and census type
-                content = self.extract_text_with_ocr(filepath)
+                    # Use improved table extraction for scanned PDFs
+                    table3_data = self.extract_table_with_ocr(filepath)
 
-                if len(content.strip()) < 50 and sum(table3_data.values()) == 0:
-                    return {'success': False, 'reason': 'OCR could not extract data from scanned PDF'}
-            else:
-                return {'success': False, 'reason': 'Scanned PDF - OCR not available (install pytesseract)'}
+                    # Also get text content for school name and census type
+                    content = self.extract_text_with_ocr(filepath)
+
+                    if len(content.strip()) < 50 and sum(table3_data.values()) == 0:
+                        return {'success': False, 'reason': 'OCR could not extract data from scanned PDF. Configure Azure Document Intelligence for better results.'}
+                else:
+                    return {'success': False, 'reason': 'Scanned PDF - OCR not available (install pytesseract or configure Azure Document Intelligence)'}
 
         school_name = self.extract_school_name(content)
         school_code = self.match_school(school_name)
@@ -1874,6 +1887,134 @@ def check_cloud_ocr_available() -> Dict[str, bool]:
         pass
 
     return available
+
+
+def extract_census_with_azure(filepath: Path, log_func=None) -> dict:
+    """
+    Extract census Table 3 data using Azure Document Intelligence.
+    This provides much better extraction for scanned PDFs than local OCR.
+
+    Requires environment variables:
+    - AZURE_FORM_RECOGNIZER_ENDPOINT: Azure endpoint URL
+    - AZURE_FORM_RECOGNIZER_KEY: API key
+    """
+    import os
+
+    endpoint = os.getenv('AZURE_FORM_RECOGNIZER_ENDPOINT')
+    key = os.getenv('AZURE_FORM_RECOGNIZER_KEY')
+
+    if not endpoint or not key:
+        if log_func:
+            log_func("  Azure Document Intelligence not configured (missing AZURE_FORM_RECOGNIZER_ENDPOINT or AZURE_FORM_RECOGNIZER_KEY)")
+        return {}
+
+    try:
+        from azure.ai.formrecognizer import DocumentAnalysisClient
+        from azure.core.credentials import AzureKeyCredential
+    except ImportError:
+        if log_func:
+            log_func("  Azure SDK not installed (pip install azure-ai-formrecognizer)")
+        return {}
+
+    year_groups = ['E1', 'E2', 'N1', 'N2', 'R', '1', '2', '3', '4', '5', '6',
+                   '7', '8', '9', '10', '11', '12', '13', '14']
+    data = {yg: 0 for yg in year_groups}
+
+    try:
+        if log_func:
+            log_func("  Using Azure Document Intelligence for PDF extraction...")
+
+        # Create client
+        client = DocumentAnalysisClient(
+            endpoint=endpoint,
+            credential=AzureKeyCredential(key)
+        )
+
+        # Read PDF file
+        with open(filepath, "rb") as f:
+            poller = client.begin_analyze_document("prebuilt-layout", f)
+
+        result = poller.result()
+
+        if log_func:
+            log_func(f"  Azure found {len(result.tables)} tables in document")
+
+        # Look for Table 3 (year group data)
+        for table_idx, table in enumerate(result.tables):
+            # Check if this looks like Table 3 (year groups)
+            # Table 3 typically has columns: Year group, Total, C, M
+            is_table3 = False
+            year_col_idx = None
+            total_col_idx = None
+
+            # Check first row for headers
+            header_cells = [cell for cell in table.cells if cell.row_index == 0]
+            for cell in header_cells:
+                cell_text = cell.content.lower() if cell.content else ""
+                if 'year' in cell_text or 'nc' in cell_text:
+                    year_col_idx = cell.column_index
+                    is_table3 = True
+                if 'total' in cell_text:
+                    total_col_idx = cell.column_index
+
+            if not is_table3:
+                continue
+
+            if log_func:
+                log_func(f"  Found Table 3 candidate at table index {table_idx}")
+
+            # If no total column found, use column 1 (first numeric column)
+            if total_col_idx is None:
+                total_col_idx = 1
+
+            # Extract data from rows
+            for cell in table.cells:
+                if cell.row_index == 0:  # Skip header
+                    continue
+
+                cell_text = cell.content.strip() if cell.content else ""
+
+                # Check if this is a year group cell
+                if cell.column_index == year_col_idx or (year_col_idx is None and cell.column_index == 0):
+                    year_group = None
+                    text_upper = cell_text.upper()
+
+                    if 'RECEPTION' in text_upper or text_upper == 'R':
+                        year_group = 'R'
+                    elif text_upper in ['N1', 'N2', 'E1', 'E2']:
+                        year_group = text_upper
+                    elif text_upper.isdigit() and text_upper in ['1','2','3','4','5','6','7','8','9','10','11','12','13','14']:
+                        year_group = text_upper
+                    elif text_upper.startswith('YEAR'):
+                        match = re.search(r'YEAR\s*(\d+)', text_upper)
+                        if match:
+                            year_group = match.group(1)
+
+                    if year_group:
+                        # Find the total value in the same row
+                        total_cells = [c for c in table.cells
+                                      if c.row_index == cell.row_index
+                                      and c.column_index == total_col_idx]
+                        if total_cells:
+                            try:
+                                value = int(total_cells[0].content.strip())
+                                if 0 < value < 500:
+                                    data[year_group] = value
+                                    if log_func:
+                                        log_func(f"    Year {year_group} = {value}")
+                            except (ValueError, AttributeError):
+                                pass
+
+        total = sum(data.values())
+        if log_func:
+            log_func(f"  Azure extraction complete: {total} total pupils")
+
+        return data
+
+    except Exception as e:
+        if log_func:
+            log_func(f"  Azure extraction error: {e}")
+        return {}
 
 
 def run_census_processor(
