@@ -1572,23 +1572,21 @@ This enriches your data with official DfE school details: type, phase, LA, trust
         else:
             st.caption("No URNs found in template. Upload a template with URN column in Schools sheet.")
 
-        # Funding data section
+        # Funding data section - Auto-fetch from GOV.UK
         st.markdown("---")
         st.markdown("#### 💷 Grant Allocation Data")
 
-        # Auto-fetch option
-        st.markdown("**Option 1: Auto-fetch from GOV.UK** (Recommended)")
         if urns_found:
             # Show available grants
             try:
                 from teams.dfe_funding_api import get_available_grants
                 available_grants = get_available_grants()
                 available_names = [g["name"] for g in available_grants if g["available"]]
-                st.caption(f"Available: {', '.join(available_names)}")
+                st.caption(f"Available from GOV.UK: {', '.join(available_names)}")
             except:
                 pass
 
-            col1, col2 = st.columns([2, 1])
+            col1, col2, col3 = st.columns([2, 1, 1])
             with col1:
                 if st.button("🌐 Fetch Grant Data from GOV.UK", key="fetch_govuk_grants"):
                     with st.spinner("Downloading grant allocations from GOV.UK..."):
@@ -1617,73 +1615,7 @@ This enriches your data with official DfE school details: type, phase, LA, trust
                             st.error(f"Error fetching grants: {e}")
 
             with col2:
-                if st.button("🔄 Clear Grant Cache", key="clear_grant_cache"):
-                    cache_dir = Path.home() / ".cache" / "dfe_grants"
-                    if cache_dir.exists():
-                        import shutil
-                        shutil.rmtree(cache_dir)
-                        st.success("Cache cleared - will download fresh data")
-                    else:
-                        st.info("No cache to clear")
-        else:
-            st.caption("Upload a template with URNs first to enable auto-fetch")
-
-        # Manual upload option
-        st.markdown("---")
-        st.markdown("**Option 2: Manual Upload**")
-        st.caption("Upload additional grant files not available via auto-fetch")
-
-        funding_data_file = st.file_uploader(
-            "Upload Funding Data File (CSV or Excel)",
-            type=["csv", "xlsx", "xls", "ods"],
-            key="s3_funding_data_upload",
-            help="Upload school-level funding data. Must contain URN column."
-        )
-
-        if funding_data_file:
-            funding_data_dir = get_session_data_dir() / team_id / "funding_data"
-            funding_data_dir.mkdir(parents=True, exist_ok=True)
-            funding_data_path = funding_data_dir / funding_data_file.name
-            with open(funding_data_path, "wb") as f:
-                f.write(funding_data_file.getbuffer())
-            st.session_state["s3_funding_data_file"] = funding_data_path
-            st.success(f"✅ Uploaded: {funding_data_file.name}")
-
-        # Match funding to schools and insert into workbook
-        funding_data_path = st.session_state.get("s3_funding_data_file")
-        if funding_data_path and Path(funding_data_path).exists() and urns_found:
-            col1, col2 = st.columns([2, 1])
-            with col1:
-                if st.button("🔗 Match & Preview Grant Allocations", key="match_funding"):
-                    with st.spinner("Matching grant allocations to schools..."):
-                        try:
-                            from teams.dfe_funding_api import (
-                                load_funding_file, get_urn_to_school_mapping,
-                                process_grant_allocations
-                            )
-
-                            funding_df = load_funding_file(Path(funding_data_path))
-
-                            # Get URN to SchoolCode mapping from template
-                            urn_mapping = get_urn_to_school_mapping(Path(template_path))
-
-                            if not urn_mapping:
-                                st.warning("No URN to SchoolCode mapping found. Ensure Schools sheet has URN and SchoolCode columns.")
-                            else:
-                                # Process grant allocations
-                                grant_results = process_grant_allocations(funding_df, urn_mapping)
-
-                                if grant_results:
-                                    st.session_state["s3_grant_results"] = grant_results
-                                    schools_matched = len(set(g["school_code"] for g in grant_results))
-                                    st.success(f"✅ Found {len(grant_results)} grant values for {schools_matched} schools")
-                                else:
-                                    st.warning("No grant allocations matched. Check that column names match expected grant types (Pupil Premium, DFC, etc.)")
-                        except Exception as e:
-                            st.error(f"Error matching grants: {e}")
-
-            with col2:
-                # Option to import into workbook
+                # Import to Funding Tab button
                 grant_results = st.session_state.get("s3_grant_results")
                 if grant_results and template_path:
                     if st.button("📥 Import to Funding Tab", key="import_grants"):
@@ -1704,6 +1636,18 @@ This enriches your data with official DfE school details: type, phase, LA, trust
                                     st.error(f"Import failed: {result['errors']}")
                             except Exception as e:
                                 st.error(f"Error importing: {e}")
+
+            with col3:
+                if st.button("🔄 Clear Cache", key="clear_grant_cache"):
+                    cache_dir = Path.home() / ".cache" / "dfe_grants"
+                    if cache_dir.exists():
+                        import shutil
+                        shutil.rmtree(cache_dir)
+                        st.success("Cache cleared")
+                    else:
+                        st.info("No cache")
+        else:
+            st.caption("Upload a template with URNs first to enable auto-fetch")
 
         # Show matched grant results
         grant_results = st.session_state.get("s3_grant_results")
