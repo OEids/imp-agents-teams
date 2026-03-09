@@ -1449,37 +1449,32 @@ class CensusProcessor:
         except Exception as e:
             return {'success': False, 'reason': f'PDF read error: {str(e)}'}
 
-        # If no text extracted, try cloud/OCR (for scanned PDFs)
+        # If no text extracted, try OCR then Azure as fallback (for scanned PDFs)
         if len(content.strip()) < 100:
-            # Try Azure Document Intelligence first (best quality)
+            ensure_ocr_available()
+
+            if OCR_AVAILABLE:
+                self.log(f"  No text found, trying local OCR with table extraction...")
+                use_ocr = True
+
+                # Use improved table extraction for scanned PDFs
+                table3_data = self.extract_table_with_ocr(filepath)
+
+                # Also get text content for school name and census type
+                content = self.extract_text_with_ocr(filepath)
+
+            # Fall back to Azure if local OCR didn't extract enough data
             import os
-            if os.getenv('AZURE_FORM_RECOGNIZER_ENDPOINT') and os.getenv('AZURE_FORM_RECOGNIZER_KEY'):
-                self.log(f"  Scanned PDF detected, trying Azure Document Intelligence...")
+            if sum(table3_data.values()) < 20 and os.getenv('AZURE_FORM_RECOGNIZER_ENDPOINT') and os.getenv('AZURE_FORM_RECOGNIZER_KEY'):
+                self.log(f"  Local OCR extracted little data, trying Azure Document Intelligence as fallback...")
                 azure_data = extract_census_with_azure(filepath, log_func=self.log)
-                if sum(azure_data.values()) > 0:
+                if sum(azure_data.values()) > sum(table3_data.values()):
                     table3_data = azure_data
                     use_azure = True
-                    # Still need to get text content for school name
-                    content = self.extract_text_with_ocr(filepath) if OCR_AVAILABLE else ""
+                    self.log(f"  Azure extraction successful: {sum(azure_data.values())} pupils")
 
-            # Fall back to local OCR if Azure didn't work
-            if not use_azure:
-                ensure_ocr_available()
-
-                if OCR_AVAILABLE:
-                    self.log(f"  No text found, trying local OCR with table extraction...")
-                    use_ocr = True
-
-                    # Use improved table extraction for scanned PDFs
-                    table3_data = self.extract_table_with_ocr(filepath)
-
-                    # Also get text content for school name and census type
-                    content = self.extract_text_with_ocr(filepath)
-
-                    if len(content.strip()) < 50 and sum(table3_data.values()) == 0:
-                        return {'success': False, 'reason': 'OCR could not extract data from scanned PDF. Configure Azure Document Intelligence for better results.'}
-                else:
-                    return {'success': False, 'reason': 'Scanned PDF - OCR not available (install pytesseract or configure Azure Document Intelligence)'}
+            if not OCR_AVAILABLE and not use_azure:
+                return {'success': False, 'reason': 'Scanned PDF - OCR not available (install pytesseract or configure Azure Document Intelligence)'}
 
         school_name = self.extract_school_name(content)
         school_code = self.match_school(school_name)
