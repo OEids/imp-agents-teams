@@ -60,10 +60,11 @@ except ImportError:
 OCR_AVAILABLE = False
 POPPLER_PATH = None
 NUMPY_AVAILABLE = False
+CV2_AVAILABLE = False
 try:
     import pytesseract
     from pdf2image import convert_from_path
-    from PIL import Image, ImageFilter, ImageOps
+    from PIL import Image, ImageFilter, ImageOps, ImageDraw
 
     # Set tesseract path - check common locations (including explicit absolute paths)
     tesseract_paths = [
@@ -94,6 +95,13 @@ try:
     try:
         import numpy as np
         NUMPY_AVAILABLE = True
+    except ImportError:
+        pass
+
+    # Try to import OpenCV for table detection
+    try:
+        import cv2
+        CV2_AVAILABLE = True
     except ImportError:
         pass
 
@@ -173,6 +181,323 @@ def preprocess_image_for_ocr(image):
         gray = Image.fromarray(img_array)
 
     return gray
+
+
+def detect_table_cells_cv2(image):
+    """
+    Detect table cells in an image using OpenCV line detection.
+    Returns list of cell bounding boxes sorted by position.
+    """
+    if not CV2_AVAILABLE or not NUMPY_AVAILABLE:
+        return []
+
+    import numpy as np
+    import cv2
+
+    # Convert PIL image to OpenCV format
+    img_array = np.array(image.convert('RGB'))
+    gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+
+    # Binary threshold
+    _, binary = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)
+
+    # Detect horizontal and vertical lines using morphological operations
+    horizontal_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (50, 1))
+    vertical_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 50))
+
+    horizontal_lines = cv2.morphologyEx(binary, cv2.MORPH_OPEN, horizontal_kernel, iterations=2)
+    vertical_lines = cv2.morphologyEx(binary, cv2.MORPH_OPEN, vertical_kernel, iterations=2)
+
+    # Combine lines
+    table_mask = cv2.add(horizontal_lines, vertical_lines)
+
+    # Dilate to connect broken lines
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    table_mask = cv2.dilate(table_mask, kernel, iterations=1)
+
+    # Find contours (potential cells)
+    contours, _ = cv2.findContours(table_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    cells = []
+    img_height, img_width = gray.shape
+
+    for contour in contours:
+        x, y, w, h = cv2.boundingRect(contour)
+
+        # Filter: cells should be reasonable size (not too small, not the whole page)
+        if w > 20 and h > 15 and w < img_width * 0.8 and h < img_height * 0.3:
+            # Check if it's roughly rectangular (cell-like)
+            area = cv2.contourArea(contour)
+            rect_area = w * h
+            if area > rect_area * 0.5:  # At least 50% fill
+                cells.append({'x': x, 'y': y, 'w': w, 'h': h})
+
+    # Sort cells: first by y (top to bottom), then by x (left to right)
+    cells.sort(key=lambda c: (c['y'] // 20, c['x']))
+
+    return cells
+
+
+def extract_table_structure_cv2(image, log_func=None):
+    """
+    Extract table structure from scanned census image using OpenCV.
+    Returns dict mapping year group to pupil count.
+    """
+    if not CV2_AVAILABLE or not NUMPY_AVAILABLE:
+        return {}
+
+    import numpy as np
+    import cv2
+
+    data = {}
+
+    # Convert PIL image to OpenCV format
+    img_array = np.array(image.convert('RGB'))
+    gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+    img_height, img_width = gray.shape
+
+    # Apply adaptive threshold for better text detection
+    binary = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                    cv2.THRESH_BINARY, 11, 2)
+
+    # Invert for contour detection (text becomes white)
+    binary_inv = cv2.bitwise_not(binary)
+
+    # Detect horizontal lines to find table rows
+    horizontal_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (img_width // 4, 1))
+    horizontal_lines = cv2.morphologyEx(binary_inv, cv2.MORPH_OPEN, horizontal_kernel)
+
+    # Find horizontal line positions
+    line_positions = []
+    col_sum = np.sum(horizontal_lines, axis=1)
+    threshold = img_width * 100  # Threshold for line detection
+
+    in_line = False
+    line_start = 0
+    for i, val in enumerate(col_sum):
+        if val > threshold and not in_line:
+            in_line = True
+            line_start = i
+        elif val <= threshold and in_line:
+            in_line = False
+            line_positions.append((line_start + i) // 2)
+
+    if log_func:
+        log_func(f"  CV2: Found {len(line_positions)} horizontal lines")
+
+    # If we found reasonable number of lines, try to extract row data
+    if len(line_positions) >= 3:
+        # Process regions between horizontal lines
+        for i in range(len(line_positions) - 1):
+            y_start = line_positions[i]
+            y_end = line_positions[i + 1]
+
+            # Skip if row is too thin
+            if y_end - y_start < 20:
+                continue
+
+            # Crop row region
+            row_img = image.crop((0, y_start, img_width, y_end))
+
+            # OCR the row with specific config for single line
+            try:
+                row_text = pytesseract.image_to_string(row_img, config='--psm 7')
+                row_text = row_text.strip()
+
+                if row_text:
+                    # Check for year group and extract number
+                    yg, count = _parse_census_row(row_text)
+                    if yg and count:
+                        data[yg] = count
+                        if log_func:
+                            log_func(f"  CV2 row: '{row_text[:50]}' -> Year {yg} = {count}")
+            except Exception:
+                pass
+
+    return data
+
+
+def _parse_census_row(row_text: str) -> tuple:
+    """
+    Parse a census table row to extract year group and pupil count.
+    Returns (year_group, count) or (None, None).
+    """
+    row_upper = row_text.upper().strip()
+
+    # Skip header rows
+    if 'HEADCOUNT' in row_upper or 'TOTAL NUMBER' in row_upper:
+        return None, None
+
+    # Skip total rows
+    if row_upper.startswith('TOTAL') or 'ALL PUPILS' in row_upper:
+        return None, None
+
+    year_group = None
+
+    # Check Reception
+    if 'RECEPTION' in row_upper or re.match(r'^R\s+\d', row_upper):
+        year_group = 'R'
+    # Check Year X
+    elif 'YEAR' in row_upper:
+        match = re.search(r'YEAR\s*(\d{1,2})', row_upper)
+        if match:
+            yg = match.group(1)
+            if yg in ['1','2','3','4','5','6','7','8','9','10','11','12','13','14']:
+                year_group = yg
+    # Check N1, N2, E1, E2
+    elif re.match(r'^[NE][12]\b', row_upper):
+        match = re.match(r'^([NE][12])', row_upper)
+        if match:
+            year_group = match.group(1)
+    # Check standalone number at start (e.g., "7 45 23 22")
+    else:
+        match = re.match(r'^(\d{1,2})\s+', row_upper)
+        if match:
+            yg = match.group(1)
+            if yg in ['1','2','3','4','5','6','7','8','9','10','11','12','13','14']:
+                year_group = yg
+
+    if not year_group:
+        return None, None
+
+    # Extract numbers from the row
+    numbers = re.findall(r'\b(\d{1,4})\b', row_text)
+
+    # Filter out the year group number if it's at the start
+    if numbers and year_group and numbers[0] == year_group:
+        numbers = numbers[1:]
+
+    # The first number after year group label is typically the total
+    for n in numbers:
+        val = int(n)
+        if 1 <= val <= 500:  # Reasonable pupil count
+            return year_group, val
+
+    return None, None
+
+
+def extract_census_table_cv2(filepath: Path, log_func=None) -> dict:
+    """
+    Extract census Table 3 data using OpenCV-based table detection.
+    This is the primary method for scanned PDFs.
+    """
+    if not CV2_AVAILABLE or not NUMPY_AVAILABLE or not OCR_AVAILABLE:
+        return {}
+
+    import numpy as np
+    import cv2
+
+    year_groups = ['E1', 'E2', 'N1', 'N2', 'R', '1', '2', '3', '4', '5', '6',
+                   '7', '8', '9', '10', '11', '12', '13', '14']
+    data = {yg: 0 for yg in year_groups}
+
+    try:
+        # Convert PDF to images
+        if POPPLER_PATH:
+            images = convert_from_path(str(filepath), dpi=300, poppler_path=POPPLER_PATH)
+        else:
+            images = convert_from_path(str(filepath), dpi=300)
+
+        for page_num, image in enumerate(images):
+            if log_func:
+                log_func(f"  CV2 processing page {page_num + 1}...")
+
+            # First try structured table extraction
+            page_data = extract_table_structure_cv2(image, log_func)
+
+            # Merge page data (don't overwrite existing values)
+            for yg, count in page_data.items():
+                if yg in data and count > 0:
+                    if data[yg] == 0:
+                        data[yg] = count
+
+            # If structured extraction didn't find much, try region-based OCR
+            if sum(data.values()) < 10:
+                region_data = _extract_by_year_regions(image, log_func)
+                for yg, count in region_data.items():
+                    if yg in data and count > 0 and data[yg] == 0:
+                        data[yg] = count
+
+        return data
+
+    except Exception as e:
+        if log_func:
+            log_func(f"  CV2 extraction error: {e}")
+        return {}
+
+
+def _extract_by_year_regions(image, log_func=None):
+    """
+    Alternative extraction: search for year group labels and OCR nearby regions.
+    This looks for "Year X" text and then extracts numbers to the right of it.
+    """
+    if not OCR_AVAILABLE:
+        return {}
+
+    data = {}
+
+    try:
+        # Get full OCR data with positions
+        ocr_data = pytesseract.image_to_data(image, output_type=pytesseract.Output.DICT)
+
+        # Build word list with positions
+        words = []
+        for i in range(len(ocr_data['text'])):
+            text = str(ocr_data['text'][i]).strip()
+            conf = int(ocr_data['conf'][i])
+            if text and conf > 30:
+                words.append({
+                    'text': text,
+                    'x': ocr_data['left'][i],
+                    'y': ocr_data['top'][i],
+                    'w': ocr_data['width'][i],
+                    'h': ocr_data['height'][i]
+                })
+
+        # Find year group labels and look for numbers nearby
+        for i, word in enumerate(words):
+            text_upper = word['text'].upper()
+            year_group = None
+            search_right = True
+
+            # Check for "Reception"
+            if text_upper.startswith('RECEP'):
+                year_group = 'R'
+            # Check for "Year" followed by number
+            elif text_upper == 'YEAR':
+                # Look at next word for the number
+                for j in range(i + 1, min(i + 3, len(words))):
+                    if words[j]['text'].isdigit():
+                        yg = words[j]['text']
+                        if yg in ['1','2','3','4','5','6','7','8','9','10','11','12','13','14']:
+                            year_group = yg
+                            break
+
+            if year_group and year_group not in data:
+                # Look for numbers to the right of this word (on same row)
+                y_center = word['y'] + word['h'] / 2
+                x_right = word['x'] + word['w']
+
+                for other in words:
+                    # Must be to the right and on same row
+                    if other['x'] > x_right:
+                        other_y_center = other['y'] + other['h'] / 2
+                        if abs(other_y_center - y_center) < word['h']:
+                            # Check if it's a number
+                            if other['text'].isdigit():
+                                val = int(other['text'])
+                                if 1 <= val <= 500:
+                                    data[year_group] = val
+                                    if log_func:
+                                        log_func(f"  Region: Year {year_group} = {val}")
+                                    break
+
+        return data
+
+    except Exception as e:
+        if log_func:
+            log_func(f"  Region extraction error: {e}")
+        return {}
 
 
 class CensusProcessor:
@@ -550,15 +875,29 @@ class CensusProcessor:
 
     def extract_table_with_ocr(self, filepath: Path) -> dict:
         """
-        Extract Table 3 data from scanned PDF using OCR with positional data.
-        Uses word positions to reconstruct table structure.
+        Extract Table 3 data from scanned PDF using OCR.
+        Uses multiple strategies for reliable extraction.
         """
         if not OCR_AVAILABLE:
             return {}
 
         data = {yg: 0 for yg in self.YEAR_GROUPS}
 
+        # Strategy 1: Try CV2-based table detection (best for clear table lines)
+        if CV2_AVAILABLE:
+            self.log("  Trying CV2 table detection...")
+            cv2_data = extract_census_table_cv2(filepath, log_func=self.log)
+            for yg, count in cv2_data.items():
+                if yg in data and count > 0:
+                    data[yg] = count
+
+            if sum(data.values()) > 20:
+                self.log(f"  CV2 extraction successful: {sum(data.values())} total pupils")
+                return data
+
+        # Strategy 2: Try positional OCR approach
         try:
+            self.log("  Trying positional OCR approach...")
             # Convert PDF pages to images at higher DPI for better OCR
             if POPPLER_PATH:
                 images = convert_from_path(str(filepath), dpi=300, poppler_path=POPPLER_PATH)
@@ -656,7 +995,7 @@ class CensusProcessor:
                             if numbers and numbers[0] == first_word:
                                 numbers = numbers[1:]
 
-                    if year_group and year_group in data and numbers:
+                    if year_group and year_group in data and data[year_group] == 0 and numbers:
                         # Get the pupil count - typically the first or second number is total
                         # In census Table 3: YearGroup | Total | C | M
                         # We want the Total (first number after year group)
@@ -669,11 +1008,14 @@ class CensusProcessor:
                         except (ValueError, IndexError):
                             pass
 
-            # If primary method didn't extract much, try fallback
+            # If primary methods didn't extract much, try fallback
             total_extracted = sum(data.values())
-            if total_extracted == 0:
-                self.log("  Primary OCR extraction found nothing, trying fallback method...")
-                data = self._ocr_fallback_extraction(filepath)
+            if total_extracted < 10:
+                self.log("  Primary OCR extraction found little data, trying fallback method...")
+                fallback_data = self._ocr_fallback_extraction(filepath)
+                for yg, count in fallback_data.items():
+                    if yg in data and count > 0 and data[yg] == 0:
+                        data[yg] = count
 
             return data
 
