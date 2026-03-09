@@ -616,6 +616,304 @@ def fetch_school_data_for_workbook(
 
 
 # ============================================================================
+# Grant Allocation Processing
+# ============================================================================
+
+def get_urn_to_school_mapping(workbook_path: Path) -> Dict[str, str]:
+    """
+    Create URN to SchoolCode mapping from workbook Schools sheet.
+
+    Args:
+        workbook_path: Path to S3 workbook
+
+    Returns:
+        Dict mapping URN (str) to SchoolCode (str)
+    """
+    try:
+        schools_df = pd.read_excel(workbook_path, sheet_name="Schools", header=1)
+
+        mapping = {}
+
+        # Find URN column
+        urn_col = None
+        for col in schools_df.columns:
+            if 'urn' in str(col).lower() or 'uniquereference' in str(col).lower():
+                urn_col = col
+                break
+
+        # Find SchoolCode column
+        code_col = None
+        for col in schools_df.columns:
+            if col == 'SchoolCode' or 'schoolcode' in str(col).lower():
+                code_col = col
+                break
+
+        if urn_col and code_col:
+            for _, row in schools_df.iterrows():
+                urn = str(row[urn_col]).strip()
+                code = str(row[code_col]).strip()
+                if urn and code and urn not in ['nan', '', '0', 'nan.0']:
+                    # Clean URN (remove .0 if present)
+                    urn = urn.split('.')[0]
+                    mapping[urn] = code
+
+        return mapping
+    except Exception as e:
+        print(f"Error creating URN mapping: {e}")
+        return {}
+
+
+def process_grant_allocations(
+    allocations_df: pd.DataFrame,
+    urn_to_school: Dict[str, str]
+) -> List[Dict[str, Any]]:
+    """
+    Process grant allocation data and match to schools.
+
+    Args:
+        allocations_df: DataFrame with grant allocations (must have URN column)
+        urn_to_school: Dict mapping URN to SchoolCode
+
+    Returns:
+        List of dicts with: school_code, urn, grant_type, description, value, source_column
+    """
+    # Import mappings
+    try:
+        import sys
+        from pathlib import Path
+        knowledge_path = Path(__file__).parent.parent / "knowledge" / "S3" / "funding"
+        if str(knowledge_path) not in sys.path:
+            sys.path.insert(0, str(knowledge_path))
+        from NATIONAL_GRANT_MAPPINGS import find_grant_mapping, GrantColumnMapping
+    except ImportError:
+        print("Warning: Could not import NATIONAL_GRANT_MAPPINGS")
+        return []
+
+    results = []
+
+    # Find URN column in allocations
+    urn_col = None
+    for col in allocations_df.columns:
+        if 'urn' in str(col).lower():
+            urn_col = col
+            break
+
+    if not urn_col:
+        print("No URN column found in allocations data")
+        return results
+
+    # Find grant columns
+    grant_columns = {}
+    for col in allocations_df.columns:
+        mapping = find_grant_mapping(str(col))
+        if mapping:
+            grant_columns[col] = mapping
+            print(f"  Mapped column '{col}' -> {mapping.imp_description}")
+
+    if not grant_columns:
+        print("No grant columns matched in data")
+        return results
+
+    # Process each row
+    for _, row in allocations_df.iterrows():
+        urn = str(row[urn_col]).strip()
+        # Clean URN
+        urn = urn.split('.')[0]
+
+        # Skip if not in our schools
+        if urn not in urn_to_school:
+            continue
+
+        school_code = urn_to_school[urn]
+
+        # Extract grant values
+        for col, mapping in grant_columns.items():
+            try:
+                value = row[col]
+                if pd.isna(value):
+                    continue
+                value = float(value)
+                if value != 0:
+                    # Make negative for income
+                    if mapping.is_negative:
+                        value = -abs(value)
+
+                    results.append({
+                        "school_code": school_code,
+                        "urn": urn,
+                        "grant_type": mapping.grant_type,
+                        "description": mapping.imp_description,
+                        "finance_code": mapping.imp_finance_code,
+                        "value": value,
+                        "source_column": col
+                    })
+            except (ValueError, TypeError):
+                continue
+
+    return results
+
+
+def insert_grants_into_workbook(
+    workbook_path: Path,
+    grant_results: List[Dict[str, Any]],
+    financial_year: str = "2025/26"
+) -> Dict[str, Any]:
+    """
+    Insert grant allocation values into workbook Funding tab.
+
+    Args:
+        workbook_path: Path to S3 workbook
+        grant_results: List of grant allocation dicts from process_grant_allocations
+        financial_year: Financial year code
+
+    Returns:
+        Dict with success status and summary
+    """
+    from openpyxl import load_workbook
+
+    result = {
+        "success": False,
+        "updated_count": 0,
+        "added_count": 0,
+        "skipped_count": 0,
+        "errors": [],
+        "log": []
+    }
+
+    try:
+        wb = load_workbook(workbook_path)
+
+        # Check for Funding sheet
+        if "Funding" not in wb.sheetnames:
+            result["errors"].append("No 'Funding' sheet found in workbook")
+            return result
+
+        funding_sheet = wb["Funding"]
+
+        # Find column indices (row 1 is header)
+        headers = {}
+        for col_idx, cell in enumerate(funding_sheet[1], 1):
+            if cell.value:
+                headers[str(cell.value).strip()] = col_idx
+
+        required_cols = ["SchoolCode", "Description", "YearValue"]
+        missing = [c for c in required_cols if c not in headers]
+        if missing:
+            result["errors"].append(f"Missing columns in Funding sheet: {missing}")
+            return result
+
+        school_col = headers["SchoolCode"]
+        desc_col = headers["Description"]
+        value_col = headers["YearValue"]
+
+        # Build index of existing rows
+        existing_rows = {}
+        for row_idx in range(2, funding_sheet.max_row + 1):
+            school = funding_sheet.cell(row=row_idx, column=school_col).value
+            desc = funding_sheet.cell(row=row_idx, column=desc_col).value
+            if school and desc:
+                key = f"{school}|{desc}"
+                existing_rows[key] = row_idx
+
+        # Process grant results
+        for grant in grant_results:
+            key = f"{grant['school_code']}|{grant['description']}"
+
+            if key in existing_rows:
+                # Update existing row
+                row_idx = existing_rows[key]
+                funding_sheet.cell(row=row_idx, column=value_col).value = grant["value"]
+                result["updated_count"] += 1
+                result["log"].append(f"Updated: {grant['school_code']} - {grant['description']} = {grant['value']}")
+            else:
+                # Row doesn't exist - log as skipped (don't add new rows as structure is template-defined)
+                result["skipped_count"] += 1
+                result["log"].append(f"Skipped (no matching row): {grant['school_code']} - {grant['description']}")
+
+        # Save workbook
+        wb.save(workbook_path)
+        wb.close()
+
+        result["success"] = True
+        return result
+
+    except Exception as e:
+        result["errors"].append(str(e))
+        return result
+
+
+def run_grant_allocation_import(
+    workbook_path: Path,
+    allocation_file: Path,
+    financial_year: str = "2025/26"
+) -> Dict[str, Any]:
+    """
+    Full workflow: Load allocations, match to schools, insert into workbook.
+
+    Args:
+        workbook_path: Path to S3 workbook
+        allocation_file: Path to DfE grant allocation file (CSV or Excel)
+        financial_year: Financial year code
+
+    Returns:
+        Dict with results summary
+    """
+    result = {
+        "success": False,
+        "schools_matched": 0,
+        "grants_found": 0,
+        "updated_count": 0,
+        "errors": [],
+        "log": []
+    }
+
+    try:
+        # Step 1: Create URN to SchoolCode mapping
+        result["log"].append("Loading workbook schools...")
+        urn_mapping = get_urn_to_school_mapping(workbook_path)
+        result["log"].append(f"Found {len(urn_mapping)} schools with URNs")
+
+        if not urn_mapping:
+            result["errors"].append("No URN to SchoolCode mapping found in workbook")
+            return result
+
+        # Step 2: Load allocation file
+        result["log"].append(f"Loading allocation file: {allocation_file.name}")
+        allocations_df = load_funding_file(allocation_file)
+        result["log"].append(f"Loaded {len(allocations_df)} rows")
+
+        # Step 3: Process allocations
+        result["log"].append("Matching grant columns...")
+        grant_results = process_grant_allocations(allocations_df, urn_mapping)
+        result["grants_found"] = len(grant_results)
+        result["schools_matched"] = len(set(g["school_code"] for g in grant_results))
+        result["log"].append(f"Found {len(grant_results)} grant values for {result['schools_matched']} schools")
+
+        if not grant_results:
+            result["errors"].append("No grant allocations matched to schools")
+            return result
+
+        # Step 4: Insert into workbook
+        result["log"].append("Inserting values into Funding sheet...")
+        insert_result = insert_grants_into_workbook(workbook_path, grant_results, financial_year)
+
+        result["updated_count"] = insert_result["updated_count"]
+        result["log"].extend(insert_result["log"][:20])  # Limit log entries
+        if insert_result["errors"]:
+            result["errors"].extend(insert_result["errors"])
+
+        if insert_result["success"]:
+            result["success"] = True
+            result["log"].append(f"SUCCESS: Updated {result['updated_count']} values in Funding sheet")
+
+        return result
+
+    except Exception as e:
+        result["errors"].append(str(e))
+        return result
+
+
+# ============================================================================
 # Test Functions
 # ============================================================================
 

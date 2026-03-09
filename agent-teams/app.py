@@ -1597,38 +1597,90 @@ Download funding data from:
             st.session_state["s3_funding_data_file"] = funding_data_path
             st.success(f"✅ Uploaded: {funding_data_file.name}")
 
-        # Match funding to schools
+        # Match funding to schools and insert into workbook
         funding_data_path = st.session_state.get("s3_funding_data_file")
         if funding_data_path and Path(funding_data_path).exists() and urns_found:
-            if st.button("🔗 Match Funding to Schools", key="match_funding"):
-                with st.spinner("Matching funding data to schools..."):
-                    try:
-                        from teams.dfe_funding_api import load_funding_file, match_funding_to_schools
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                if st.button("🔗 Match & Preview Grant Allocations", key="match_funding"):
+                    with st.spinner("Matching grant allocations to schools..."):
+                        try:
+                            from teams.dfe_funding_api import (
+                                load_funding_file, get_urn_to_school_mapping,
+                                process_grant_allocations
+                            )
 
-                        funding_df = load_funding_file(Path(funding_data_path))
-                        matched = match_funding_to_schools(urns_found, funding_df)
+                            funding_df = load_funding_file(Path(funding_data_path))
 
-                        if not matched.empty and "error" not in matched.columns:
-                            st.session_state["s3_matched_funding"] = matched
-                            st.success(f"✅ Matched funding for {len(matched)} schools")
-                        else:
-                            st.warning("Could not match funding data. Ensure file contains URN column.")
-                    except Exception as e:
-                        st.error(f"Error matching funding: {e}")
+                            # Get URN to SchoolCode mapping from template
+                            urn_mapping = get_urn_to_school_mapping(Path(template_path))
 
-        # Show matched funding
-        matched_funding = st.session_state.get("s3_matched_funding")
-        if matched_funding is not None and not matched_funding.empty:
-            with st.expander("💰 Matched Funding Data", expanded=True):
-                st.dataframe(matched_funding, hide_index=True, use_container_width=True)
+                            if not urn_mapping:
+                                st.warning("No URN to SchoolCode mapping found. Ensure Schools sheet has URN and SchoolCode columns.")
+                            else:
+                                # Process grant allocations
+                                grant_results = process_grant_allocations(funding_df, urn_mapping)
 
-                csv = matched_funding.to_csv(index=False)
+                                if grant_results:
+                                    st.session_state["s3_grant_results"] = grant_results
+                                    schools_matched = len(set(g["school_code"] for g in grant_results))
+                                    st.success(f"✅ Found {len(grant_results)} grant values for {schools_matched} schools")
+                                else:
+                                    st.warning("No grant allocations matched. Check that column names match expected grant types (Pupil Premium, DFC, etc.)")
+                        except Exception as e:
+                            st.error(f"Error matching grants: {e}")
+
+            with col2:
+                # Option to import into workbook
+                grant_results = st.session_state.get("s3_grant_results")
+                if grant_results and template_path:
+                    if st.button("📥 Import to Funding Tab", key="import_grants"):
+                        with st.spinner("Inserting values into Funding tab..."):
+                            try:
+                                from teams.dfe_funding_api import insert_grants_into_workbook
+
+                                result = insert_grants_into_workbook(
+                                    Path(template_path),
+                                    grant_results
+                                )
+
+                                if result["success"]:
+                                    st.success(f"✅ Updated {result['updated_count']} values in Funding tab")
+                                    if result["skipped_count"] > 0:
+                                        st.info(f"ℹ️ Skipped {result['skipped_count']} values (no matching row in Funding tab)")
+                                else:
+                                    st.error(f"Import failed: {result['errors']}")
+                            except Exception as e:
+                                st.error(f"Error importing: {e}")
+
+        # Show matched grant results
+        grant_results = st.session_state.get("s3_grant_results")
+        if grant_results:
+            with st.expander("💰 Matched Grant Allocations", expanded=True):
+                # Convert to DataFrame for display
+                grants_df = pd.DataFrame(grant_results)
+                # Reorder columns for clarity
+                display_cols = ["school_code", "description", "value", "grant_type", "source_column"]
+                display_df = grants_df[[c for c in display_cols if c in grants_df.columns]]
+                st.dataframe(display_df, hide_index=True, use_container_width=True)
+
+                # Summary by grant type
+                st.markdown("**Summary by Grant Type:**")
+                summary = grants_df.groupby("grant_type").agg({
+                    "value": ["count", "sum"],
+                    "school_code": "nunique"
+                }).round(2)
+                summary.columns = ["Values", "Total £", "Schools"]
+                st.dataframe(summary, use_container_width=True)
+
+                # Download option
+                csv = grants_df.to_csv(index=False)
                 st.download_button(
-                    "📥 Download Matched Funding CSV",
+                    "📥 Download Grant Allocations CSV",
                     data=csv,
-                    file_name="matched_funding.csv",
+                    file_name="grant_allocations.csv",
                     mime="text/csv",
-                    key="download_matched_funding"
+                    key="download_grant_allocations"
                 )
 
         st.markdown("---")
