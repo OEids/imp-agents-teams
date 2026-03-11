@@ -408,6 +408,19 @@ class S2SpecialistAgent:
             except Exception as e:
                 self.log(f"[WARN] Could not initialize template registry: {e}")
 
+        # Template reference data - loaded from prepopulated workbook
+        # These are used for fuzzy matching customer data to template codes
+        self.template_references = {
+            'schools': {},       # code -> {title, type, ...}
+            'pay_scales': {},    # code -> {title, type, ...}
+            'role_groups': {},   # code -> {title, teaching, ...}
+            'roles': {},         # code -> {title, group, ...}
+            'pensions': {},      # code -> {title, ...}
+            'eqwp': {},          # code -> {title, weeks, ...}
+            'finance_codes': {}, # code -> {title, ...}
+        }
+        self.template_references_loaded = False
+
     def log(self, message: str, level: str = "INFO"):
         """Log a message with proper encoding and error handling for Streamlit."""
         try:
@@ -433,6 +446,356 @@ class S2SpecialistAgent:
         except Exception:
             # Completely silent - don't let logging break execution
             pass
+
+    def load_template_references(self, template_path: Path) -> bool:
+        """
+        Load reference codes from prepopulated S2 template workbook.
+
+        When a prepopulated template is provided, we extract the reference codes
+        (schools, pay scales, role groups, etc.) and use them for fuzzy matching
+        customer data instead of using the default knowledge files.
+
+        Args:
+            template_path: Path to prepopulated S2 workbook
+
+        Returns:
+            True if successfully loaded reference data
+        """
+        try:
+            xl = pd.ExcelFile(template_path)
+            sheets = xl.sheet_names
+            self.log(f"Loading template references from: {template_path.name}")
+            self.log(f"  Found {len(sheets)} sheets")
+
+            # Helper to find column
+            def find_col(df, candidates):
+                for col in df.columns:
+                    col_clean = str(col).strip().lower().replace(' ', '').replace('_', '')
+                    for c in candidates:
+                        if c.lower().replace(' ', '').replace('_', '') == col_clean:
+                            return col
+                return None
+
+            # Load Schools (usually row 2 is header)
+            for sheet in sheets:
+                if 'school' in sheet.lower() and 'finance' not in sheet.lower():
+                    try:
+                        df = pd.read_excel(xl, sheet, header=1)
+                        code_col = find_col(df, ['SchoolCode', 'Code'])
+                        title_col = find_col(df, ['Title', 'SchoolTitle', 'Name'])
+                        if code_col:
+                            for _, row in df.iterrows():
+                                code = str(row.get(code_col, '')).strip()
+                                if code and code.lower() not in ['nan', '', 'none']:
+                                    self.template_references['schools'][code] = {
+                                        'title': str(row.get(title_col, '')).strip() if title_col else code,
+                                    }
+                            self.log(f"  Schools: {len(self.template_references['schools'])} loaded from {sheet}")
+                            break
+                    except Exception as e:
+                        self.log(f"  [WARN] Could not read {sheet}: {e}")
+
+            # Load Pay Scales
+            for sheet in sheets:
+                sheet_clean = sheet.lower().replace(' ', '').replace('_', '')
+                if 'payscale' in sheet_clean and 'point' not in sheet_clean and 'grade' not in sheet_clean:
+                    try:
+                        df = pd.read_excel(xl, sheet, header=1)
+                        code_col = find_col(df, ['PayScaleCode', 'Code'])
+                        title_col = find_col(df, ['PayScaleTitle', 'Title'])
+                        if code_col:
+                            for _, row in df.iterrows():
+                                code = str(row.get(code_col, '')).strip()
+                                if code and code.lower() not in ['nan', '', 'none']:
+                                    self.template_references['pay_scales'][code] = {
+                                        'title': str(row.get(title_col, '')).strip() if title_col else code,
+                                    }
+                            self.log(f"  Pay Scales: {len(self.template_references['pay_scales'])} loaded from {sheet}")
+                            break
+                    except Exception as e:
+                        self.log(f"  [WARN] Could not read {sheet}: {e}")
+
+            # Load Staff Role Groups
+            for sheet in sheets:
+                sheet_clean = sheet.lower().replace(' ', '').replace('_', '')
+                if 'rolegroup' in sheet_clean or 'stfrolegroup' in sheet_clean:
+                    try:
+                        df = pd.read_excel(xl, sheet, header=1)
+                        code_col = find_col(df, ['StaffRoleGroupCode', 'Code', 'SRGCode'])
+                        title_col = find_col(df, ['Title', 'StaffRoleGroupTitle'])
+                        if code_col:
+                            for _, row in df.iterrows():
+                                code = str(row.get(code_col, '')).strip()
+                                if code and code.lower() not in ['nan', '', 'none']:
+                                    title = str(row.get(title_col, '')).strip() if title_col else code
+                                    self.template_references['role_groups'][code] = {
+                                        'title': title,
+                                        'teaching': 'teach' in title.lower(),
+                                    }
+                            self.log(f"  Role Groups: {len(self.template_references['role_groups'])} loaded from {sheet}")
+                            break
+                    except Exception as e:
+                        self.log(f"  [WARN] Could not read {sheet}: {e}")
+
+            # Load Staff Roles
+            for sheet in sheets:
+                sheet_clean = sheet.lower().replace(' ', '').replace('_', '')
+                if ('stfrole' in sheet_clean or 'staffrole' in sheet_clean) and 'group' not in sheet_clean:
+                    try:
+                        df = pd.read_excel(xl, sheet, header=1)
+                        code_col = find_col(df, ['StaffRoleCode', 'Code', 'RoleCode'])
+                        title_col = find_col(df, ['StaffRoleTitle', 'Title'])
+                        group_col = find_col(df, ['StaffRoleGroupCode', 'RoleGroupCode', 'SRGCode'])
+                        if code_col:
+                            for _, row in df.iterrows():
+                                code = str(row.get(code_col, '')).strip()
+                                if code and code.lower() not in ['nan', '', 'none']:
+                                    self.template_references['roles'][code] = {
+                                        'title': str(row.get(title_col, '')).strip() if title_col else code,
+                                        'group': str(row.get(group_col, '')).strip() if group_col else '',
+                                    }
+                            self.log(f"  Staff Roles: {len(self.template_references['roles'])} loaded from {sheet}")
+                            break
+                    except Exception as e:
+                        self.log(f"  [WARN] Could not read {sheet}: {e}")
+
+            # Load Pensions
+            for sheet in sheets:
+                if 'pension' in sheet.lower():
+                    try:
+                        df = pd.read_excel(xl, sheet, header=1)
+                        code_col = find_col(df, ['PensionCode', 'Code'])
+                        title_col = find_col(df, ['PensionTitle', 'Title'])
+                        if code_col:
+                            for _, row in df.iterrows():
+                                code = str(row.get(code_col, '')).strip()
+                                if code and code.lower() not in ['nan', '', 'none']:
+                                    self.template_references['pensions'][code] = {
+                                        'title': str(row.get(title_col, '')).strip() if title_col else code,
+                                    }
+                            self.log(f"  Pensions: {len(self.template_references['pensions'])} loaded from {sheet}")
+                            break
+                    except Exception as e:
+                        self.log(f"  [WARN] Could not read {sheet}: {e}")
+
+            # Load EQWP Patterns
+            for sheet in sheets:
+                if 'eqw' in sheet.lower() or 'equat' in sheet.lower():
+                    try:
+                        df = pd.read_excel(xl, sheet, header=1)
+                        code_col = find_col(df, ['EquatedWeekPatternCode', 'EQWPCode', 'Code'])
+                        title_col = find_col(df, ['Title', 'EQWPTitle'])
+                        if code_col:
+                            for _, row in df.iterrows():
+                                code = str(row.get(code_col, '')).strip()
+                                if code and code.lower() not in ['nan', '', 'none']:
+                                    self.template_references['eqwp'][code] = {
+                                        'title': str(row.get(title_col, '')).strip() if title_col else code,
+                                    }
+                            self.log(f"  EQWP Patterns: {len(self.template_references['eqwp'])} loaded from {sheet}")
+                            break
+                    except Exception as e:
+                        self.log(f"  [WARN] Could not read {sheet}: {e}")
+
+            # Summary
+            total = sum(len(v) for v in self.template_references.values())
+            self.log(f"  TOTAL: {total} reference codes loaded from template")
+            self.template_references_loaded = total > 0
+            return self.template_references_loaded
+
+        except Exception as e:
+            self.log(f"[ERROR] Failed to load template references: {e}")
+            return False
+
+    def fuzzy_match_to_template(self, value: str, ref_type: str, threshold: float = 0.6) -> Optional[Tuple[str, str, float]]:
+        """
+        Fuzzy match a customer value to a template reference code.
+
+        Args:
+            value: Customer value to match
+            ref_type: Type of reference ('schools', 'pay_scales', 'role_groups', 'pensions', 'eqwp')
+            threshold: Minimum similarity score (0.0 to 1.0)
+
+        Returns:
+            Tuple of (matched_code, matched_title, confidence) or None if no match
+        """
+        if not self.template_references_loaded or not value:
+            return None
+
+        refs = self.template_references.get(ref_type, {})
+        if not refs:
+            return None
+
+        from difflib import SequenceMatcher
+        value_lower = str(value).lower().strip()
+
+        best_match = None
+        best_score = 0.0
+
+        for code, data in refs.items():
+            title = data.get('title', code)
+
+            # Score against code
+            code_score = SequenceMatcher(None, value_lower, code.lower()).ratio()
+
+            # Score against title
+            title_score = SequenceMatcher(None, value_lower, title.lower()).ratio()
+
+            # Use best score
+            score = max(code_score, title_score)
+
+            # Boost if contains key words
+            if value_lower in title.lower() or title.lower() in value_lower:
+                score = min(1.0, score + 0.2)
+
+            # Exact match bonus
+            if value_lower == code.lower() or value_lower == title.lower():
+                score = 1.0
+
+            if score > best_score and score >= threshold:
+                best_score = score
+                best_match = (code, title, score)
+
+        return best_match
+
+    def match_school_code(self, customer_value: str) -> Optional[str]:
+        """
+        Match a customer school value to a template school code.
+
+        Uses template references if loaded, otherwise returns the original value.
+        """
+        if not customer_value:
+            return None
+
+        # Try template fuzzy matching first
+        if self.template_references_loaded:
+            match = self.fuzzy_match_to_template(customer_value, 'schools', threshold=0.6)
+            if match:
+                code, title, confidence = match
+                if confidence >= 0.7:
+                    return code
+                else:
+                    self.assumptions.append(f"School '{customer_value}' matched to '{code}' ({confidence:.0%} confidence)")
+                    return code
+
+        # Return original if no template or no match
+        return str(customer_value).strip()
+
+    def match_pay_scale_code(self, customer_value: str) -> Optional[str]:
+        """
+        Match a customer pay scale value to a template pay scale code.
+
+        Uses template references if loaded, otherwise uses default pattern matching.
+        """
+        if not customer_value:
+            return None
+
+        # Try template fuzzy matching first
+        if self.template_references_loaded:
+            match = self.fuzzy_match_to_template(customer_value, 'pay_scales', threshold=0.5)
+            if match:
+                code, title, confidence = match
+                if confidence >= 0.6:
+                    return code
+                else:
+                    self.assumptions.append(f"Pay scale '{customer_value}' matched to '{code}' ({confidence:.0%} confidence)")
+                    return code
+
+        # Fall back to pattern matching from knowledge files
+        value_upper = str(customer_value).upper().strip()
+
+        # Common pay scale patterns
+        if 'MAIN' in value_upper or value_upper.startswith('M'):
+            return 'MAIN_EW'
+        elif 'UPS' in value_upper or value_upper.startswith('U'):
+            return 'UPS_EW'
+        elif 'LEAD' in value_upper or value_upper.startswith('L'):
+            return 'LEADERSHIP_EW'
+        elif 'NJC' in value_upper:
+            return 'NJC'
+        elif 'UNQUAL' in value_upper:
+            return 'UNQUALIFIED_EW'
+
+        return str(customer_value).strip()
+
+    def match_role_group_code(self, job_title: str) -> str:
+        """
+        Match a customer job title to a template role group code.
+
+        Uses template references if loaded, otherwise uses default pattern matching.
+        """
+        if not job_title:
+            return 'OTH'
+
+        # Try template fuzzy matching first
+        if self.template_references_loaded and self.template_references.get('role_groups'):
+            match = self.fuzzy_match_to_template(job_title, 'role_groups', threshold=0.5)
+            if match:
+                code, title, confidence = match
+                if confidence >= 0.5:
+                    return code
+
+            # Also try matching against staff roles
+            if self.template_references.get('roles'):
+                match = self.fuzzy_match_to_template(job_title, 'roles', threshold=0.5)
+                if match:
+                    code, title, confidence = match
+                    # Get the role group for this role
+                    role_data = self.template_references['roles'].get(code, {})
+                    group = role_data.get('group')
+                    if group:
+                        return group
+
+        # Fall back to default pattern matching
+        return get_srg_for_role(job_title)
+
+    def match_pension_code(self, customer_value: str) -> Optional[str]:
+        """
+        Match a customer pension value to a template pension code.
+        """
+        if not customer_value:
+            return None
+
+        # Try template fuzzy matching first
+        if self.template_references_loaded:
+            match = self.fuzzy_match_to_template(customer_value, 'pensions', threshold=0.5)
+            if match:
+                code, title, confidence = match
+                return code
+
+        # Fall back to common patterns
+        value_upper = str(customer_value).upper().strip()
+        if 'TPS' in value_upper or 'TEACH' in value_upper:
+            return 'TPS'
+        elif 'LGPS' in value_upper or 'LOCAL' in value_upper:
+            return 'LGPS'
+        elif 'OPT' in value_upper or 'OUT' in value_upper:
+            return 'OPTOUT'
+
+        return str(customer_value).strip()
+
+    def match_eqwp_code(self, customer_value: str) -> Optional[str]:
+        """
+        Match a customer working pattern value to a template EQWP code.
+        """
+        if not customer_value:
+            return None
+
+        # Try template fuzzy matching first
+        if self.template_references_loaded:
+            match = self.fuzzy_match_to_template(customer_value, 'eqwp', threshold=0.5)
+            if match:
+                code, title, confidence = match
+                return code
+
+        # Fall back to common patterns
+        value_str = str(customer_value).lower().strip()
+        if 'all year' in value_str or '52' in value_str:
+            return 'ALLYEAR'
+        elif 'term time' in value_str or '39' in value_str:
+            return 'TTO39'
+
+        return str(customer_value).strip()
 
     def _format_detailed_error(self, file_path: Path, action: str, exception: Exception) -> str:
         """Format a detailed error message with context and suggestions."""
@@ -7055,10 +7418,15 @@ class S2SpecialistAgent:
         self.log("S2 SPECIALIST AGENT - STARTING PROCESSING")
         self.log("="*60)
 
-        # Log template mode
+        # Log template mode and load reference codes from template
         if self.template_path and Path(self.template_path).exists():
             self.log(f"Template Mode: ENABLED - {Path(self.template_path).name}")
             self.log("  Customer data will be written into the template")
+            # Load reference codes from template for fuzzy matching
+            if self.load_template_references(Path(self.template_path)):
+                self.log("  Template references loaded - fuzzy matching enabled")
+            else:
+                self.log("  [WARN] Could not load template references - using default matching")
         else:
             self.log("Template Mode: DISABLED - Creating new workbook")
 

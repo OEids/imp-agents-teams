@@ -436,31 +436,82 @@ def run_team_processing(team_id: str, column_mappings: dict = None) -> dict:
             "template_sheets": result.get("template_sheets", {})
         }
     elif team_id == "S2":
-        from teams.s2_specialist import run_s2_specialist
-
         # Get template path if user uploaded one
         template_path = st.session_state.get("s2_template_path")
+        use_orchestrator = st.session_state.get("s2_use_orchestrator", False)
 
-        result = run_s2_specialist(
-            customer_dir,
-            output_dir,
-            template_path=template_path,
-            column_mappings=column_mappings
-        )
-        return {
-            "success": result.get("success", False),
-            "summary": result.get("summary", {}),
-            "issues": result.get("issues", []),
-            "assumptions": result.get("assumptions", []),
-            "output_file": result.get("output_file"),
-            "template_sheets": result.get("template_sheets", {}),
-            "unclassified_data": result.get("unclassified_data", []),
-            "created_role_codes": result.get("created_role_codes", []),
-            "created_role_groups": result.get("created_role_groups", []),
-            "skipped_staff": result.get("skipped_staff", []),
-            "processing_log": result.get("processing_log", []),
-            "build_mode": "template" if template_path else "raw_data"
-        }
+        # Use orchestrator if enabled and template is provided
+        if use_orchestrator and template_path and Path(template_path).exists():
+            from teams.s2_orchestrator import S2Orchestrator
+
+            orchestrator = S2Orchestrator()
+
+            # Run the orchestration
+            orch_result = orchestrator.run(
+                customer_name=customer_dir.name,
+                customer_folder=customer_dir,
+                template_path=Path(template_path),
+                build_mode="PREPOPULATED_TEMPLATE",
+                stop_on_fail=True
+            )
+
+            # Convert orchestration result to standard format
+            success = orch_result.status.value in ["PASS", "PASS_WITH_WARNINGS"]
+
+            # Build summary from metrics
+            summary = {
+                "agents_passed": orch_result.metrics.get("agents_passed", 0),
+                "agents_failed": orch_result.metrics.get("agents_failed", 0),
+                "total_errors": orch_result.metrics.get("total_errors", 0),
+                "total_warnings": orch_result.metrics.get("total_warnings", 0),
+                "staff_members": orch_result.metrics.get("staff_members", 0),
+                "contracts_built": orch_result.metrics.get("contracts_built", 0),
+                "audit_passed": orch_result.metrics.get("audit_passed", False),
+                "audit_score": orch_result.metrics.get("audit_score", 0),
+            }
+
+            # Add contract counts if available
+            for contract in orch_result.agent_contracts:
+                if contract.agent_name == "Contracts Build":
+                    summary["teaching_contracts"] = contract.metrics.get("teaching_contracts", 0)
+                    summary["support_contracts"] = contract.metrics.get("support_contracts", 0)
+
+            return {
+                "success": success,
+                "summary": summary,
+                "issues": orch_result.consolidated_errors,
+                "assumptions": [a.get("description", "") for a in orch_result.assumptions_register],
+                "output_file": str(output_dir / f"S2_Build_{customer_dir.name}.xlsx"),
+                "template_sheets": {},
+                "orchestrator_result": orch_result.to_dict(),
+                "agent_completion_matrix": orch_result.completion_matrix,
+                "build_mode": "orchestrator",
+                "data_source_warnings": orch_result.consolidated_warnings,
+            }
+        else:
+            # Use standard S2 specialist
+            from teams.s2_specialist import run_s2_specialist
+
+            result = run_s2_specialist(
+                customer_dir,
+                output_dir,
+                template_path=template_path,
+                column_mappings=column_mappings
+            )
+            return {
+                "success": result.get("success", False),
+                "summary": result.get("summary", {}),
+                "issues": result.get("issues", []),
+                "assumptions": result.get("assumptions", []),
+                "output_file": result.get("output_file"),
+                "template_sheets": result.get("template_sheets", {}),
+                "unclassified_data": result.get("unclassified_data", []),
+                "created_role_codes": result.get("created_role_codes", []),
+                "created_role_groups": result.get("created_role_groups", []),
+                "skipped_staff": result.get("skipped_staff", []),
+                "processing_log": result.get("processing_log", []),
+                "build_mode": "template" if template_path else "raw_data"
+            }
     elif team_id == "S3":
         from teams.s3_specialist import run_s3_specialist
 
@@ -1105,26 +1156,43 @@ def render_sidebar():
         st.subheader("☁️ Azure Document AI")
         st.caption("For PDF census extraction")
 
-        # Check if already configured
-        azure_endpoint = os.environ.get('AZURE_FORM_RECOGNIZER_ENDPOINT', '')
-        azure_key = os.environ.get('AZURE_FORM_RECOGNIZER_KEY', '')
+        # Check if already configured (use secure storage)
+        try:
+            from config.secure_credentials import (
+                get_azure_credentials, store_azure_credentials,
+                delete_azure_credentials, has_azure_credentials
+            )
+            use_secure_storage = True
+        except ImportError:
+            use_secure_storage = False
+
+        if use_secure_storage:
+            azure_endpoint, azure_key = get_azure_credentials()
+        else:
+            azure_endpoint = os.environ.get('AZURE_FORM_RECOGNIZER_ENDPOINT', '')
+            azure_key = os.environ.get('AZURE_FORM_RECOGNIZER_KEY', '')
 
         if azure_endpoint and azure_key:
-            st.success("✅ Azure configured")
+            st.success("✅ Azure configured (secure storage)")
             if st.button("Clear Azure Config", width="stretch"):
                 # Clear from environment
                 os.environ.pop('AZURE_FORM_RECOGNIZER_ENDPOINT', None)
                 os.environ.pop('AZURE_FORM_RECOGNIZER_KEY', None)
-                # Clear from config file
+                # Clear from secure storage
+                if use_secure_storage:
+                    delete_azure_credentials()
+                # Also clear from old config file if present
                 config = load_user_config()
-                config.pop('azure_endpoint', None)
-                config.pop('azure_key', None)
-                save_user_config(config)
+                if 'azure_endpoint' in config or 'azure_key' in config:
+                    config.pop('azure_endpoint', None)
+                    config.pop('azure_key', None)
+                    save_user_config(config)
                 st.success("Azure config cleared")
                 st.rerun()
         else:
             with st.expander("Configure Azure Document AI"):
                 st.caption("Get free API key: [Azure Portal](https://portal.azure.com/#create/Microsoft.CognitiveServicesFormRecognizer)")
+                st.caption("🔒 Credentials stored securely in Windows Credential Manager")
 
                 new_endpoint = st.text_input(
                     "Azure Endpoint",
@@ -1142,12 +1210,14 @@ def render_sidebar():
                         # Save to environment for immediate use
                         os.environ['AZURE_FORM_RECOGNIZER_ENDPOINT'] = new_endpoint
                         os.environ['AZURE_FORM_RECOGNIZER_KEY'] = new_key
-                        # Save to config for persistence
-                        config = load_user_config()
-                        config['azure_endpoint'] = new_endpoint
-                        config['azure_key'] = new_key
-                        save_user_config(config)
-                        st.success("Azure config saved!")
+                        # Save to secure storage
+                        if use_secure_storage:
+                            if store_azure_credentials(new_endpoint, new_key):
+                                st.success("Azure config saved securely!")
+                            else:
+                                st.error("Failed to save to secure storage")
+                        else:
+                            st.warning("Secure storage not available - credentials in memory only")
                         st.rerun()
                     else:
                         st.warning("Enter both endpoint and key")
@@ -1155,9 +1225,11 @@ def render_sidebar():
         # Show current config
         with st.expander("View Config"):
             config = load_user_config()
-            # Hide sensitive keys
-            display_config = {k: ('***' if 'key' in k.lower() else v) for k, v in config.items()}
+            # Remove any old Azure credentials from display (they're in secure storage now)
+            display_config = {k: v for k, v in config.items() if 'azure' not in k.lower()}
             st.json(display_config)
+            if use_secure_storage and has_azure_credentials():
+                st.caption("🔒 Azure credentials stored in Windows Credential Manager")
 
         # Intelligence Module Settings
         if INFERENCE_AVAILABLE:
@@ -1215,8 +1287,81 @@ def render_data_upload(team_id: str):
     """Render the data upload section."""
     st.subheader("📤 Upload Customer Data")
 
+    # S2 Template Mode - Upload pre-populated workbook with API/S1 data
+    if team_id == "S2":
+        st.markdown("### 📋 Step 1: Upload Prepopulated S2 Workbook (Optional)")
+        st.info("""
+        **S2 Workflow Options:**
+
+        **Option A - With Template (Recommended):**
+        1. **Upload Prepopulated Workbook** → Contains API settings, departments, S1 reference data
+        2. **Upload Customer Staff Data** → Your staff lists, pay scales, contracts
+        3. **Run S2 Orchestrator** → Agents populate staff data into the template
+
+        **Option B - From Scratch:**
+        - Skip template upload, just upload raw staff data files
+        - S2 Agent will create a new workbook
+        """)
+
+        with st.container():
+            template_file = st.file_uploader(
+                "Upload Prepopulated S2 Workbook",
+                type=["xlsx", "xlsm"],
+                key="s2_template_upload",
+                help="Upload a prepopulated S2 workbook that already has API settings, departments, and Strand 1 data filled."
+            )
+
+            if template_file:
+                # Save template to templates directory
+                template_dir = TEMPLATES_DIR / "S2"
+                template_dir.mkdir(parents=True, exist_ok=True)
+                template_path = template_dir / template_file.name
+
+                with open(template_path, "wb") as f:
+                    f.write(template_file.getbuffer())
+
+                st.session_state["s2_template_path"] = template_path
+                st.success(f"✅ Template uploaded: {template_file.name}")
+                st.info("🔧 **Template Mode ENABLED** - Staff data will be written into this prepopulated workbook")
+
+                # Show template details
+                try:
+                    xl = pd.ExcelFile(template_path)
+                    sheet_count = len(xl.sheet_names)
+                    st.caption(f"Workbook contains {sheet_count} sheets")
+
+                    # Check for key sheets
+                    key_sheets = ["Parameters", "Schools", "Finance Codes S2", "PayScales", "StfRoleGroup"]
+                    found_sheets = [s for s in key_sheets if s in xl.sheet_names or any(s.lower() in sn.lower() for sn in xl.sheet_names)]
+                    if found_sheets:
+                        st.success(f"Found key sheets: {', '.join(found_sheets)}")
+                except Exception as e:
+                    st.warning(f"Could not read template details: {e}")
+
+            # Show current template status
+            current_template = st.session_state.get("s2_template_path")
+            if current_template and Path(current_template).exists():
+                st.success(f"📋 Active Template: {Path(current_template).name}")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Clear Template", key="clear_s2_template"):
+                        st.session_state["s2_template_path"] = None
+                        st.rerun()
+                with col2:
+                    # Show orchestrator option when template is loaded
+                    st.session_state["s2_use_orchestrator"] = st.checkbox(
+                        "Use 7-Agent Orchestrator",
+                        value=st.session_state.get("s2_use_orchestrator", True),
+                        help="Run the full 7-agent pipeline with dependency enforcement"
+                    )
+            else:
+                st.caption("No template selected - will create new workbook from scratch")
+
+        st.markdown("---")
+        st.markdown("### 📊 Step 2: Upload Staff Data Files")
+
     # S3 Template Mode - Upload pre-populated template first
-    if team_id == "S3":
+    elif team_id == "S3":
         st.markdown("### 📋 Step 1: Upload Template (Required)")
         st.info("""
         **S3 Workflow:**
@@ -1259,7 +1404,7 @@ def render_data_upload(team_id: str):
                 st.caption("No template selected - using Raw Data mode")
 
         st.markdown("---")
-        st.markdown("### 📊 Step 2: Upload Census Files (Optional)")
+        st.markdown("### 📊 Step 2: Upload Census Files")
         st.info("""
 **Recommended: Use HTML format** - HTML census files extract reliably.
 
@@ -1468,7 +1613,7 @@ The HTML format extracts reliably with 100% accuracy.
         # Note: Raw data upload follows below
 
         st.markdown("---")
-        st.markdown("### 💰 Step 4: Upload GAG Funding Statements (Optional)")
+        st.markdown("### 💰 Step 4: Upload GAG Funding Statements")
         st.info("Upload Pre-16 and/or Post-16 GAG funding statement PDFs to extract funding values for the Funding tab.")
 
         funding_files = st.file_uploader(
@@ -1511,12 +1656,33 @@ This enriches your data with official DfE school details: type, phase, LA, trust
         # Check if template has URNs
         template_path = st.session_state.get("s3_template_path")
         urns_found = []
+        urn_error = None
         if template_path and Path(template_path).exists():
             try:
                 from teams.dfe_funding_api import get_urns_from_workbook
                 urns_found = get_urns_from_workbook(Path(template_path))
-            except Exception:
-                pass
+            except Exception as e:
+                urn_error = str(e)
+
+        if not template_path:
+            st.warning("⚠️ No template uploaded. Upload a template in Step 1 that contains a Schools sheet with URN column.")
+        elif not urns_found:
+            # Show diagnostic info
+            try:
+                xl = pd.ExcelFile(template_path)
+                sheets = xl.sheet_names
+                st.warning(f"⚠️ No URNs found in template. Available sheets: {', '.join(sheets)}")
+
+                # Try to show Schools sheet columns
+                for sheet in ["Schools", "schools", "School"]:
+                    if sheet in sheets:
+                        df = pd.read_excel(template_path, sheet_name=sheet, header=1, nrows=5)
+                        st.caption(f"Columns in '{sheet}' sheet: {', '.join(str(c) for c in df.columns)}")
+                        break
+                if urn_error:
+                    st.caption(f"Error: {urn_error}")
+            except Exception as diag_e:
+                st.warning(f"⚠️ Could not read template: {diag_e}")
 
         if urns_found:
             st.success(f"✅ Found {len(urns_found)} URNs in template")
@@ -1820,7 +1986,17 @@ def render_processing(team_id: str):
         "S2": "Staff Specialist - Pay scales, staff roles, contracts, allowances",
         "S3": "Financial Specialist - Budgets, grants, pupil numbers, scenarios"
     }
-    st.info(f"🤖 **{agent_info.get(team_id, 'Specialist Agent')}**")
+
+    # Show S2 mode indicator
+    if team_id == "S2":
+        use_orchestrator = st.session_state.get("s2_use_orchestrator", False)
+        template_path = st.session_state.get("s2_template_path")
+        if use_orchestrator and template_path:
+            st.info("🤖 **S2 Orchestrator Mode** - 7-Agent Pipeline with dependency enforcement")
+        else:
+            st.info(f"🤖 **{agent_info.get(team_id, 'Specialist Agent')}**")
+    else:
+        st.info(f"🤖 **{agent_info.get(team_id, 'Specialist Agent')}**")
 
     col1, col2, col3 = st.columns([2, 1, 1])
 
@@ -1853,18 +2029,61 @@ def render_processing(team_id: str):
         summary = result.get("summary", {})
         if summary:
             if team_id == "S2":
-                cols = st.columns(4)
-                cols[0].metric("Staff Members", summary.get("staff_members", 0))
-                cols[1].metric("Staff Roles", summary.get("staff_roles", 0))
-                cols[2].metric("Teaching Contracts", summary.get("teaching_contracts", 0))
-                cols[3].metric("Support Contracts", summary.get("support_contracts", 0))
+                # Check if orchestrator mode was used
+                build_mode = result.get("build_mode", "raw_data")
+                if build_mode == "orchestrator":
+                    st.success("🔄 **Orchestrator Mode** - 7-Agent Pipeline Completed")
 
-                cols2 = st.columns(4)
-                cols2[0].metric("Pay Scales", summary.get("pay_scales", 0))
-                cols2[1].metric("Pay Scale Points", summary.get("pay_scale_points", 0))
-                audit_score = summary.get("audit_score", 0)
-                cols2[2].metric("Audit Score", f"{audit_score:.1f}%")
-                cols2[3].metric("Audit Passed", "YES" if summary.get("audit_passed", False) else "NO")
+                    # Show agent completion matrix
+                    agent_matrix = result.get("agent_completion_matrix", {})
+                    if agent_matrix:
+                        with st.expander("🤖 Agent Completion Matrix", expanded=True):
+                            for agent_name, status in agent_matrix.items():
+                                icon = {"PASS": "✅", "PASS_WITH_WARNINGS": "⚠️", "FAIL": "❌", "SKIPPED": "⏭️", "PENDING": "⏳"}.get(status, "❓")
+                                color = {"PASS": "green", "PASS_WITH_WARNINGS": "orange", "FAIL": "red", "SKIPPED": "gray"}.get(status, "gray")
+                                st.markdown(f"{icon} **{agent_name}**: :{color}[{status}]")
+
+                    cols = st.columns(4)
+                    cols[0].metric("Agents Passed", summary.get("agents_passed", 0))
+                    cols[1].metric("Agents Failed", summary.get("agents_failed", 0))
+                    cols[2].metric("Total Errors", summary.get("total_errors", 0))
+                    cols[3].metric("Total Warnings", summary.get("total_warnings", 0))
+
+                    cols2 = st.columns(4)
+                    cols2[0].metric("Staff Members", summary.get("staff_members", 0))
+                    cols2[1].metric("Contracts Built", summary.get("contracts_built", 0))
+                    audit_score = summary.get("audit_score", 0)
+                    cols2[2].metric("Audit Score", f"{audit_score:.1f}%")
+                    cols2[3].metric("Audit Passed", "YES" if summary.get("audit_passed", False) else "NO")
+
+                elif build_mode == "template":
+                    st.info("📋 **Template Mode** - Data written into pre-populated workbook")
+                    cols = st.columns(4)
+                    cols[0].metric("Staff Members", summary.get("staff_members", 0))
+                    cols[1].metric("Staff Roles", summary.get("staff_roles", 0))
+                    cols[2].metric("Teaching Contracts", summary.get("teaching_contracts", 0))
+                    cols[3].metric("Support Contracts", summary.get("support_contracts", 0))
+
+                    cols2 = st.columns(4)
+                    cols2[0].metric("Pay Scales", summary.get("pay_scales", 0))
+                    cols2[1].metric("Pay Scale Points", summary.get("pay_scale_points", 0))
+                    audit_score = summary.get("audit_score", 0)
+                    cols2[2].metric("Audit Score", f"{audit_score:.1f}%")
+                    cols2[3].metric("Audit Passed", "YES" if summary.get("audit_passed", False) else "NO")
+
+                else:
+                    cols = st.columns(4)
+                    cols[0].metric("Staff Members", summary.get("staff_members", 0))
+                    cols[1].metric("Staff Roles", summary.get("staff_roles", 0))
+                    cols[2].metric("Teaching Contracts", summary.get("teaching_contracts", 0))
+                    cols[3].metric("Support Contracts", summary.get("support_contracts", 0))
+
+                    cols2 = st.columns(4)
+                    cols2[0].metric("Pay Scales", summary.get("pay_scales", 0))
+                    cols2[1].metric("Pay Scale Points", summary.get("pay_scale_points", 0))
+                    audit_score = summary.get("audit_score", 0)
+                    cols2[2].metric("Audit Score", f"{audit_score:.1f}%")
+                    cols2[3].metric("Audit Passed", "YES" if summary.get("audit_passed", False) else "NO")
 
                 # Show customer data load status
                 customer_data_loaded = result.get("customer_data_loaded", False)
@@ -2924,11 +3143,19 @@ def render_s3_funding_mapping(team_id: str):
 
 def main():
     """Main application entry point."""
-    # Restore Azure credentials from saved config
-    config = load_user_config()
-    if config.get('azure_endpoint') and config.get('azure_key'):
-        os.environ['AZURE_FORM_RECOGNIZER_ENDPOINT'] = config['azure_endpoint']
-        os.environ['AZURE_FORM_RECOGNIZER_KEY'] = config['azure_key']
+    # Restore Azure credentials from secure storage
+    try:
+        from config.secure_credentials import get_azure_credentials
+        azure_endpoint, azure_key = get_azure_credentials()
+        if azure_endpoint and azure_key:
+            os.environ['AZURE_FORM_RECOGNIZER_ENDPOINT'] = azure_endpoint
+            os.environ['AZURE_FORM_RECOGNIZER_KEY'] = azure_key
+    except ImportError:
+        # Fall back to old config file (for migration)
+        config = load_user_config()
+        if config.get('azure_endpoint') and config.get('azure_key'):
+            os.environ['AZURE_FORM_RECOGNIZER_ENDPOINT'] = config['azure_endpoint']
+            os.environ['AZURE_FORM_RECOGNIZER_KEY'] = config['azure_key']
 
     render_sidebar()
 
