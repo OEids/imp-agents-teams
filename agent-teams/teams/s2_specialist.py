@@ -5443,6 +5443,25 @@ class S2SpecialistAgent:
         self._build_contract_allowances()
         self._build_finance_codes_s2()
 
+        # Log contract generation summary
+        total_staff = len(self.staff_lookup)
+        total_teaching = len(self.template_data.get("ContractsTeachFTE", []))
+        total_support = len(self.template_data.get("ContractsSupportHours", []))
+        total_contracts = total_teaching + total_support
+        total_skipped = len(self.skipped_staff)
+
+        self.log("\n" + "="*60)
+        self.log("CONTRACT GENERATION SUMMARY")
+        self.log("="*60)
+        self.log(f"Total staff in lookup: {total_staff}")
+        self.log(f"Teaching contracts created: {total_teaching}")
+        self.log(f"Support contracts created: {total_support}")
+        self.log(f"Total contracts: {total_contracts}")
+        self.log(f"Staff skipped: {total_skipped}")
+        if total_skipped > 0:
+            self.log(f"Skipped staff details saved to _SkippedStaff sheet")
+        self.log("="*60 + "\n")
+
         # Convert to DataFrames
         result = {}
         for sheet_name, data in self.template_data.items():
@@ -6536,6 +6555,8 @@ class S2SpecialistAgent:
         self.log("Building ContractsTeachFTE...")
 
         contracts_created = 0
+        skipped_no_title = 0
+        skipped_not_teaching = 0
 
         # Use the consolidated lookup - this has merged data from all files
         for staff_code, record in self.staff_lookup.items():
@@ -6547,12 +6568,20 @@ class S2SpecialistAgent:
                 title = str(self._lookup_get(record, 'role', '')).strip()
 
             if not title or title.lower() == 'nan':
+                skipped_no_title += 1
+                self.skipped_staff.append({
+                    'StaffCode': staff_code,
+                    'Reason': 'No job title found',
+                    'ContractType': 'Teaching',
+                    'Name': self._lookup_get(record, 'name', '')
+                })
                 continue  # No job title, can't create contract
 
             srg = get_srg_for_role(title)
 
             # Only teaching contracts
             if not S2_STAFF_ROLE_GROUP_PATTERNS.get(srg, {}).get('teaching', False):
+                skipped_not_teaching += 1
                 continue
 
             # Get school code
@@ -6798,12 +6827,20 @@ class S2SpecialistAgent:
             self._extract_contract_allowances_from_lookup(record, staff_code, contract_ref)
 
         self.log(f"  Created {contracts_created} teaching contracts from lookup")
+        if skipped_no_title > 0:
+            self.log(f"  Skipped {skipped_no_title} staff members with no job title")
+        if skipped_not_teaching > 0:
+            self.log(f"  Skipped {skipped_not_teaching} non-teaching staff members")
 
     def _build_contracts_support(self):
         """Build ContractsSupportHours sheet from consolidated staff lookup."""
         self.log("Building ContractsSupportHours...")
 
         contracts_created = 0
+        skipped_no_title = 0
+        skipped_is_teaching = 0
+        skipped_no_hours = 0
+        skipped_zero_hours = 0
 
         # Use the consolidated lookup - this has merged data from all files
         for staff_code, record in self.staff_lookup.items():
@@ -6815,12 +6852,20 @@ class S2SpecialistAgent:
                 title = str(self._lookup_get(record, 'role', '')).strip()
 
             if not title or title.lower() == 'nan':
+                skipped_no_title += 1
+                self.skipped_staff.append({
+                    'StaffCode': staff_code,
+                    'Reason': 'No job title found',
+                    'ContractType': 'Support',
+                    'Name': self._lookup_get(record, 'name', '')
+                })
                 continue  # No job title, can't create contract
 
             srg = get_srg_for_role(title)
 
             # Only support contracts (non-teaching)
             if S2_STAFF_ROLE_GROUP_PATTERNS.get(srg, {}).get('teaching', False):
+                skipped_is_teaching += 1
                 continue
 
             # Get hours - skip 0-hour contracts
@@ -6828,12 +6873,37 @@ class S2SpecialistAgent:
             if hours is None or str(hours).lower() == 'nan':
                 hours = self._lookup_get(record, 'hours', None)
             if hours is None or str(hours).lower() == 'nan':
+                skipped_no_hours += 1
+                self.skipped_staff.append({
+                    'StaffCode': staff_code,
+                    'Reason': 'No hours found',
+                    'ContractType': 'Support',
+                    'JobTitle': title,
+                    'Name': self._lookup_get(record, 'name', '')
+                })
                 continue
             try:
                 hours = float(hours)
                 if hours == 0:
+                    skipped_zero_hours += 1
+                    self.skipped_staff.append({
+                        'StaffCode': staff_code,
+                        'Reason': 'Zero hours',
+                        'ContractType': 'Support',
+                        'JobTitle': title,
+                        'Name': self._lookup_get(record, 'name', '')
+                    })
                     continue
             except (ValueError, TypeError):
+                skipped_no_hours += 1
+                self.skipped_staff.append({
+                    'StaffCode': staff_code,
+                    'Reason': 'Invalid hours value',
+                    'ContractType': 'Support',
+                    'JobTitle': title,
+                    'Hours': str(hours),
+                    'Name': self._lookup_get(record, 'name', '')
+                })
                 continue
 
             # Get school code
@@ -7084,6 +7154,14 @@ class S2SpecialistAgent:
             self._extract_contract_allowances_from_lookup(record, staff_code, contract_ref)
 
         self.log(f"  Created {contracts_created} support contracts from lookup")
+        if skipped_no_title > 0:
+            self.log(f"  Skipped {skipped_no_title} staff members with no job title")
+        if skipped_is_teaching > 0:
+            self.log(f"  Skipped {skipped_is_teaching} teaching staff (handled in teaching contracts)")
+        if skipped_no_hours > 0:
+            self.log(f"  Skipped {skipped_no_hours} staff members with no/invalid hours")
+        if skipped_zero_hours > 0:
+            self.log(f"  Skipped {skipped_zero_hours} staff members with zero hours")
 
     def _normalize_scale_point(self, point: str, scale_type: str) -> str:
         """Normalize scale point code."""
