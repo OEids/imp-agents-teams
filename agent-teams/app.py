@@ -436,83 +436,29 @@ def run_team_processing(team_id: str, column_mappings: dict = None) -> dict:
             "template_sheets": result.get("template_sheets", {})
         }
     elif team_id == "S2":
-        # Get template path if user uploaded one
-        template_path = st.session_state.get("s2_template_path")
-        use_orchestrator = st.session_state.get("s2_use_orchestrator", False)
+        # Use standard S2 specialist (no template or orchestrator)
+        from teams.s2_specialist import run_s2_specialist
 
-        # Use orchestrator if enabled and template is provided
-        if use_orchestrator and template_path and Path(template_path).exists():
-            from teams.s2_orchestrator import S2Orchestrator
-
-            orchestrator = S2Orchestrator()
-
-            # Run the orchestration
-            orch_result = orchestrator.run(
-                customer_name=customer_dir.name,
-                customer_folder=customer_dir,
-                template_path=Path(template_path),
-                build_mode="PREPOPULATED_TEMPLATE",
-                stop_on_fail=True
-            )
-
-            # Convert orchestration result to standard format
-            success = orch_result.status.value in ["PASS", "PASS_WITH_WARNINGS"]
-
-            # Extract metrics from Agent 6 and Agent 7 contracts
-            agent_6_contract = next((c for c in orch_result.agent_contracts if c.agent_id == 6), None)
-            agent_7_contract = next((c for c in orch_result.agent_contracts if c.agent_id == 7), None)
-
-            # Build summary from metrics
-            summary = {
-                "agents_passed": orch_result.metrics.get("agents_passed", 0),
-                "agents_failed": orch_result.metrics.get("agents_failed", 0),
-                "total_errors": orch_result.metrics.get("total_errors", 0),
-                "total_warnings": orch_result.metrics.get("total_warnings", 0),
-                "staff_members": agent_6_contract.metrics.get("staff_members", 0) if agent_6_contract else 0,
-                "teaching_contracts": agent_6_contract.metrics.get("teaching_contracts", 0) if agent_6_contract else 0,
-                "support_contracts": agent_6_contract.metrics.get("support_contracts", 0) if agent_6_contract else 0,
-                "contracts_built": agent_6_contract.metrics.get("contracts_count", 0) if agent_6_contract else 0,
-                "pay_scales": agent_6_contract.metrics.get("pay_scales", 0) if agent_6_contract else 0,
-                "audit_passed": agent_7_contract.metrics.get("audit_passed", False) if agent_7_contract else False,
-                "audit_score": agent_7_contract.metrics.get("audit_score", 0) if agent_7_contract else 0,
-            }
-
-            return {
-                "success": success,
-                "summary": summary,
-                "issues": orch_result.consolidated_errors,
-                "assumptions": [a.get("description", "") for a in orch_result.assumptions_register],
-                "output_file": str(orch_result.output_file) if orch_result.output_file else None,
-                "template_sheets": {},
-                "orchestrator_result": orch_result.to_dict(),
-                "agent_completion_matrix": orch_result.completion_matrix,
-                "build_mode": "orchestrator",
-                "data_source_warnings": orch_result.consolidated_warnings,
-            }
-        else:
-            # Use standard S2 specialist
-            from teams.s2_specialist import run_s2_specialist
-
-            result = run_s2_specialist(
-                customer_dir,
-                output_dir,
-                template_path=template_path,
-                column_mappings=column_mappings
-            )
-            return {
-                "success": result.get("success", False),
-                "summary": result.get("summary", {}),
-                "issues": result.get("issues", []),
-                "assumptions": result.get("assumptions", []),
-                "output_file": result.get("output_file"),
-                "template_sheets": result.get("template_sheets", {}),
-                "unclassified_data": result.get("unclassified_data", []),
-                "created_role_codes": result.get("created_role_codes", []),
-                "created_role_groups": result.get("created_role_groups", []),
-                "skipped_staff": result.get("skipped_staff", []),
-                "processing_log": result.get("processing_log", []),
-                "build_mode": "template" if template_path else "raw_data"
-            }
+        result = run_s2_specialist(
+            customer_dir,
+            output_dir,
+            template_path=None,  # No template mode
+            column_mappings=column_mappings
+        )
+        return {
+            "success": result.get("success", False),
+            "summary": result.get("summary", {}),
+            "issues": result.get("issues", []),
+            "assumptions": result.get("assumptions", []),
+            "output_file": result.get("output_file"),
+            "template_sheets": result.get("template_sheets", {}),
+            "unclassified_data": result.get("unclassified_data", []),
+            "created_role_codes": result.get("created_role_codes", []),
+            "created_role_groups": result.get("created_role_groups", []),
+            "skipped_staff": result.get("skipped_staff", []),
+            "processing_log": result.get("processing_log", []),
+            "build_mode": "raw_data"
+        }
     elif team_id == "S3":
         from teams.s3_specialist import run_s3_specialist
 
@@ -1288,78 +1234,9 @@ def render_data_upload(team_id: str):
     """Render the data upload section."""
     st.subheader("📤 Upload Customer Data")
 
-    # S2 Template Mode - Upload pre-populated workbook with API/S1 data
+    # S2 - No template upload step, just process staff data files
     if team_id == "S2":
-        st.markdown("### 📋 Step 1: Upload Prepopulated S2 Workbook (Optional)")
-        st.info("""
-        **S2 Workflow Options:**
-
-        **Option A - With Template (Recommended):**
-        1. **Upload Prepopulated Workbook** → Contains API settings, departments, S1 reference data
-        2. **Upload Customer Staff Data** → Your staff lists, pay scales, contracts
-        3. **Run S2 Orchestrator** → Agents populate staff data into the template
-
-        **Option B - From Scratch:**
-        - Skip template upload, just upload raw staff data files
-        - S2 Agent will create a new workbook
-        """)
-
-        with st.container():
-            template_file = st.file_uploader(
-                "Upload Prepopulated S2 Workbook",
-                type=["xlsx", "xlsm"],
-                key="s2_template_upload",
-                help="Upload a prepopulated S2 workbook that already has API settings, departments, and Strand 1 data filled."
-            )
-
-            if template_file:
-                # Save template to templates directory
-                template_dir = TEMPLATES_DIR / "S2"
-                template_dir.mkdir(parents=True, exist_ok=True)
-                template_path = template_dir / template_file.name
-
-                with open(template_path, "wb") as f:
-                    f.write(template_file.getbuffer())
-
-                st.session_state["s2_template_path"] = template_path
-                st.success(f"✅ Template uploaded: {template_file.name}")
-                st.info("🔧 **Template Mode ENABLED** - Staff data will be written into this prepopulated workbook")
-
-                # Show template details
-                try:
-                    xl = pd.ExcelFile(template_path)
-                    sheet_count = len(xl.sheet_names)
-                    st.caption(f"Workbook contains {sheet_count} sheets")
-
-                    # Check for key sheets
-                    key_sheets = ["Parameters", "Schools", "Finance Codes S2", "PayScales", "StfRoleGroup"]
-                    found_sheets = [s for s in key_sheets if s in xl.sheet_names or any(s.lower() in sn.lower() for sn in xl.sheet_names)]
-                    if found_sheets:
-                        st.success(f"Found key sheets: {', '.join(found_sheets)}")
-                except Exception as e:
-                    st.warning(f"Could not read template details: {e}")
-
-            # Show current template status
-            current_template = st.session_state.get("s2_template_path")
-            if current_template and Path(current_template).exists():
-                st.success(f"📋 Active Template: {Path(current_template).name}")
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("Clear Template", key="clear_s2_template"):
-                        st.session_state["s2_template_path"] = None
-                        st.rerun()
-                with col2:
-                    # Show orchestrator option when template is loaded
-                    st.session_state["s2_use_orchestrator"] = st.checkbox(
-                        "Use 6-Agent Orchestrator",
-                        value=st.session_state.get("s2_use_orchestrator", True),
-                        help="Run the full 6-agent pipeline with dependency enforcement"
-                    )
-            else:
-                st.caption("No template selected - will create new workbook from scratch")
-
-        st.markdown("---")
-        st.markdown("### 📊 Step 2: Upload Staff Data Files")
+        st.markdown("### 📊 Upload Staff Data Files")
 
     # S3 Template Mode - Upload pre-populated template first
     elif team_id == "S3":
@@ -1988,16 +1865,8 @@ def render_processing(team_id: str):
         "S3": "Financial Specialist - Budgets, grants, pupil numbers, scenarios"
     }
 
-    # Show S2 mode indicator
-    if team_id == "S2":
-        use_orchestrator = st.session_state.get("s2_use_orchestrator", False)
-        template_path = st.session_state.get("s2_template_path")
-        if use_orchestrator and template_path:
-            st.info("🤖 **S2 Orchestrator Mode** - 6-Agent Pipeline with dependency enforcement")
-        else:
-            st.info(f"🤖 **{agent_info.get(team_id, 'Specialist Agent')}**")
-    else:
-        st.info(f"🤖 **{agent_info.get(team_id, 'Specialist Agent')}**")
+    # Show specialist agent info
+    st.info(f"🤖 **{agent_info.get(team_id, 'Specialist Agent')}**")
 
     col1, col2, col3 = st.columns([2, 1, 1])
 

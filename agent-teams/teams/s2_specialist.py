@@ -305,7 +305,7 @@ class S2SpecialistAgent:
             "AllowanceTypePoint": [],
             "AllowanceIncreasePercen": [],
             "Pensions": [],
-            "EQWPatterns": [],
+            # "EQWPatterns": [],  # REMOVED - Not sufficient output
             "StfRoleGroup": [],
             "StfRole": [],
             "StaffMembers": [],
@@ -357,7 +357,7 @@ class S2SpecialistAgent:
             "staff_role_groups": None,
             "pay_scales": None,
             "pensions": None,
-            "equated_week_patterns": None,
+            # "equated_week_patterns": None,  # REMOVED - Not sufficient output
             "allowance_types": None,
             "adjustment_types": None,
             "leave_types": None,
@@ -382,7 +382,7 @@ class S2SpecialistAgent:
             "AllowanceTypePoint": "17_AllowanceTypePoint",
             "AllowanceIncreasePercen": "18_AllowanceIncreasePercen",
             "Pensions": "24_Pensions",
-            "EQWPatterns": "23_EQWPatterns",
+            # "EQWPatterns": "23_EQWPatterns",  # REMOVED - Not sufficient output
             "StfRoleGroup": "26_StfRoleGroup",
             "StfRole": "27_StfRole",
             "StaffMembers": "25_StaffMembers",
@@ -1614,7 +1614,7 @@ class S2SpecialistAgent:
         self._build_leave_types_from_import()
         self._build_adjustment_types_from_import()
         self._build_pensions_from_import()
-        self._build_eqw_patterns_from_import()
+        # self._build_eqw_patterns_from_import()  # REMOVED - Not sufficient output
         self._build_staff_role_groups_from_import()
         self._build_staff_roles_from_import()
         self._build_pay_scales_from_import()
@@ -5433,7 +5433,7 @@ class S2SpecialistAgent:
         self._build_allowance_types()
         self._build_allowance_points()
         self._build_pensions()
-        self._build_eqw_patterns()
+        # self._build_eqw_patterns()  # REMOVED - Equated Week Patterns output not sufficient
         self._build_staff_role_groups()
         self._build_staff_roles()
         self._build_staff_members()
