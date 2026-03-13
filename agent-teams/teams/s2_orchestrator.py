@@ -37,6 +37,14 @@ except ImportError:
     S2_SPECIALIST_AVAILABLE = False
     S2SpecialistAgent = None
 
+# Import S2 Validation Module
+try:
+    from .s2_validation import validate_s2_output
+    S2_VALIDATION_AVAILABLE = True
+except ImportError:
+    S2_VALIDATION_AVAILABLE = False
+    validate_s2_output = None
+
 
 class AgentStatus(Enum):
     """Status codes for agent execution."""
@@ -616,6 +624,35 @@ class ReconciliationAgent(BaseS2Agent):
 
             contract.outputs.append(f"✓ Reconciliation order: {', '.join(self.RECONCILIATION_ORDER)}")
             contract.metrics["reconciliation_steps"] = len(self.RECONCILIATION_ORDER)
+
+            # Run IMP Planner validation checks
+            if S2_VALIDATION_AVAILABLE and context.process_result:
+                self._log("Running IMP Planner validation checks...")
+                try:
+                    template_sheets = context.process_result.get('template_sheets', {})
+                    validation_result = validate_s2_output(template_sheets)
+
+                    contract.metrics["imp_validation_score"] = validation_result.get('score', 0)
+                    contract.metrics["imp_validation_passed"] = validation_result.get('passed', False)
+                    contract.metrics["imp_validation_errors"] = len(validation_result.get('errors', []))
+                    contract.metrics["imp_validation_warnings"] = len(validation_result.get('warnings', []))
+
+                    # Add validation results to outputs
+                    contract.outputs.append(f"✓ IMP Validation: {validation_result.get('score', 0):.1f}% ({len(validation_result.get('passed_checks', []))} checks passed)")
+
+                    # Add validation errors and warnings
+                    for error in validation_result.get('errors', [])[:5]:
+                        contract.errors.append(f"IMP Validation: {error}")
+
+                    for warning in validation_result.get('warnings', [])[:10]:
+                        contract.warnings.append(f"IMP Validation: {warning}")
+
+                    self._log(f"IMP Planner validation complete: {validation_result.get('score', 0):.1f}% score")
+                except Exception as e:
+                    contract.warnings.append(f"IMP Planner validation error: {str(e)}")
+                    self._log(f"IMP validation error: {e}", "WARN")
+            else:
+                contract.warnings.append("IMP Planner validation not available")
 
             # Final validation checks
             file_size_kb = Path(context.output_file).stat().st_size // 1024
