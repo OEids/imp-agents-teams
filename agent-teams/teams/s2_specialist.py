@@ -5448,6 +5448,7 @@ class S2SpecialistAgent:
         total_teaching = len(self.template_data.get("ContractsTeachFTE", []))
         total_support = len(self.template_data.get("ContractsSupportHours", []))
         total_contracts = total_teaching + total_support
+        staff_with_contracts = len(self._staff_with_contracts) if hasattr(self, '_staff_with_contracts') else total_contracts
 
         # Count assumptions related to placeholders/defaults
         placeholder_count = sum(1 for a in self.assumptions if 'placeholder' in a.lower() or 'default' in a.lower())
@@ -5456,10 +5457,13 @@ class S2SpecialistAgent:
         self.log("CONTRACT GENERATION SUMMARY")
         self.log("="*60)
         self.log(f"Total staff in lookup: {total_staff}")
-        self.log(f"Teaching contracts created: {total_teaching}")
-        self.log(f"Support contracts created: {total_support}")
+        self.log(f"Staff with contracts: {staff_with_contracts}")
+        self.log(f"Teaching contracts: {total_teaching}")
+        self.log(f"Support contracts: {total_support}")
         self.log(f"Total contracts: {total_contracts}")
-        self.log(f"Coverage: {(total_contracts/total_staff*100):.1f}% of staff have contracts")
+        self.log(f"Ratio: {(total_contracts/staff_with_contracts):.2f} contracts per staff member" if staff_with_contracts > 0 else "Ratio: N/A")
+        if staff_with_contracts < total_staff:
+            self.log(f"WARNING: {total_staff - staff_with_contracts} staff members have NO contracts")
         if placeholder_count > 0:
             self.log(f"Contracts with placeholders/defaults: {placeholder_count}")
             self.log(f"  (Check assumptions in output for details)")
@@ -6561,6 +6565,10 @@ class S2SpecialistAgent:
         contracts_with_placeholder_title = 0
         skipped_not_teaching = 0
 
+        # Track which staff have contracts to prevent duplicates
+        if not hasattr(self, '_staff_with_contracts'):
+            self._staff_with_contracts = set()
+
         # Use the consolidated lookup - this has merged data from all files
         for staff_code, record in self.staff_lookup.items():
             # Get job title to determine if teaching
@@ -6570,18 +6578,33 @@ class S2SpecialistAgent:
             if not title or title.lower() == 'nan':
                 title = str(self._lookup_get(record, 'role', '')).strip()
 
-            # NEVER skip - use placeholder if no title found
+            # If no title, check pay scale to determine teaching vs support
             if not title or title.lower() == 'nan':
-                title = "Teacher - TBC"
-                contracts_with_placeholder_title += 1
-                self.assumptions.append(f"Staff {staff_code}: No job title found, using placeholder 'Teacher - TBC'")
+                pay_scale = str(self._lookup_get(record, 'pay_scale', '')).strip().upper()
+                if not pay_scale or pay_scale == 'NAN':
+                    pay_scale = str(self._lookup_get(record, 'pay_scale_type', '')).strip().upper()
+                if not pay_scale or pay_scale == 'NAN':
+                    pay_scale = str(self._lookup_get(record, 'scale', '')).strip().upper()
 
-            srg = get_srg_for_role(title)
+                # Teaching pay scales: TMS, UPS, LEAD, MPR, UPR
+                teaching_scales = ['TMS', 'UPS', 'LEAD', 'MPR', 'UPR', 'TEACHER', 'MAIN', 'UPPER', 'LEADERSHIP']
+                is_teaching_scale = any(ts in pay_scale for ts in teaching_scales)
 
-            # Only teaching contracts
-            if not S2_STAFF_ROLE_GROUP_PATTERNS.get(srg, {}).get('teaching', False):
-                skipped_not_teaching += 1
-                continue
+                if is_teaching_scale:
+                    title = "Teacher - TBC"
+                    contracts_with_placeholder_title += 1
+                    self.assumptions.append(f"Staff {staff_code}: No job title, determined as teaching from pay scale '{pay_scale}'")
+                else:
+                    # Support or unknown - skip for support processing
+                    skipped_not_teaching += 1
+                    continue
+            else:
+                srg = get_srg_for_role(title)
+
+                # Only teaching contracts
+                if not S2_STAFF_ROLE_GROUP_PATTERNS.get(srg, {}).get('teaching', False):
+                    skipped_not_teaching += 1
+                    continue
 
             # Get school code
             school = str(self._lookup_get(record, 'school_code', '')).strip()
@@ -6821,13 +6844,12 @@ class S2SpecialistAgent:
                 "Notes": f"Staff: {forename} {surname}".strip() if forename or surname else "",
             })
             contracts_created += 1
+            self._staff_with_contracts.add(staff_code)
 
             # Check for allowances from the record
             self._extract_contract_allowances_from_lookup(record, staff_code, contract_ref)
 
         self.log(f"  Created {contracts_created} teaching contracts from lookup")
-        if contracts_with_placeholder_title > 0:
-            self.log(f"  WARNING: {contracts_with_placeholder_title} contracts created with placeholder title 'Teacher - TBC'")
         if skipped_not_teaching > 0:
             self.log(f"  INFO: {skipped_not_teaching} non-teaching staff (will be processed as support contracts)")
 
@@ -6840,9 +6862,18 @@ class S2SpecialistAgent:
         contracts_with_default_hours = 0
         contracts_with_zero_hours = 0
         skipped_is_teaching = 0
+        skipped_has_contract = 0
+
+        # Track which staff have contracts to prevent duplicates
+        if not hasattr(self, '_staff_with_contracts'):
+            self._staff_with_contracts = set()
 
         # Use the consolidated lookup - this has merged data from all files
         for staff_code, record in self.staff_lookup.items():
+            # Skip if already has a teaching contract
+            if staff_code in self._staff_with_contracts:
+                skipped_has_contract += 1
+                continue
             # Get job title to determine if support
             title = str(self._lookup_get(record, 'job_title', '')).strip()
             if not title or title.lower() == 'nan':
@@ -7131,6 +7162,7 @@ class S2SpecialistAgent:
                 "Notes": f"Staff: {forename} {surname}".strip() if forename or surname else "",
             })
             contracts_created += 1
+            self._staff_with_contracts.add(staff_code)
 
             # Check for allowances from the record
             self._extract_contract_allowances_from_lookup(record, staff_code, contract_ref)
@@ -7144,6 +7176,8 @@ class S2SpecialistAgent:
             self.log(f"  INFO: {contracts_with_zero_hours} zero-hour contracts included in output")
         if skipped_is_teaching > 0:
             self.log(f"  INFO: {skipped_is_teaching} teaching staff (processed in teaching contracts)")
+        if skipped_has_contract > 0:
+            self.log(f"  INFO: {skipped_has_contract} staff already have teaching contracts (not duplicated)")
 
     def _normalize_scale_point(self, point: str, scale_type: str) -> str:
         """Normalize scale point code."""
