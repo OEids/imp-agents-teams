@@ -5448,7 +5448,26 @@ class S2SpecialistAgent:
         total_teaching = len(self.template_data.get("ContractsTeachFTE", []))
         total_support = len(self.template_data.get("ContractsSupportHours", []))
         total_contracts = total_teaching + total_support
-        staff_with_contracts = len(self._staff_with_contracts) if hasattr(self, '_staff_with_contracts') else total_contracts
+
+        # Analyze contracts per staff
+        contracts_per_staff = self._contracts_per_staff if hasattr(self, '_contracts_per_staff') else {}
+        staff_with_contracts = len(contracts_per_staff)
+
+        # Find staff with multiple contracts
+        staff_with_multiple = []
+        for staff_code, info in contracts_per_staff.items():
+            total_for_staff = info['teaching'] + info['support']
+            if total_for_staff > 1:
+                staff_with_multiple.append({
+                    'code': staff_code,
+                    'name': info.get('name', ''),
+                    'teaching': info['teaching'],
+                    'support': info['support'],
+                    'total': total_for_staff
+                })
+
+        # Sort by total contracts descending
+        staff_with_multiple.sort(key=lambda x: x['total'], reverse=True)
 
         # Count assumptions related to placeholders/defaults
         placeholder_count = sum(1 for a in self.assumptions if 'placeholder' in a.lower() or 'default' in a.lower())
@@ -5462,12 +5481,36 @@ class S2SpecialistAgent:
         self.log(f"Support contracts: {total_support}")
         self.log(f"Total contracts: {total_contracts}")
         self.log(f"Ratio: {(total_contracts/staff_with_contracts):.2f} contracts per staff member" if staff_with_contracts > 0 else "Ratio: N/A")
+
+        # Show staff with multiple contracts
+        if staff_with_multiple:
+            self.log(f"\nStaff with MULTIPLE contracts: {len(staff_with_multiple)}")
+            self.log("-" * 60)
+            for i, staff in enumerate(staff_with_multiple[:20], 1):  # Show top 20
+                self.log(f"  {i}. {staff['code']} ({staff['name']}): {staff['total']} contracts ({staff['teaching']} teaching, {staff['support']} support)")
+            if len(staff_with_multiple) > 20:
+                self.log(f"  ... and {len(staff_with_multiple) - 20} more")
+
         if staff_with_contracts < total_staff:
-            self.log(f"WARNING: {total_staff - staff_with_contracts} staff members have NO contracts")
+            self.log(f"\nWARNING: {total_staff - staff_with_contracts} staff members have NO contracts")
         if placeholder_count > 0:
-            self.log(f"Contracts with placeholders/defaults: {placeholder_count}")
+            self.log(f"\nContracts with placeholders/defaults: {placeholder_count}")
             self.log(f"  (Check assumptions in output for details)")
         self.log("="*60 + "\n")
+
+        # Add _MultipleContracts diagnostic sheet
+        if staff_with_multiple:
+            self.template_data["_MultipleContracts"] = []
+            for staff in staff_with_multiple:
+                self.template_data["_MultipleContracts"].append({
+                    "StaffCode": staff['code'],
+                    "StaffName": staff['name'],
+                    "TeachingContracts": staff['teaching'],
+                    "SupportContracts": staff['support'],
+                    "TotalContracts": staff['total'],
+                    "Note": "This staff member has multiple contracts - please verify this is correct"
+                })
+            self.log(f"Added _MultipleContracts diagnostic sheet with {len(staff_with_multiple)} staff")
 
         # Convert to DataFrames
         result = {}
@@ -6565,9 +6608,9 @@ class S2SpecialistAgent:
         contracts_with_placeholder_title = 0
         skipped_not_teaching = 0
 
-        # Track which staff have contracts to prevent duplicates
-        if not hasattr(self, '_staff_with_contracts'):
-            self._staff_with_contracts = set()
+        # Track contracts per staff for summary reporting (allow duplicates)
+        if not hasattr(self, '_contracts_per_staff'):
+            self._contracts_per_staff = {}
 
         # Use the consolidated lookup - this has merged data from all files
         for staff_code, record in self.staff_lookup.items():
@@ -6844,7 +6887,11 @@ class S2SpecialistAgent:
                 "Notes": f"Staff: {forename} {surname}".strip() if forename or surname else "",
             })
             contracts_created += 1
-            self._staff_with_contracts.add(staff_code)
+
+            # Track contracts per staff (allow multiple)
+            if staff_code not in self._contracts_per_staff:
+                self._contracts_per_staff[staff_code] = {'teaching': 0, 'support': 0, 'name': f"{forename} {surname}".strip()}
+            self._contracts_per_staff[staff_code]['teaching'] += 1
 
             # Check for allowances from the record
             self._extract_contract_allowances_from_lookup(record, staff_code, contract_ref)
@@ -6862,18 +6909,13 @@ class S2SpecialistAgent:
         contracts_with_default_hours = 0
         contracts_with_zero_hours = 0
         skipped_is_teaching = 0
-        skipped_has_contract = 0
 
-        # Track which staff have contracts to prevent duplicates
-        if not hasattr(self, '_staff_with_contracts'):
-            self._staff_with_contracts = set()
+        # Track contracts per staff for summary reporting (allow duplicates)
+        if not hasattr(self, '_contracts_per_staff'):
+            self._contracts_per_staff = {}
 
         # Use the consolidated lookup - this has merged data from all files
         for staff_code, record in self.staff_lookup.items():
-            # Skip if already has a teaching contract
-            if staff_code in self._staff_with_contracts:
-                skipped_has_contract += 1
-                continue
             # Get job title to determine if support
             title = str(self._lookup_get(record, 'job_title', '')).strip()
             if not title or title.lower() == 'nan':
@@ -7162,7 +7204,11 @@ class S2SpecialistAgent:
                 "Notes": f"Staff: {forename} {surname}".strip() if forename or surname else "",
             })
             contracts_created += 1
-            self._staff_with_contracts.add(staff_code)
+
+            # Track contracts per staff (allow multiple)
+            if staff_code not in self._contracts_per_staff:
+                self._contracts_per_staff[staff_code] = {'teaching': 0, 'support': 0, 'name': f"{forename} {surname}".strip()}
+            self._contracts_per_staff[staff_code]['support'] += 1
 
             # Check for allowances from the record
             self._extract_contract_allowances_from_lookup(record, staff_code, contract_ref)
@@ -7176,8 +7222,6 @@ class S2SpecialistAgent:
             self.log(f"  INFO: {contracts_with_zero_hours} zero-hour contracts included in output")
         if skipped_is_teaching > 0:
             self.log(f"  INFO: {skipped_is_teaching} teaching staff (processed in teaching contracts)")
-        if skipped_has_contract > 0:
-            self.log(f"  INFO: {skipped_has_contract} staff already have teaching contracts (not duplicated)")
 
     def _normalize_scale_point(self, point: str, scale_type: str) -> str:
         """Normalize scale point code."""
