@@ -1,11 +1,11 @@
 """
 Strand 2 Orchestrator
 
-Coordinates the 7-agent Strand 2 Excel automation process for payroll and HR data builds.
+Coordinates the 6-agent Strand 2 Excel automation process for payroll and HR data builds.
 Enforces strict sequential execution with dependency management and quality gates.
 
 This orchestrator wraps the S2SpecialistAgent to provide:
-- Strict 7-phase sequential execution
+- Strict 6-phase sequential execution
 - Dependency enforcement (downstream agents blocked if upstream fails)
 - Handoff contract validation between phases
 - Quality gates and validation at each step
@@ -13,12 +13,11 @@ This orchestrator wraps the S2SpecialistAgent to provide:
 - Agent completion matrix for status visibility
 
 Architecture:
-    Agent 1: Workbook & API Structure Validator
     Agent 2: Pay Scales & Structures Builder
     Agent 3: Finance & Role Mapping
     Agent 4: Staff Data Preparation
     Agent 5: Roles & Staff Records Generator
-    Agent 6: Contracts Build
+    Agent 6: Contracts Build & Output Generation
     Agent 7: Reconciliation & Validation
 """
 
@@ -215,88 +214,6 @@ class BaseS2Agent(ABC):
         self.log(f"[{timestamp}] [Agent {self.agent_id}:{self.agent_name}] [{level}] {message}")
 
 
-class WorkbookValidatorAgent(BaseS2Agent):
-    """
-    Agent 1: Workbook & API Structure Validator
-
-    Responsibilities:
-    - Load AA_NEW - Strand 2 Standard Workbook API template
-    - Validate workbook version from Parameters tab
-    - Apply and validate API key from Notes tab
-    - Discover and validate customer data files
-    - Initialise the S2SpecialistAgent for downstream processing
-    """
-
-    def __init__(self, log_func: Callable = None):
-        super().__init__(1, "Workbook & API Structure", log_func)
-
-    def execute(self, context: S2BuildContext, upstream_contracts: List[HandoffContract]) -> HandoffContract:
-        contract = self._create_contract(AgentStatus.IN_PROGRESS)
-
-        self._log("Starting workbook validation and file discovery")
-
-        try:
-            # Validate template exists
-            if not context.template_path.exists():
-                contract.errors.append(f"Template not found: {context.template_path}")
-                return self._complete_contract(contract, AgentStatus.FAIL)
-
-            contract.outputs.append(f"Template validated: {context.template_path.name}")
-
-            # Validate customer folder exists
-            if not context.customer_folder.exists():
-                contract.errors.append(f"Customer folder not found: {context.customer_folder}")
-                return self._complete_contract(contract, AgentStatus.FAIL)
-
-            contract.outputs.append(f"Customer folder validated: {context.customer_folder.name}")
-
-            # Discover customer data files
-            data_extensions = ['*.xlsx', '*.xlsm', '*.xls', '*.csv', '*.pdf', '*.docx']
-            for ext in data_extensions:
-                for f in context.customer_folder.glob(ext):
-                    if not f.name.startswith('~$'):  # Skip temp files
-                        context.source_files.append(f)
-
-            if not context.source_files:
-                contract.warnings.append(f"No data files found in {context.customer_folder}")
-            else:
-                contract.outputs.append(f"Found {len(context.source_files)} data files")
-                contract.metrics["source_files_count"] = len(context.source_files)
-
-            # Validate S2SpecialistAgent is available
-            if context.specialist is None:
-                contract.warnings.append("S2SpecialistAgent not available - limited functionality")
-            else:
-                contract.outputs.append("S2SpecialistAgent initialised")
-
-            # Set workbook path in context
-            safe_name = context.customer_name.replace(' ', '_').replace('/', '-')
-            context.workbook_path = context.customer_folder / f"S2_Build_{safe_name}.xlsx"
-            contract.outputs.append(f"Workbook path set: {context.workbook_path.name}")
-
-            # Add metrics
-            contract.metrics["template_size_kb"] = context.template_path.stat().st_size // 1024 if context.template_path.exists() else 0
-
-            # Log assumptions
-            contract.assumptions.append({
-                "category": "workbook",
-                "description": "Using default template structure",
-                "impact": "Template sheets will be used as-is"
-            })
-
-            self._log(f"Workbook validation complete - found {len(context.source_files)} files")
-
-            # Determine final status
-            if contract.errors:
-                return self._complete_contract(contract, AgentStatus.FAIL)
-            elif contract.warnings:
-                return self._complete_contract(contract, AgentStatus.PASS_WITH_WARNINGS)
-            else:
-                return self._complete_contract(contract, AgentStatus.PASS)
-
-        except Exception as e:
-            contract.errors.append(f"Unexpected error: {str(e)}")
-            return self._complete_contract(contract, AgentStatus.FAIL)
 
 
 class PayScalesAgent(BaseS2Agent):
@@ -764,7 +681,7 @@ class S2Orchestrator:
     """
     Strand 2 Orchestrator
 
-    Coordinates the 7-agent Strand 2 process with strict dependency enforcement,
+    Coordinates the 6-agent Strand 2 process with strict dependency enforcement,
     quality gates, and comprehensive tracking.
 
     Usage:
@@ -783,9 +700,8 @@ class S2Orchestrator:
         self._initialize_agents()
 
     def _initialize_agents(self):
-        """Initialize all 7 agents in execution order."""
+        """Initialize all 6 agents in execution order."""
         self._agents = [
-            WorkbookValidatorAgent(self.log),
             PayScalesAgent(self.log),
             FinanceMappingAgent(self.log),
             StaffDataPrepAgent(self.log),

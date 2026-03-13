@@ -1351,9 +1351,9 @@ def render_data_upload(team_id: str):
                 with col2:
                     # Show orchestrator option when template is loaded
                     st.session_state["s2_use_orchestrator"] = st.checkbox(
-                        "Use 7-Agent Orchestrator",
+                        "Use 6-Agent Orchestrator",
                         value=st.session_state.get("s2_use_orchestrator", True),
-                        help="Run the full 7-agent pipeline with dependency enforcement"
+                        help="Run the full 6-agent pipeline with dependency enforcement"
                     )
             else:
                 st.caption("No template selected - will create new workbook from scratch")
@@ -1993,7 +1993,7 @@ def render_processing(team_id: str):
         use_orchestrator = st.session_state.get("s2_use_orchestrator", False)
         template_path = st.session_state.get("s2_template_path")
         if use_orchestrator and template_path:
-            st.info("🤖 **S2 Orchestrator Mode** - 7-Agent Pipeline with dependency enforcement")
+            st.info("🤖 **S2 Orchestrator Mode** - 6-Agent Pipeline with dependency enforcement")
         else:
             st.info(f"🤖 **{agent_info.get(team_id, 'Specialist Agent')}**")
     else:
@@ -2033,7 +2033,7 @@ def render_processing(team_id: str):
                 # Check if orchestrator mode was used
                 build_mode = result.get("build_mode", "raw_data")
                 if build_mode == "orchestrator":
-                    st.success("🔄 **Orchestrator Mode** - 7-Agent Pipeline Completed")
+                    st.success("🔄 **Orchestrator Mode** - 6-Agent Pipeline Completed")
 
                     # Show agent completion matrix
                     agent_matrix = result.get("agent_completion_matrix", {})
