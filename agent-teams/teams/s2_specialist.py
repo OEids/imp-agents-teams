@@ -6661,13 +6661,24 @@ class S2SpecialistAgent:
             # Get FTE
             fte = self._lookup_get(record, 'fte', None)
             if fte is None or str(fte).lower() == 'nan':
-                fte = self._lookup_get(record, 'weekly_fte', 1.0)
+                fte = self._lookup_get(record, 'weekly_fte', None)
+
+            # Skip if no FTE or FTE = 0 (only create contracts with actual hours)
+            if fte is None or str(fte).lower() == 'nan':
+                skipped_not_teaching += 1
+                continue
+
             try:
                 fte = float(fte)
-                if fte <= 0 or fte > 10:
+                if fte <= 0:
+                    # Skip zero-FTE contracts
+                    skipped_not_teaching += 1
+                    continue
+                if fte > 10:
                     fte = 1.0
             except (ValueError, TypeError):
-                fte = 1.0
+                skipped_not_teaching += 1
+                continue
 
             # Get pay scale info
             pay_scale_contract = str(self._lookup_get(record, 'pay_scale_contract', '')).strip().upper()
@@ -6906,8 +6917,7 @@ class S2SpecialistAgent:
 
         contracts_created = 0
         contracts_with_placeholder_title = 0
-        contracts_with_default_hours = 0
-        contracts_with_zero_hours = 0
+        skipped_no_hours = 0  # Skipped due to missing or zero hours
         skipped_is_teaching = 0
 
         # Track contracts per staff for summary reporting (allow duplicates)
@@ -6936,30 +6946,26 @@ class S2SpecialistAgent:
                 skipped_is_teaching += 1
                 continue
 
-            # Get hours - NEVER skip, use defaults if missing
+            # Get hours - only create contracts if hours exist and > 0
             hours = self._lookup_get(record, 'weekly_hours', None)
             if hours is None or str(hours).lower() == 'nan':
                 hours = self._lookup_get(record, 'hours', None)
 
-            # Handle missing or invalid hours
-            hours_is_default = False
-            hours_is_zero = False
+            # Skip if no hours or hours = 0 (only create contracts with actual hours)
+            if hours is None or str(hours).lower() == 'nan':
+                skipped_no_hours += 1
+                continue
+
             try:
-                hours = float(hours) if hours and str(hours).lower() != 'nan' else None
-                if hours is None:
-                    hours = 37.5  # Default full-time hours
-                    hours_is_default = True
-                    contracts_with_default_hours += 1
-                    self.assumptions.append(f"Staff {staff_code}: No hours found, using default 37.5 hours")
-                elif hours == 0:
-                    hours_is_zero = True
-                    contracts_with_zero_hours += 1
-                    self.assumptions.append(f"Staff {staff_code}: Zero hours contract included in output")
+                hours = float(hours)
+                if hours <= 0:
+                    # Skip zero-hour or negative hour contracts
+                    skipped_no_hours += 1
+                    continue
             except (ValueError, TypeError):
-                hours = 37.5  # Default if invalid
-                hours_is_default = True
-                contracts_with_default_hours += 1
-                self.assumptions.append(f"Staff {staff_code}: Invalid hours value, using default 37.5 hours")
+                # Skip if hours can't be parsed
+                skipped_no_hours += 1
+                continue
 
             # Get school code
             school = str(self._lookup_get(record, 'school_code', '')).strip()
@@ -7216,10 +7222,8 @@ class S2SpecialistAgent:
         self.log(f"  Created {contracts_created} support contracts from lookup")
         if contracts_with_placeholder_title > 0:
             self.log(f"  WARNING: {contracts_with_placeholder_title} contracts created with placeholder title 'Support Staff - TBC'")
-        if contracts_with_default_hours > 0:
-            self.log(f"  WARNING: {contracts_with_default_hours} contracts created with default hours (37.5)")
-        if contracts_with_zero_hours > 0:
-            self.log(f"  INFO: {contracts_with_zero_hours} zero-hour contracts included in output")
+        if skipped_no_hours > 0:
+            self.log(f"  INFO: {skipped_no_hours} staff skipped (no hours or zero hours)")
         if skipped_is_teaching > 0:
             self.log(f"  INFO: {skipped_is_teaching} teaching staff (processed in teaching contracts)")
 
