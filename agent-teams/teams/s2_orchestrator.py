@@ -109,6 +109,8 @@ class S2BuildContext:
     customer_folder: Path
     template_path: Path
     workbook_path: Optional[Path] = None
+    output_file: Optional[Path] = None  # Final output workbook path
+    output_dir: Optional[Path] = None  # Output directory
     build_mode: str = "RAW_DATA"  # or "PREPOPULATED_TEMPLATE"
 
     # The underlying S2SpecialistAgent that does the actual work
@@ -130,6 +132,9 @@ class S2BuildContext:
     validation_errors: List[str] = field(default_factory=list)
     validation_warnings: List[str] = field(default_factory=list)
 
+    # Processing results
+    process_result: Optional[Dict[str, Any]] = None
+
     # Metadata
     created_at: datetime = field(default_factory=datetime.now)
 
@@ -145,6 +150,8 @@ class S2BuildContext:
             "customer_folder": str(self.customer_folder),
             "template_path": str(self.template_path),
             "workbook_path": str(self.workbook_path) if self.workbook_path else None,
+            "output_file": str(self.output_file) if self.output_file else None,
+            "output_dir": str(self.output_dir) if self.output_dir else None,
             "build_mode": self.build_mode,
             "specialist_available": self.specialist is not None,
             "pay_scales_count": len(self.pay_scales),
@@ -536,58 +543,79 @@ class RolesGeneratorAgent(BaseS2Agent):
 
 class ContractsBuildAgent(BaseS2Agent):
     """
-    Agent 6: Contracts Build
+    Agent 6: Contracts Build & Output Generation
 
     Responsibilities:
-    - Build Contracts sheet with all required fields using S2SpecialistAgent
+    - Run full S2SpecialistAgent process to build all templates
+    - Build Contracts sheet with all required fields
     - Resolve overlapping contracts and mismatches
     - Align dates to Strand 2 rules
     - Apply contract allowances and adjustments
     - Capture pension opt-out status
+    - Generate and save the output workbook
     """
 
     def __init__(self, log_func: Callable = None):
-        super().__init__(6, "Contracts Build", log_func)
+        super().__init__(6, "Contracts Build & Output", log_func)
 
     def execute(self, context: S2BuildContext, upstream_contracts: List[HandoffContract]) -> HandoffContract:
         contract = self._create_contract(AgentStatus.IN_PROGRESS)
 
-        self._log("Starting contracts build")
+        self._log("Starting full S2 build process")
 
         try:
-            # Use S2SpecialistAgent to build all templates
-            if context.specialist:
-                self._log("Building template sheets using specialist...")
+            # Use S2SpecialistAgent to run the complete process
+            if context.specialist and context.customer_folder.exists():
+                self._log("Running full S2 specialist process...")
                 try:
-                    template_data = context.specialist.build_all_templates()
+                    # Create output directory
+                    if not context.output_dir:
+                        context.output_dir = context.customer_folder / "output"
+                    context.output_dir.mkdir(exist_ok=True)
 
-                    # Extract contract counts
-                    teaching_contracts = template_data.get("ContractsTeachFTE", [])
-                    support_contracts = template_data.get("ContractsSupportHours", [])
+                    # Run the full S2 process
+                    result = context.specialist.process(
+                        customer_data_dir=context.customer_folder,
+                        output_dir=context.output_dir,
+                        template_path=context.template_path if context.template_path.exists() else None
+                    )
 
-                    if hasattr(teaching_contracts, '__len__'):
-                        contract.metrics["teaching_contracts"] = len(teaching_contracts) if not hasattr(teaching_contracts, 'empty') else len(teaching_contracts) if not teaching_contracts.empty else 0
-                    if hasattr(support_contracts, '__len__'):
-                        contract.metrics["support_contracts"] = len(support_contracts) if not hasattr(support_contracts, 'empty') else len(support_contracts) if not support_contracts.empty else 0
+                    # Store result in context
+                    context.process_result = result
+                    context.output_file = result.get('output_file')
 
-                    # Update context with contract data
-                    total_contracts = contract.metrics.get("teaching_contracts", 0) + contract.metrics.get("support_contracts", 0)
-                    contract.outputs.append(f"Built {total_contracts} contracts")
-                    contract.metrics["contracts_count"] = total_contracts
+                    # Extract results
+                    if result:
+                        contract.outputs.append(f"✓ Output saved: {context.output_file.name if context.output_file else 'N/A'}")
+                        contract.outputs.append(f"✓ Staff members: {result.get('summary', {}).get('staff_members', 0)}")
+                        contract.outputs.append(f"✓ Teaching contracts: {result.get('summary', {}).get('teaching_contracts', 0)}")
+                        contract.outputs.append(f"✓ Support contracts: {result.get('summary', {}).get('support_contracts', 0)}")
 
-                    # Copy issues and assumptions from specialist
-                    if hasattr(context.specialist, 'issues'):
-                        for issue in context.specialist.issues:
-                            contract.warnings.append(issue)
+                        contract.metrics["staff_members"] = result.get('summary', {}).get('staff_members', 0)
+                        contract.metrics["teaching_contracts"] = result.get('summary', {}).get('teaching_contracts', 0)
+                        contract.metrics["support_contracts"] = result.get('summary', {}).get('support_contracts', 0)
+                        contract.metrics["contracts_count"] = contract.metrics["teaching_contracts"] + contract.metrics["support_contracts"]
+                        contract.metrics["pay_scales"] = result.get('summary', {}).get('pay_scales', 0)
+                        contract.metrics["sheets_created"] = len(result.get('template_sheets', {}))
+
+                        # Copy issues (last 20) as warnings
+                        if result.get('issues'):
+                            for issue in result['issues'][-20:]:
+                                contract.warnings.append(issue)
+
+                        # Check if output file was actually created
+                        if not context.output_file or not Path(context.output_file).exists():
+                            contract.errors.append("Output file was not created")
+                        else:
+                            contract.outputs.append(f"✓ File size: {Path(context.output_file).stat().st_size // 1024} KB")
 
                 except Exception as e:
-                    contract.warnings.append(f"Build error: {str(e)}")
-                    self._log(f"Build error: {e}", "WARN")
+                    contract.errors.append(f"Process error: {str(e)}")
+                    self._log(f"Process error: {e}", "ERROR")
             else:
-                contract.outputs.append(f"Contracts to build: {len(context.contracts)}")
-                contract.metrics["contracts_count"] = len(context.contracts)
+                contract.errors.append("Specialist not available or customer folder not found")
 
-            self._log(f"Built {contract.metrics.get('contracts_count', 0)} contracts")
+            self._log(f"Build complete - {contract.metrics.get('contracts_count', 0)} contracts")
 
             if contract.errors:
                 return self._complete_contract(contract, AgentStatus.FAIL)
@@ -606,12 +634,11 @@ class ReconciliationAgent(BaseS2Agent):
     Agent 7: Reconciliation & Validation
 
     Responsibilities:
-    - Run full S2 process using S2SpecialistAgent
-    - Export Staff Details Extract reports
-    - Build reconciliation workbook with composite key mapping
+    - Validate output workbook was created successfully
+    - Review audit results from specialist
     - Reconcile in strict order (Hours, Weeks, Scale, Rates, Salary, Allowances)
     - Tag non-built contracts
-    - Generate System Review workbook
+    - Generate final summary and System Review
     """
 
     RECONCILIATION_ORDER = [
@@ -629,7 +656,7 @@ class ReconciliationAgent(BaseS2Agent):
     def execute(self, context: S2BuildContext, upstream_contracts: List[HandoffContract]) -> HandoffContract:
         contract = self._create_contract(AgentStatus.IN_PROGRESS)
 
-        self._log("Starting reconciliation and final output")
+        self._log("Starting reconciliation and validation")
 
         try:
             # Check all upstream agents passed
@@ -640,46 +667,47 @@ class ReconciliationAgent(BaseS2Agent):
                 )
                 return self._complete_contract(contract, AgentStatus.FAIL)
 
-            # Run the full S2 process using the specialist
-            if context.specialist and context.customer_folder.exists():
-                self._log("Running full S2 process via specialist...")
-                try:
-                    # Create output directory
-                    output_dir = context.customer_folder / "output"
-                    output_dir.mkdir(exist_ok=True)
+            # Validate output file was created by Agent 6
+            if not context.output_file or not Path(context.output_file).exists():
+                contract.errors.append("Output file was not created by upstream agents")
+                return self._complete_contract(contract, AgentStatus.FAIL)
 
-                    # Run the process
-                    result = context.specialist.process(
-                        customer_data_dir=context.customer_folder,
-                        output_dir=output_dir,
-                        template_path=context.template_path if context.template_path.exists() else None
-                    )
+            contract.outputs.append(f"✓ Output file validated: {Path(context.output_file).name}")
 
-                    # Extract results
-                    if result:
-                        contract.outputs.append(f"Output path: {result.get('output_path', 'N/A')}")
-                        contract.metrics["staff_members"] = result.get('staff_members_count', 0)
-                        contract.metrics["contracts_built"] = result.get('contracts_count', 0)
-                        contract.metrics["sheets_created"] = result.get('sheets_created', 0)
+            # Extract audit results from process_result
+            if context.process_result:
+                result = context.process_result
+                audit = result.get('audit', {})
 
-                        # Copy audit results
-                        if hasattr(context.specialist, 'audit_passed'):
-                            contract.metrics["audit_passed"] = context.specialist.audit_passed
-                            contract.metrics["audit_score"] = getattr(context.specialist, 'audit_score', 0)
+                contract.outputs.append(f"✓ Audit score: {audit.get('score', 0):.1f}%")
+                contract.outputs.append(f"✓ Audit status: {'PASS' if audit.get('passed') else 'FAIL'}")
 
-                        # Copy any issues
-                        if hasattr(context.specialist, 'issues'):
-                            for issue in context.specialist.issues[-20:]:  # Last 20 issues
-                                contract.warnings.append(issue)
+                contract.metrics["audit_score"] = audit.get('score', 0)
+                contract.metrics["audit_passed"] = audit.get('passed', False)
+                contract.metrics["staff_members"] = result.get('summary', {}).get('staff_members', 0)
+                contract.metrics["contracts_built"] = result.get('summary', {}).get('teaching_contracts', 0) + result.get('summary', {}).get('support_contracts', 0)
+                contract.metrics["pay_scales"] = result.get('summary', {}).get('pay_scales', 0)
 
-                except Exception as e:
-                    contract.warnings.append(f"Process error: {str(e)}")
-                    self._log(f"Process error: {e}", "WARN")
+                # Check for audit failures
+                if not audit.get('passed'):
+                    contract.warnings.append(f"Audit failed with score {audit.get('score', 0):.1f}%")
 
-            contract.outputs.append(f"Reconciliation order: {self.RECONCILIATION_ORDER}")
+                # Extract issues
+                issues = result.get('issues', [])
+                if issues:
+                    contract.warnings.extend([f"Build issue: {issue}" for issue in issues[-10:]])
+
+            contract.outputs.append(f"✓ Reconciliation order: {', '.join(self.RECONCILIATION_ORDER)}")
             contract.metrics["reconciliation_steps"] = len(self.RECONCILIATION_ORDER)
 
-            self._log("Reconciliation complete")
+            # Final validation checks
+            file_size_kb = Path(context.output_file).stat().st_size // 1024
+            if file_size_kb < 50:
+                contract.warnings.append(f"Output file is very small ({file_size_kb} KB)")
+
+            contract.outputs.append(f"✓ Final output: {context.output_file}")
+
+            self._log("Reconciliation and validation complete")
 
             if contract.errors:
                 return self._complete_contract(contract, AgentStatus.FAIL)
@@ -705,6 +733,7 @@ class OrchestrationResult:
     consolidated_warnings: List[str]
     assumptions_register: List[Dict]
     metrics: Dict[str, Any]
+    output_file: Optional[Path] = None
 
     def to_dict(self) -> Dict:
         """Serialise result to dictionary."""
@@ -718,7 +747,8 @@ class OrchestrationResult:
             "consolidated_errors": self.consolidated_errors,
             "consolidated_warnings": self.consolidated_warnings,
             "assumptions_register": self.assumptions_register,
-            "metrics": self.metrics
+            "metrics": self.metrics,
+            "output_file": str(self.output_file) if self.output_file else None
         }
 
     @property
@@ -805,6 +835,7 @@ class S2Orchestrator:
             customer_name=customer_name,
             customer_folder=Path(customer_folder),
             template_path=Path(template_path),
+            output_dir=Path(customer_folder) / "output",
             build_mode=build_mode
         )
 
@@ -881,11 +912,14 @@ class S2Orchestrator:
             consolidated_errors=self._consolidate_errors(),
             consolidated_warnings=self._consolidate_warnings(),
             assumptions_register=self._consolidate_assumptions(),
-            metrics=self._compute_metrics()
+            metrics=self._compute_metrics(),
+            output_file=context.output_file
         )
 
         self._log(f"Orchestration complete: {overall_status.value}")
         self._log(f"Duration: {(completed_at - started_at).total_seconds():.1f}s")
+        if context.output_file:
+            self._log(f"Output file: {context.output_file}")
 
         return result
 
@@ -1035,7 +1069,8 @@ class S2Orchestrator:
             consolidated_errors=self._consolidate_errors(),
             consolidated_warnings=self._consolidate_warnings(),
             assumptions_register=self._consolidate_assumptions(),
-            metrics=self._compute_metrics()
+            metrics=self._compute_metrics(),
+            output_file=context.output_file
         )
 
     def get_completion_matrix(self) -> Dict[str, str]:

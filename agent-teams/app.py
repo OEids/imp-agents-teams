@@ -458,30 +458,31 @@ def run_team_processing(team_id: str, column_mappings: dict = None) -> dict:
             # Convert orchestration result to standard format
             success = orch_result.status.value in ["PASS", "PASS_WITH_WARNINGS"]
 
+            # Extract metrics from Agent 6 and Agent 7 contracts
+            agent_6_contract = next((c for c in orch_result.agent_contracts if c.agent_id == 6), None)
+            agent_7_contract = next((c for c in orch_result.agent_contracts if c.agent_id == 7), None)
+
             # Build summary from metrics
             summary = {
                 "agents_passed": orch_result.metrics.get("agents_passed", 0),
                 "agents_failed": orch_result.metrics.get("agents_failed", 0),
                 "total_errors": orch_result.metrics.get("total_errors", 0),
                 "total_warnings": orch_result.metrics.get("total_warnings", 0),
-                "staff_members": orch_result.metrics.get("staff_members", 0),
-                "contracts_built": orch_result.metrics.get("contracts_built", 0),
-                "audit_passed": orch_result.metrics.get("audit_passed", False),
-                "audit_score": orch_result.metrics.get("audit_score", 0),
+                "staff_members": agent_6_contract.metrics.get("staff_members", 0) if agent_6_contract else 0,
+                "teaching_contracts": agent_6_contract.metrics.get("teaching_contracts", 0) if agent_6_contract else 0,
+                "support_contracts": agent_6_contract.metrics.get("support_contracts", 0) if agent_6_contract else 0,
+                "contracts_built": agent_6_contract.metrics.get("contracts_count", 0) if agent_6_contract else 0,
+                "pay_scales": agent_6_contract.metrics.get("pay_scales", 0) if agent_6_contract else 0,
+                "audit_passed": agent_7_contract.metrics.get("audit_passed", False) if agent_7_contract else False,
+                "audit_score": agent_7_contract.metrics.get("audit_score", 0) if agent_7_contract else 0,
             }
-
-            # Add contract counts if available
-            for contract in orch_result.agent_contracts:
-                if contract.agent_name == "Contracts Build":
-                    summary["teaching_contracts"] = contract.metrics.get("teaching_contracts", 0)
-                    summary["support_contracts"] = contract.metrics.get("support_contracts", 0)
 
             return {
                 "success": success,
                 "summary": summary,
                 "issues": orch_result.consolidated_errors,
                 "assumptions": [a.get("description", "") for a in orch_result.assumptions_register],
-                "output_file": str(output_dir / f"S2_Build_{customer_dir.name}.xlsx"),
+                "output_file": str(orch_result.output_file) if orch_result.output_file else None,
                 "template_sheets": {},
                 "orchestrator_result": orch_result.to_dict(),
                 "agent_completion_matrix": orch_result.completion_matrix,
